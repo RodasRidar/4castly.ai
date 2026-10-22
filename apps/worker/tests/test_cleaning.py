@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 import polars as pl
 import pytest
@@ -11,6 +11,7 @@ from worker.application.cleaning import (
     movements_to_frame,
     to_demand_series,
 )
+from worker.domain.models import Movement
 
 
 @pytest.fixture
@@ -67,3 +68,36 @@ def test_to_demand_series_builds_one_series_per_sku(movements_frame) -> None:
     assert {s.sku for s in series} == {"A001", "B002"}
     acid = next(s for s in series if s.sku == "A001")
     assert len(acid.y) == len(acid.ds) == len(acid.censored) == 8
+
+
+def _mv(day: str, code: str, qty_in: float, qty_out: float, balance: float) -> Movement:
+    return Movement(
+        sku="LOW1",
+        sku_name="LOW STOCK SKU",
+        uom="KG",
+        timestamp=datetime.strptime(day, "%Y-%m-%d"),
+        movement_code=code,
+        movement_type="SALDO INICIAL" if code == "" else "",
+        document="",
+        counterparty="",
+        qty_in=qty_in,
+        qty_out=qty_out,
+        balance=balance,
+    )
+
+
+def test_low_stock_relative_to_typical_demand_is_censored() -> None:
+    # Weekly demand: 100, 100, 190, 100 -> typical (median) = 100 per week.
+    frame = movements_to_frame(
+        [
+            _mv("2025-01-06", "", 0, 0, 400),
+            _mv("2025-01-07", "01", 0, 100, 300),
+            _mv("2025-01-14", "01", 0, 100, 200),
+            _mv("2025-01-21", "01", 0, 190, 10),  # 10 kg left: cannot serve a typical week
+            _mv("2025-01-27", "02", 120, 0, 130),
+            _mv("2025-01-28", "01", 0, 100, 30),  # 30 kg left: above 25% of a typical week
+        ]
+    )
+    weekly = build_demand_frame(frame, "weekly")
+    assert weekly["y"].to_list() == [100.0, 100.0, 190.0, 100.0]
+    assert weekly["censored"].to_list() == [False, False, True, False]

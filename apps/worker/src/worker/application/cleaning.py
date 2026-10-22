@@ -16,6 +16,8 @@ CUSTOMER_RETURN_CODE = "05"
 NON_DEMAND_CODES = frozenset({"02", "11", "99"})
 
 DEFAULT_STOCKOUT_THRESHOLD = 0.5
+# Stock below this share of a typical period's demand cannot serve typical orders.
+DEFAULT_LOW_STOCK_RATIO = 0.25
 
 
 class MovementsSchema(pa.DataFrameModel):
@@ -73,13 +75,16 @@ def build_demand_frame(
     movements: pl.DataFrame,
     freq: Frequency = "daily",
     stockout_threshold: float = DEFAULT_STOCKOUT_THRESHOLD,
+    low_stock_ratio: float = DEFAULT_LOW_STOCK_RATIO,
 ) -> pl.DataFrame:
     """Return one row per (sku, period) with demand `y`, `balance` and `censored`.
 
     demand = sales ('01', qty_out) - customer returns ('05', qty_in). Transfers ('11'),
     imports ('02'), adjustments ('99') and the opening balance never count as demand.
-    A period is censored when the running balance dropped to <= `stockout_threshold`
-    inside it (or stayed there, for periods without movements).
+    A period is censored when the running balance inside it (or carried into it, for
+    periods without movements) dropped to <= max(`stockout_threshold`,
+    `low_stock_ratio` * typical demand), where typical demand is the SKU's median
+    positive period demand.
     """
     interval: Literal["1d", "1w"] = "1d" if freq == "daily" else "1w"
     prepared = _with_running_balance(movements).with_columns(
@@ -114,14 +119,19 @@ def build_demand_frame(
             pl.col("y").fill_null(0.0),
             pl.col("bal_last").forward_fill().over("sku"),
         )
-        .with_columns(pl.col("bal_min").fill_null(pl.col("bal_last")))
+        .with_columns(
+            pl.col("bal_min").fill_null(pl.col("bal_last")),
+            pl.col("y").clip(lower_bound=0.0),
+        )
     )
+    typical_demand = pl.col("y").filter(pl.col("y") > 0).median().over("sku").fill_null(0.0)
+    low_stock = pl.max_horizontal(pl.lit(stockout_threshold), low_stock_ratio * typical_demand)
     return full.select(
         "sku",
         pl.col("period").dt.date().alias("ds"),
-        pl.col("y").clip(lower_bound=0.0),
+        "y",
         pl.col("bal_min").alias("balance"),
-        (pl.col("bal_min") <= stockout_threshold).alias("censored"),
+        (pl.col("bal_min") <= low_stock).alias("censored"),
     )
 
 
