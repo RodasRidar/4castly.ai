@@ -17,6 +17,10 @@ B2B demand/stock forecasting SaaS. First client: a chemical/pharma importer that
 
 ## Local development
 
+Common tasks from the repo root via `make`: `install`, `lint`, `format`, `typecheck`, `test`,
+`check` (all of them), `dev-web`, `dev-api`. Enable git hooks once with `prek install`
+(or `pre-commit install`); they run ruff, whitespace/EOF checks and block data/`.env` files.
+
 ```bash
 # web (http://localhost:5173)
 cd apps/web && cp .env.example .env && pnpm install && pnpm dev     # pnpm build to type-check

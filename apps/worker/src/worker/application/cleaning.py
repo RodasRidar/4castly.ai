@@ -31,7 +31,7 @@ class MovementsSchema(pa.DataFrameModel):
     qty_out: float = pa.Field(ge=0)
     balance: float = pa.Field(nullable=True)
 
-    class Config:
+    class Config:  # ty: ignore[invalid-attribute-override]  (pandera's documented API)
         strict = True
         coerce = True
 
@@ -40,11 +40,17 @@ def movements_to_frame(movements: Iterable[Movement]) -> pl.DataFrame:
     """Build the movements frame and validate it against `MovementsSchema`."""
     rows = [
         {
-            "sku": m.sku, "sku_name": m.sku_name, "uom": m.uom,
-            "timestamp": m.timestamp, "movement_code": m.movement_code,
-            "movement_type": m.movement_type, "document": m.document,
-            "counterparty": m.counterparty, "qty_in": m.qty_in,
-            "qty_out": m.qty_out, "balance": m.balance,
+            "sku": m.sku,
+            "sku_name": m.sku_name,
+            "uom": m.uom,
+            "timestamp": m.timestamp,
+            "movement_code": m.movement_code,
+            "movement_type": m.movement_type,
+            "document": m.document,
+            "counterparty": m.counterparty,
+            "qty_in": m.qty_in,
+            "qty_out": m.qty_out,
+            "balance": m.balance,
         }
         for m in movements
     ]
@@ -96,9 +102,7 @@ def build_demand_frame(
         pl.col("period").min().alias("start"), pl.col("period").max().alias("end")
     )
     grid = (
-        bounds.with_columns(
-            pl.datetime_ranges("start", "end", interval=interval).alias("period")
-        )
+        bounds.with_columns(pl.datetime_ranges("start", "end", interval=interval).alias("period"))
         .explode("period")
         .select("sku", "period")
     )

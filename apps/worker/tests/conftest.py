@@ -15,24 +15,68 @@ A, B, C, E, H, I, J, K, L, M, N, O, P = 0, 1, 2, 4, 7, 8, 9, 10, 11, 12, 13, 14,
 def _row(**cells: object) -> list[object]:
     row: list[object] = [""] * 16
     for col, value in cells.items():
-        row[{"A": A, "B": B, "C": C, "E": E, "H": H, "I": I, "J": J, "K": K,
-             "L": L, "M": M, "N": N, "O": O, "P": P}[col]] = value
+        row[
+            {
+                "A": A,
+                "B": B,
+                "C": C,
+                "E": E,
+                "H": H,
+                "I": I,
+                "J": J,
+                "K": K,
+                "L": L,
+                "M": M,
+                "N": N,
+                "O": O,
+                "P": P,
+            }[col]
+        ] = value
     return row
 
 
-def _movement(day: str, code: str, kind: str, doc: str, who: str,
-              qty_in: float | str, qty_out: float | str, balance: float) -> list[object]:
-    return _row(A=datetime.strptime(day, "%Y-%m-%d"), B=code, C=kind, H=doc,
-                J=who, M=qty_in, N=qty_out, O=balance)
+def _movement(
+    day: str,
+    code: str,
+    kind: str,
+    doc: str,
+    who: str,
+    qty_in: float | str,
+    qty_out: float | str,
+    balance: float,
+) -> list[object]:
+    return _row(
+        A=datetime.strptime(day, "%Y-%m-%d"),
+        B=code,
+        C=kind,
+        H=doc,
+        J=who,
+        M=qty_in,
+        N=qty_out,
+        O=balance,
+    )
 
 
-def _block(code: str, name: str, uom: str, opening: float, movements: list[list[object]]) -> list[list[object]]:
+def _block(
+    code: str, name: str, uom: str, opening: float, movements: list[list[object]]
+) -> list[list[object]]:
     return [
         _row(E=f"ARTICULO: {code}"),
         _row(A="LOTE: <TODOS>"),
         _row(A="ARTICULO", C="CANTIDAD", E="COSTO"),
-        _row(A="FECHA", B="CODIGO", C="TIPO", H="NRO. COMP.", I="OBSERV.",
-             J="PROV/CLIENTE", K="LOTE", L="S.INICIAL", M="INGRESOS", N="SALIDAS", O="S.FINAL"),
+        _row(
+            A="FECHA",
+            B="CODIGO",
+            C="TIPO",
+            H="NRO. COMP.",
+            I="OBSERV.",
+            J="PROV/CLIENTE",
+            K="LOTE",
+            L="S.INICIAL",
+            M="INGRESOS",
+            N="SALIDAS",
+            O="S.FINAL",
+        ),
         _row(A=code, B=name, K=uom),
         _row(J="SALDO INICIAL ", L=opening, O=opening),
         *movements,

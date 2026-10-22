@@ -41,3 +41,7 @@ supabase/.temp/
 .DS_Store
 .idea/
 .vscode/
+
+# Coverage
+.coverage
+htmlcov/

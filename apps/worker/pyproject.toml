@@ -25,4 +25,87 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.1",
+    "ty>=0.0.90",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--cov", "--cov-report=term-missing:skip-covered"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "N",        # pep8-naming
+    "UP",       # pyupgrade
+    "B",        # bugbear
+    "A",        # builtins shadowing
+    "C4",       # comprehensions
+    "SIM",      # simplify
+    "RET",      # return consistency
+    "PT",       # pytest style
+    "PL",       # pylint subset
+    "RUF",      # ruff-specific
+    "S",        # bandit security
+    "T20",      # no print
+    "DTZ",      # timezone-aware datetimes
+    "TID",      # tidy imports
+    "ANN",      # annotations
+    "ARG",      # unused arguments
+    "ERA",      # commented-out code
+]
+ignore = [
+    "ANN401",   # Any is sometimes unavoidable at third-party boundaries
+    "COM812",   # formatter conflict
+    "ISC001",   # formatter conflict
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",     # pytest relies on bare asserts
+    "PLR2004",  # magic values are fine in expected-value assertions
+    "ANN",      # fixtures and tests need no annotations
+    "ARG",      # fixtures are injected by name
+    "DTZ",      # fixtures use naive local timestamps, matching the Kardex source
+    "E741",     # column-letter constants (I, O) mirror the spreadsheet layout
+    "PLR0913",  # synthetic-row builders mirror the spreadsheet columns
+    "PLR0917",  # same as above
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["worker"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ty.src]
+include = ["src", "tests"]
+
+[tool.ty.terminal]
+error-on-warning = true
+
+[tool.coverage.run]
+branch = true
+source = ["worker"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+    '^\\s*\\.\\.\\.$',   # Protocol method bodies
 ]

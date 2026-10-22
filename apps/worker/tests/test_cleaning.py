@@ -6,6 +6,7 @@ from pandera.errors import SchemaError
 
 from worker.adapters.ingestion import KardexExcelSource
 from worker.application.cleaning import (
+    MovementsSchema,
     build_demand_frame,
     movements_to_frame,
     to_demand_series,
@@ -24,8 +25,6 @@ def _acid(frame: pl.DataFrame) -> dict[date, tuple[float, bool]]:
 
 def test_schema_rejects_negative_quantities(movements_frame) -> None:
     bad = movements_frame.with_columns(pl.lit(-1.0).alias("qty_out"))
-    from worker.application.cleaning import MovementsSchema
-
     with pytest.raises(SchemaError):
         MovementsSchema.validate(bad)
 
@@ -33,7 +32,9 @@ def test_schema_rejects_negative_quantities(movements_frame) -> None:
 def test_demand_is_sales_minus_returns_excluding_other_codes(movements_frame) -> None:
     daily = _acid(build_demand_frame(movements_frame, "daily"))
     assert daily[date(2025, 1, 3)][0] == 80.0  # 50 + 30 sales
-    assert daily[date(2025, 1, 4)][0] == 30.0  # 40 sale - 10 return; transfer(20) and adjust(10) ignored
+    assert (
+        daily[date(2025, 1, 4)][0] == 30.0
+    )  # 40 sale - 10 return; transfer(20) and adjust(10) ignored
     assert daily[date(2025, 1, 2)][0] == 0.0  # import is not demand
     assert daily[date(2025, 1, 1)][0] == 0.0  # opening balance is not demand
 

@@ -63,7 +63,8 @@ def _parse_period_start(rows: Sequence[Sequence[Any]]) -> datetime | None:
         for value in row:
             match = _PERIOD_RE.search(_text(value))
             if match:
-                return datetime.strptime(match.group(1), "%d/%m/%Y")
+                # Kardex dates are naive local business dates by design (no timezone in source).
+                return datetime.strptime(match.group(1), "%d/%m/%Y")  # noqa: DTZ007
     return None
 
 
@@ -143,15 +144,26 @@ class KardexExcelSource:
             if timestamp is None:
                 return None
             return Movement(
-                sku=sku, sku_name=name, uom=uom, timestamp=timestamp,
-                movement_code="", movement_type=OPENING_BALANCE_TYPE,
-                document="", counterparty="", qty_in=0.0, qty_out=0.0, balance=balance,
+                sku=sku,
+                sku_name=name,
+                uom=uom,
+                timestamp=timestamp,
+                movement_code="",
+                movement_type=OPENING_BALANCE_TYPE,
+                document="",
+                counterparty="",
+                qty_in=0.0,
+                qty_out=0.0,
+                balance=balance,
             )
 
         if timestamp is None:
             return None
         return Movement(
-            sku=sku, sku_name=name, uom=uom, timestamp=timestamp,
+            sku=sku,
+            sku_name=name,
+            uom=uom,
+            timestamp=timestamp,
             movement_code=_text(_cell(row, COL_B)),
             movement_type=_text(_cell(row, COL_C)),
             document=_text(_cell(row, COL_H)),

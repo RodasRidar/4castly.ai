@@ -1,0 +1,45 @@
+# Hooks for prek (https://prek.j178.dev) or pre-commit.
+#   prek install            # or: pre-commit install
+#   prek run --all-files
+exclude: ^(\.agents|\.claude|\.atl)/
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.1
+    hooks:
+      - id: ruff-check
+        name: ruff check (api)
+        files: ^apps/api/
+        args: [--fix, --config=apps/api/pyproject.toml]
+      - id: ruff-format
+        name: ruff format (api)
+        files: ^apps/api/
+        args: [--config=apps/api/pyproject.toml]
+      - id: ruff-check
+        name: ruff check (worker)
+        files: ^apps/worker/
+        args: [--fix, --config=apps/worker/pyproject.toml]
+      - id: ruff-format
+        name: ruff format (worker)
+        files: ^apps/worker/
+        args: [--config=apps/worker/pyproject.toml]
+
+  - repo: local
+    hooks:
+      - id: block-data-and-env-files
+        name: block data files (*.xlsx, *.xls, *.csv) and .env files
+        language: fail
+        entry: Client data and secrets must never be committed (only .env.example is allowed).
+        files: (\.(xlsx|xls|csv)$)|((^|/)\.env(\..+)?$)
+        exclude: (^|/)\.env\.example$

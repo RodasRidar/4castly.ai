@@ -31,7 +31,7 @@ class TimesFMForecaster:
 
     def _load(self) -> Any:
         if self._model is None:
-            from timesfm3.mlx import ModelConfig, TimesFM3Forecaster  # lazy: pulls mlx + weights
+            from timesfm3.mlx import ModelConfig, TimesFM3Forecaster  # noqa: PLC0415  (lazy: mlx + weights)
 
             self._model = TimesFM3Forecaster(
                 ModelConfig(
@@ -44,12 +44,11 @@ class TimesFMForecaster:
     def forecast(self, series: DemandSeries, horizon: int) -> Forecast:
         model = self._load()
         context = np.asarray(series.y, dtype=np.float32)
-        out = model.predict(
-            context, horizon=horizon, return_quantiles=True, make_positive=True
-        )
+        out = model.predict(context, horizon=horizon, return_quantiles=True, make_positive=True)
         q = np.asarray(out.quantiles)  # (horizon, 9)
         return Forecast(
-            sku=series.sku, model=self.name,
+            sku=series.sku,
+            model=self.name,
             ds=series.future_dates(horizon),
             p10=q[:, IDX_P10].astype(float).tolist(),
             p50=q[:, IDX_P50].astype(float).tolist(),
