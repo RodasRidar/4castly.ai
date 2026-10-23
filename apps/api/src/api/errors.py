@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.domain.errors import AppError
+from api.observability.context import current_request_id
 from api.schemas import ApiError, FieldIssue
 
 PROBLEM_JSON = "application/problem+json"
@@ -32,6 +33,26 @@ def new_ref() -> str:
     return "".join(secrets.choice(_REF_ALPHABET) for _ in range(_REF_LENGTH))
 
 
+def problem_response(
+    *,
+    status: int,
+    code: str,
+    message_key: str,
+    fields: list[FieldIssue] | None = None,
+    request_id: str | None = None,
+) -> JSONResponse:
+    body = ApiError(
+        title=HTTPStatus(status).phrase,
+        status=status,
+        code=code,
+        message_key=message_key,
+        ref=new_ref(),
+        request_id=request_id or current_request_id(),
+        fields=fields or [],
+    )
+    return JSONResponse(body.model_dump(mode="json"), status_code=status, media_type=PROBLEM_JSON)
+
+
 def problem(
     request: Request,
     *,
@@ -40,16 +61,13 @@ def problem(
     message_key: str,
     fields: list[FieldIssue] | None = None,
 ) -> JSONResponse:
-    body = ApiError(
-        title=HTTPStatus(status).phrase,
+    return problem_response(
         status=status,
         code=code,
         message_key=message_key,
-        ref=new_ref(),
-        request_id=request.headers.get("x-request-id"),
-        fields=fields or [],
+        fields=fields,
+        request_id=current_request_id() or request.headers.get("x-request-id"),
     )
-    return JSONResponse(body.model_dump(mode="json"), status_code=status, media_type=PROBLEM_JSON)
 
 
 def register_exception_handlers(app: FastAPI) -> None:

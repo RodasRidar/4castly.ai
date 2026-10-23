@@ -6,6 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.db.engine import create_engine
 from api.errors import register_exception_handlers
+from api.observability.logging import configure_logging
+from api.observability.middleware import (
+    AccessLogMiddleware,
+    BodySizeLimitMiddleware,
+    RequestIdMiddleware,
+)
+from api.observability.tracing import configure_tracing
 from api.openapi import install_openapi
 from api.routers import (
     conversations,
@@ -25,6 +32,7 @@ V1_ROUTERS = (me, conversations, uploads, templates, jobs, runs, products, messa
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+    configure_logging(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
@@ -39,6 +47,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             if engine is not None:
                 await engine.dispose()
+            if app.state.tracer_provider is not None:
+                app.state.tracer_provider.shutdown()
 
     app = FastAPI(
         lifespan=lifespan,
@@ -48,17 +58,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         separate_input_output_schemas=False,
         generate_unique_id_function=lambda route: route.name,
     )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
     register_exception_handlers(app)
     app.include_router(health.router)
     for module in V1_ROUTERS:
         app.include_router(module.router)
     install_openapi(app)
+
+    # Last added runs first: CORS, request id, tracing, access log, then the size limit.
+    app.add_middleware(BodySizeLimitMiddleware, max_bytes=settings.max_body_bytes)
+    app.add_middleware(AccessLogMiddleware)
+    app.state.tracer_provider = configure_tracing(settings, app)
+    app.add_middleware(RequestIdMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["X-Request-ID"],
+    )
     return app
 
 

@@ -8,8 +8,14 @@ dependencies = [
     "asyncpg>=0.32.0",
     "castly-inventory",
     "fastapi>=0.160.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.1",
+    "opentelemetry-instrumentation-fastapi>=0.66b1",
+    "opentelemetry-instrumentation-httpx>=0.66b1",
+    "opentelemetry-instrumentation-sqlalchemy>=0.66b1",
+    "opentelemetry-sdk>=1.45.1",
     "pydantic-settings>=2.16.1",
     "sqlalchemy[asyncio]>=2.1.6",
+    "structlog>=26.1.0",
     "supabase>=2.33.0",
     "uvicorn[standard]>=0.54.0",
 ]
@@ -89,6 +95,7 @@ ignore = [
     "S101",     # pytest relies on bare asserts
     "PLR2004",  # magic values are fine in expected-value assertions
     "ANN",      # fixtures and tests need no annotations
+    "S106",     # fake tokens in test settings
     "ARG",      # fixtures are injected by name
 ]
 
