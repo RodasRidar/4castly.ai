@@ -379,7 +379,8 @@ internal codes shown in the UI.
 | `GET /conversations?group=&cursor=` | Sidebar list (pinned, today, week, older) |
 | `PATCH /conversations/{id}` | Rename, pin, archive |
 | `DELETE /conversations/{id}` · `POST /conversations/{id}/restore` | Soft delete + undo |
-| `POST /uploads` (multipart) | Upload file → creates conversation + digest job; returns `{conversation_id, job_id}` |
+| `POST /uploads` | Returns a signed Supabase Storage upload URL + `upload_id` (the browser uploads the file directly; Vercel caps request bodies at 4.5 MB) |
+| `POST /uploads/{id}/complete` | Verifies the object exists, creates conversation + digest job, spawns the worker; returns `{conversation_id, job_id}` |
 | `GET /templates/sales.xlsx` | Template download |
 | `GET /jobs/{id}` · `GET /jobs/{id}/events` (SSE) | Real stages and `processed/total` |
 | `POST /jobs/{id}/cancel` | Cancel digestion |
@@ -429,7 +430,7 @@ Conventions: `Annotated` dependencies, `response_model` on every route, async al
 ### ORM and migrations
 
 - Migrations stay in `supabase/migrations` as plain SQL, applied with the Supabase CLI (as `CLAUDE.md` already
-  says). RLS policies, `SECURITY DEFINER` functions, audit triggers, pgmq and grants are SQL-native; Alembic
+  says). RLS policies, `SECURITY DEFINER` functions, audit triggers and grants are SQL-native; Alembic
   autogenerate does not model them, so a second migration tool would split the source of truth.
 - ORM: **SQLAlchemy 2.0** (typed `Mapped[...]` models, async engine with `asyncpg`). It is the most mature
   Python ORM, has first-class async, and lets us run the per-transaction `set local role` / `set_config` needed
@@ -794,6 +795,7 @@ Worker: `structlog` and the same OpenTelemetry packages; `sqlalchemy` for the sh
 | D27 | LangChain not adopted for v1; Langfuse adopted for LLM traces, feedback, prompt versions |
 | D28 | Frontend: layout layer (layout routes) and atomic inventory built before pages |
 | D2 | Design precedence: brief override rules > Stitch > `DESIGN.md` (section 3) |
+| D29 | Hosting: web and API on Vercel, worker on Modal, database/auth/storage on Supabase (section 13) |
 | D3-D22 | Accepted as recommended in the table below |
 
 ### Accepted recommendations (2026-10-23)
@@ -922,7 +924,8 @@ Trust boundaries: browser ↔ API, API/worker ↔ Postgres, API/worker ↔ Stora
 - **S19 Dependencies.** `uv.lock` and `pnpm-lock.yaml` committed, Dependabot or Renovate, `pip-audit` and
   `pnpm audit` in CI, GitHub Actions pinned by commit SHA, secret scanning (gitleaks) in the pre-commit hooks.
 - **S20 Rate limiting.** Supabase limits the auth endpoints. API limits per user and tenant (uploads, chat,
-  exports) are enforced at the edge or in middleware depending on hosting (S-open-4).
+  exports) are enforced in API middleware, keyed by user and tenant and backed by Postgres (Vercel functions keep
+  no shared memory between instances).
 - **S21 Security monitoring.** Axiom monitors for spikes in failed logins, 401/403/404 on tenant resources,
   RLS denials (`42501`), upload rejections and guard hits.
 
@@ -944,14 +947,17 @@ persisted, so they keep working when the assistant, the forecaster or a third pa
 
 ### Jobs (digest and forecast)
 
-- **R1 Queue semantics.** pgmq with a visibility timeout. Handlers are idempotent by `job_id`: results are built
-  first and published in one transaction (`forecast_runs` switches to ready only at the end), so a retried job
-  never leaves half a run visible.
-- **R2 Retries.** Up to 3 attempts with exponential backoff for transient errors (DB, network, LLM 429/5xx).
-  Deterministic errors (unreadable file, no date column) fail fast with their own stage and message, no retry.
-  After the last attempt the job is `failed` with a support `ref`, and the message is archived (dead letter).
-- **R3 Stuck jobs.** Workers write `heartbeat_at`; a reaper re-queues jobs whose heartbeat is older than the
-  timeout. Cancellation ("Cancelar" in digestion) sets a flag checked between stages.
+- **R1 Job dispatch.** The `jobs` table is the source of truth. The API inserts the job row and then spawns the
+  Modal function with the `job_id` (section 13); no polling queue. Handlers are idempotent by `job_id`: they
+  claim the job with a conditional update (`queued → running`), build results first and publish them in one
+  transaction (`forecast_runs` switches to ready only at the end), so a retried or duplicated spawn never leaves
+  half a run visible.
+- **R2 Retries.** Up to 3 attempts with exponential backoff for transient errors (DB, network, LLM 429/5xx),
+  using Modal's function retries. Deterministic errors (unreadable file, no date column) fail fast with their own
+  stage and message, no retry. After the last attempt the job is `failed` with a support `ref`.
+- **R3 Stuck jobs.** Workers write `heartbeat_at`; a Vercel cron (every 5 minutes) re-spawns `queued` jobs that
+  were never claimed and `running` jobs whose heartbeat is older than the timeout. Cancellation ("Cancelar" in
+  digestion) sets a flag checked between stages.
 - **R4 Per-product isolation.** If one product's forecast fails, it falls back to the baseline model, then to the
   simple method; the run never fails because of one product. The reliability label shows it.
 - **R5 Concurrency limits.** One active forecast job per conversation; a cap per tenant so one large file does
@@ -966,7 +972,7 @@ persisted, so they keep working when the assistant, the forecaster or a third pa
 - **R8 Streaming.** SSE keep-alive comments every 15 s. If the client disconnects mid-answer, generation stops,
   the partial answer is saved as `interrupted`, and the UI offers "Reintentar". Job progress uses SSE with a
   polling fallback (`GET /jobs/{id}` every few seconds).
-- **R9 Health.** `/health/live` (process up) and `/health/ready` (DB and queue reachable). Graceful shutdown:
+- **R9 Health.** `/health/live` (process up) and `/health/ready` (DB reachable). Graceful shutdown:
   the API drains in-flight requests; the worker finishes its current stage or lets the message become visible
   again.
 
@@ -996,6 +1002,48 @@ assistant first token under 3 s. Monitored in Axiom (section 7b).
 | S-open-1 | Resend countdown vs Supabase per-address email limit | Set the limit to 30 s to keep the brief's countdown |
 | S-open-2 | Retention of original uploaded files | 30 days, then delete; derived data kept |
 | S-open-3 | Daily assistant token budget per tenant | Start generous, alert at 80 %, tune after the first client |
-| S-open-4 | Hosting for API, worker and web (decides WAF, edge rate limits, secret store) | Needs your call |
+| S-open-4 | Hosting for API, worker and web | Decided 2026-10-23: Vercel (web + API), Modal (worker); section 13 |
 | S-open-5 | Point-in-time recovery for production | Yes before the first real client |
 | S-open-6 | Upload size and row limits | Set from the first client's real files |
+
+---
+
+## 13. Hosting (D29, decided 2026-10-23)
+
+| Part | Platform | Why |
+|---|---|---|
+| Web (Vite SPA) | Vercel | Static build + CDN; preview deployments per branch |
+| API (FastAPI) | Vercel Functions, Python runtime on Fluid Compute | FastAPI is supported natively; SSE streaming works with no extra config; 300 s per request on Hobby is enough for chat turns |
+| Worker (ingestion, cleaning, forecasting) | Modal | Python-native, runs Polars, statsforecast and TimesFM (native code), scales to zero, GPU available later; free Starter plan with monthly credits |
+| Postgres, Auth, Storage | Supabase | Already in use (RLS, auth hooks, private buckets) |
+| LLM observability | Langfuse Cloud (EU) | D21 |
+| Logs and traces | Axiom | D26 |
+
+Rejected for the worker: Cloudflare Python Workers (Pyodide/WebAssembly, only pure-Python or PyEmscripten
+packages, so Polars, statsforecast/numba and TimesFM do not run) and Cloudflare Containers (works, but no free
+tier: requires Workers Paid, and each container is started from a TypeScript Worker, one more moving part).
+
+### Constraints this imposes
+
+- **Uploads bypass the API.** Vercel caps request and response bodies at 4.5 MB. The browser uploads the file to
+  Supabase Storage with a signed upload URL, then calls `POST /uploads/{id}/complete` (section 7).
+- **Large responses stream.** Excel exports are streamed or served from Storage with a signed URL.
+- **No in-process state in the API.** Fluid Compute shares and recycles instances, so rate limits, idempotency
+  keys and caches live in Postgres.
+- **DB connections from serverless.** The API connects through the Supabase pooler (transaction mode), with
+  asyncpg's prepared-statement cache disabled (section 7b).
+- **Worker dispatch.** The API spawns the Modal function by name with the `job_id`; a Vercel cron re-spawns
+  stuck jobs (section 12, R1-R3). The pgmq queue from `0001_init.sql` is no longer used.
+- **Worker image.** TimesFM weights are downloaded once into a Modal volume, not on each run.
+- **Secrets.** Vercel environment variables (API), Modal secrets (worker), one set per environment; the web app
+  only gets the Supabase URL and anon key.
+- **Region.** API region pinned next to the Supabase project's region; Modal region as close as available.
+
+### Plans and when to upgrade
+
+| Service | MVP (development) | First paying client |
+|---|---|---|
+| Vercel | Hobby (non-commercial use only, per Vercel's terms) | Pro is required for commercial use |
+| Supabase | Free (pauses projects after a week of inactivity; no PITR) | Pro + PITR (R10) |
+| Modal | Starter (free monthly credits; confirm the current amount on modal.com) | Stays on usage billing |
+| Langfuse, Axiom | Free tiers | Review volume after the first month |
