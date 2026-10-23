@@ -219,12 +219,12 @@ is one source of truth (D2).
 
 ---
 
-## 4. Backend decision: FastAPI or NestJS (D1)
+## 4. Backend decision: FastAPI or NestJS (D1, decided 2026-10-23: FastAPI)
 
 Question: since this is a monorepo with shared contracts, should the SaaS backend be NestJS, with Python only
 where needed?
 
-Recommendation: keep FastAPI. Reasons, from this repo:
+Decision: keep FastAPI. Reasons, from this repo:
 
 1. "Where Python is needed" is most of the backend. Kardex parsing, file profiling, executing the normalization
    plan, cleaning, forecasting, the inventory formulas (projection, coverage, risk, suggested quantity), the
@@ -279,6 +279,36 @@ Existing tables are kept. Changes are additive except D4 (rename `skus` → `pro
 | `messages` | Chat | `conversation_id`, `role` (`user|assistant`), `kind` (`text|file|mapping|clarification|progress|result|error`), `content`, `payload` jsonb, `context_product_id` null, `created_at` |
 | `message_feedback` | Like / dislike | `message_id`, `user_id`, `value` (`up|down`) |
 | `share_links` | "Compartir enlace" | `conversation_id`, `token`, `scope` (D10), `expires_at` |
+
+| `audit.log_entries` | Row-change audit (append-only) | `id`, `at`, `tenant_id`, `actor_id`, `request_id`, `table_name`, `op` (`INSERT|UPDATE|DELETE`), `row_pk`, `old` jsonb, `new` jsonb, `changed_fields` text[] |
+| `audit.events` | Business audit events | `at`, `tenant_id`, `actor_id`, `request_id`, `action` (`auth.login`, `upload.created`, `plan.confirmed`, `run.recalculated`, `export.created`, `share.created`, `conversation.deleted`, `assistant.feedback`), `target_type`, `target_id`, `metadata` jsonb |
+
+### Multi-tenancy
+
+Shared schema, `tenant_id` on every domain row, enforced by RLS (pool model). This is the model the repo already
+started; schema-per-tenant or database-per-tenant are not justified for B2B with a few dozen companies.
+
+- Every policy goes through `current_tenant_ids()` (already `SECURITY DEFINER`, so no recursive policies).
+- Composite foreign keys `(tenant_id, id)` on child tables so a row can never point to another tenant's parent.
+- RLS also applies to the API, not only to the browser. The API connects with a dedicated `app_api` role
+  (no `BYPASSRLS`) and, per request transaction, runs `set local role authenticated` plus
+  `set_config('request.jwt.claims', <verified claims>, true)` and `set_config('app.request_id', <id>, true)`.
+  `auth.uid()`, RLS and the audit triggers then see the real user. A bug in a query cannot leak another tenant.
+- The worker uses a separate `app_worker` role that may bypass RLS, and every worker query takes an explicit
+  `tenant_id` (the job carries it).
+- RLS tests: pytest suite that seeds two tenants and asserts each table returns zero rows across tenants.
+
+### Auditing
+
+- One generic trigger function `audit.record_change()` attached to every mutable domain table. It stores the old
+  and new row, the changed fields, `auth.uid()` as actor and `current_setting('app.request_id', true)`, so each
+  DB change joins to the request logs and traces in Axiom by `request_id`.
+- `audit` schema: `insert` only through the trigger and a `audit.log_event()` function; no `update`/`delete`
+  grants to any app role, so entries are immutable from the app.
+- Business events (exports, share links, login, assistant feedback) go to `audit.events` from the API service
+  layer, not from routers.
+- Retention: monthly partitions by `at` once volume justifies it; not in the first migration.
+- Large blobs (file contents, chat text) are not copied into audit rows; only ids and metadata.
 
 RLS: every table carries `tenant_id` and gets select/insert/update policies through `current_tenant_ids()`;
 `profiles` is owner-only; `allowed_emails` is service-role only. Indexes on `(tenant_id, last_activity_at desc)`
@@ -344,33 +374,344 @@ LLM proposes a JSON plan from the file profile, and the worker executes it deter
 
 ---
 
-## 8. Frontend architecture (proposal)
+## 7b. Backend standards (FastAPI)
 
-Container/presentational + atomic design + a services port, mirroring the worker's hexagonal layout:
+### Layout
+
+`apps/api` mirrors the worker's hexagonal rule (dependencies point inward):
+
+```
+api/
+  main.py              create_app(): middlewares, exception handlers, routers, lifespan (DB pool, OTel)
+  settings.py          pydantic-settings, one Settings object, no secrets in code
+  routers/             thin: parse request, call a service, map to a response schema
+  schemas/             Pydantic request/response models = OpenAPI = TS contracts
+  services/            use cases (conversations, uploads, runs, chat, exports, profile)
+  domain/errors.py     AppError hierarchy (NotFound, Conflict, Validation, Forbidden, Unavailable)
+  db/                  SQLAlchemy engine, session-per-request, tenant context, repositories
+  assistant/           agent loop, tools, prompts, number guard (section 7c)
+  observability/       logging config, middlewares, OTel setup, redaction
+```
+
+Conventions: `Annotated` dependencies, `response_model` on every route, async all the way down, one
+`APIRouter` per resource under `/v1`, Pydantic v2 `model_config = ConfigDict(extra="forbid")` on inputs.
+
+### ORM and migrations
+
+- Migrations stay in `supabase/migrations` as plain SQL, applied with the Supabase CLI (as `CLAUDE.md` already
+  says). RLS policies, `SECURITY DEFINER` functions, audit triggers, pgmq and grants are SQL-native; Alembic
+  autogenerate does not model them, so a second migration tool would split the source of truth.
+- ORM: **SQLAlchemy 2.0** (typed `Mapped[...]` models, async engine with `asyncpg`). It is the most mature
+  Python ORM, has first-class async, and lets us run the per-transaction `set local role` / `set_config` needed
+  for RLS. SQLModel was considered: it is a thin layer over SQLAlchemy that couples DB models to API schemas, and
+  we want them separate (API schemas are the public contract).
+- Models describe tables that the SQL migrations create; they never create tables. A pytest check runs
+  `supabase db reset` locally and compares the reflected schema with the models, so drift fails CI.
+- Through the Supabase pooler in transaction mode, asyncpg needs its prepared-statement cache disabled; the
+  engine config sets it explicitly.
+- The worker keeps Polars for bulk reads/writes (`COPY`-style inserts of sales and forecasts) and shares the
+  table definitions module; no ORM objects in hot loops.
+
+### Errors
+
+- One exception hierarchy in `domain/errors.py`; services raise these, never `HTTPException`.
+- Exception handlers in `main.py` turn them into RFC 9457 `application/problem+json`:
+  `{type, title, status, code, message_key, ref, request_id}`. `message_key` is translated in the web app, so the
+  UI never shows internal codes. `ref` is the short support reference shown in the failure screen (08d).
+- Database errors are mapped once, by SQLSTATE, in the DB layer:
+
+  | SQLSTATE | Meaning | HTTP |
+  |---|---|---|
+  | `23505` | unique violation | 409 |
+  | `23503` | foreign key violation | 409 |
+  | `23514` / `22P02` | check / invalid text representation | 422 |
+  | `42501` | insufficient privilege (RLS) | 404 (never confirm another tenant's resource exists) |
+  | `40001` / `40P01` | serialization failure / deadlock | retried once, then 503 |
+  | `57014` | statement timeout | 504 |
+  | `P0001` + `HINT` | business rule raised in SQL with a stable hint key | 422 with that key |
+
+- Unhandled exceptions: 500 with `ref`, full stack trace logged once at `error` with the trace id.
+- The worker records failures on `jobs.error_ref` and `jobs.status = failed`; it never writes stack traces to
+  rows the UI can read.
+
+### Logging, tracing and monitoring (Axiom)
+
+One pipeline, OpenTelemetry end to end, exported over OTLP/HTTP to Axiom in every environment
+(`https://<AXIOM_DOMAIN>/v1/traces` with `Authorization: Bearer` and `X-Axiom-Dataset`; source:
+https://axiom.co/docs/guides/opentelemetry-python). Separate datasets per environment (`4castly-dev`,
+`4castly-prod`); tokens from env vars only.
+
+- **Structured logs**: `structlog` with a JSON renderer in deployed environments and a console renderer locally.
+  Standard fields on every line: `timestamp`, `level`, `event`, `service` (`api|worker|web`), `env`, `version`,
+  `request_id`, `trace_id`, `span_id`, `tenant_id`, `user_id`, `route`, `job_id` when present. Logs carry the
+  trace context, so Axiom links a log line to its trace.
+- **Middlewares** (pure ASGI, in this order): request id (accept or create `X-Request-ID`, echo it back), OTel
+  FastAPI instrumentation, context binding (`contextvars` with tenant/user once auth resolves), access log
+  (method, route template, status, duration; one line per request), body-size limit for uploads.
+- **Levels**: `info` for business events and access lines, `warning` for handled 4xx that indicate misuse,
+  `error` for 5xx and job failures, `debug` off in production.
+- **Redaction processor**: drops or masks emails, JWTs, API keys, file contents and chat text before export.
+  Client data never goes to Axiom.
+- **Traces**: FastAPI, SQLAlchemy/asyncpg and httpx auto-instrumentation; manual spans around parse, plan
+  execution, forecast per batch, and each agent turn. The worker continues the trace from the job's
+  `traceparent` so an upload is one trace from HTTP request to finished forecast.
+- **Frontend**: React error boundary + `window.onerror`/`unhandledrejection` → `POST /v1/client-logs`
+  (rate limited, same redaction), so no Axiom token ships in the browser. The web app sends `traceparent` on
+  API calls.
+- **Monitors in Axiom**: 5xx rate per route, p95 latency per route, job failure rate, digest and forecast
+  duration, assistant error rate and token spend per tenant.
+
+### Testing
+
+pytest per app (already set up), `httpx.AsyncClient` against `create_app()`, a local Supabase for DB and RLS
+tests, contract test that regenerates OpenAPI and diffs it.
+
+---
+
+## 7c. AI assistant
+
+### Model and call shape
+
+- Model `claude-sonnet-5-5` (decided). Adaptive thinking is its default; effort set explicitly per route
+  (`medium` for the chat agent, re-tuned with evals). Forced `tool_choice` is not supported on this model, so
+  tools run with `auto` + `strict: true` schemas.
+- Streaming with the official `anthropic` Python SDK (`client.messages.stream`), never an OpenAI-compatible shim.
+- The server-side refusal fallback (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`) is enabled
+  by default on the Claude API.
+- Prompt caching: frozen system prompt and tool list first, per-conversation data after the cache breakpoint;
+  `usage.cache_read_input_tokens` logged per turn.
+
+### Agent design
+
+The agent is a tool-using loop, owned by us, behind an `AssistantAgent` port (same hexagonal rule as
+`Forecaster`):
+
+- **Tools** (all read the persisted run, never compute new forecasts): `get_run_summary`, `find_products`
+  (filters: risk, ABC, query), `get_product_detail`, `simulate_purchase` (formulas module), `get_parameters`,
+  `explain_reliability`. Every number the assistant may cite comes back from a tool.
+- **Number guard**: after the turn, every figure in the answer is checked against the tool results of that turn.
+  Unknown figures are removed and the turn is logged as a guard hit.
+- **Filter links**: figures that correspond to a filter (`12 productos críticos`) are emitted as structured
+  annotations so the web app renders them as links that apply the filter.
+- **Context**: conversation scope (run) or product scope (detail drawer); assistant style (brief/detailed) and
+  language come from preferences.
+- **Normalization plan**: a separate single call with structured outputs (`output_config.format`, JSON schema
+  of the plan) over the file profile; not part of the chat agent.
+
+### Streaming to the browser (token by token)
+
+`POST /v1/conversations/{id}/messages` returns `text/event-stream`. Events:
+
+| Event | Payload |
+|---|---|
+| `message.start` | message id |
+| `text.delta` | text chunk (rendered as it arrives) |
+| `tool.start` / `tool.end` | human status line ("Revisando productos críticos…") |
+| `annotation` | filter link or product link |
+| `message.end` | final message id, usage, stop reason |
+| `error` | `message_key`, `ref` |
+
+The client reads it with `fetch` + `ReadableStream` (EventSource cannot send a POST body or auth header), supports
+**Stop** (abort), **Retry**, auto-scroll that pauses when the user scrolls up, a streaming cursor, and Markdown
+rendering of the final text. The message is persisted as it completes; a dropped connection shows the partial
+text and a retry.
+
+### LangChain: not now
+
+Evaluated and not adopted for v1:
+
+- We use one provider and one agent with five or six tools. The official SDK plus a ~100-line loop gives full
+  control over streaming events, tool status lines, caching and the number guard.
+- LangChain adds an abstraction over the message format and streaming events, frequent breaking changes, and
+  another layer to debug when a stream misbehaves.
+- Revisit LangGraph if we need multi-agent graphs with persisted checkpoints or human-in-the-loop steps. The
+  `AssistantAgent` port keeps that swap contained.
+
+### Langfuse: yes, for LLM observability
+
+Langfuse covers what Axiom does not: LLM-specific traces (prompt, tools, tokens, cost per turn), user feedback,
+prompt versions and evaluation datasets.
+
+- Ingest over OpenTelemetry: Langfuse exposes an OTLP endpoint (`/api/public/otel`, Basic auth with the project
+  keys; self-hosted from v3.22). The Anthropic Python SDK emits GenAI spans natively, so the same OTel setup
+  sends them; a second span processor routes only LLM spans to Langfuse, while Axiom gets them without prompt
+  content.
+- Like / dislike in the chat become Langfuse scores linked to the turn's trace.
+- System prompts versioned in Langfuse prompt management; each generation records the prompt version.
+- Evaluation datasets from real conversations (anonymized) to tune effort and prompts.
+- Hosting: EU cloud region or self-hosted (D21), because prompts contain client sales data.
+
+---
+
+## 8. Frontend architecture
+
+Container/presentational + atomic design + a layout layer + a services port, mirroring the worker's hexagonal
+layout:
 
 ```
 apps/web/src/
-  app/            router, providers, guards, error boundary
-  theme/          tokens.css (light/dark), fonts, ThemeProvider (single source with preferences)
+  app/            router (layout routes), providers, guards, error boundary
+  theme/          tokens.css (light/dark CSS variables), tailwind entry, fonts, theme store
   i18n/           es (default), en; namespaces per feature
   services/
-    ports.ts      interfaces: AuthService, ConversationService, UploadService, JobService, RunService, ChatService, ProfileService
+    ports.ts      interfaces: AuthService, ConversationService, UploadService, JobService, RunService,
+                  ChatService, ProfileService
     mock/         in-memory implementation + fixtures generated from the formulas module
-    http/         real implementation + schema.gen.ts (OpenAPI)
-  shared/ui/
-    atoms/        Button (primary|secondary|ghost|danger-text), IconButton, Input, OtpInput, Select, Checkbox,
-                  SegmentedControl, Chip, Badge, Spinner, Skeleton, Avatar, TextLink, Kbd, Tooltip, NumberStepper
-    molecules/    RiskBadge, FileChip, KpiCard, SuggestionChips, AnswerChips, FocusChip, SearchField, Pagination,
-                  MessageActions, ConversationItem, UserCard, Toast, ConfirmCard, EmptyState, ErrorState
-    organisms/    Sidebar, ConversationList, UserMenu, Composer, ChatMessage, JobProgress, UploadDropzone,
-                  ColumnMappingCard, ClarificationCard, ForecastChart, ProductForecastChart, ProductTable,
-                  ParametersDrawer, Drawer, ExportMenu, SettingsNav
-    templates/    AuthLayout, AppShell, ConversationLayout (40/60), SettingsLayout
-  features/<area>/  containers (fetch via services), page components, hooks
+    http/         real implementation + schema.gen.ts (OpenAPI) + SSE client
+  ui/
+    atoms/ molecules/ organisms/    presentational only (section 8.3)
+  layouts/        AuthLayout, AppLayout, ConversationLayout, SettingsLayout (section 8.2)
+  features/<area>/  containers (fetch via services), pages, hooks
 ```
 
 Presentational components take props only; containers call the service port. Swapping mock → http is one
 provider change per service.
+
+### 8.1 Styling and theme (Tailwind + CSS variables)
+
+- Tailwind CSS v4 (decided), with the Vite plugin.
+- Design tokens live once, as CSS variables, in `theme/tokens.css`: `:root` holds light values and
+  `[data-theme=dark]` holds dark values. Tailwind maps them with `@theme inline` (`--color-ink: var(--ink)`, etc.),
+  so utilities like `bg-canvas text-ink border-hairline` switch theme without writing `dark:` on every element.
+- The `dark` variant is redefined to follow the attribute
+  (`@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *))`, per the Tailwind docs) for the few
+  places that need a different shape, not just a different color.
+- The theme store resolves `light | dark | system`; for `system` it listens to `prefers-color-scheme` and sets
+  `data-theme` on `<html>`. A tiny inline script in `index.html` sets it before first paint (no flash). The same
+  store is used by the user menu and Settings → Preferences, and persists to the profile.
+- Components never use raw hex values or Tailwind palette colors (`blue-600`, `emerald-500`); only tokens.
+  An oxlint rule or a test greps for it.
+
+### 8.2 Layout layer
+
+Screens share their frame, so layouts are React Router layout routes. The sidebar is mounted once and never
+remounts while navigating between conversations.
+
+```
+<RootLayout>                         providers, theme, i18n, toasts, error boundary
+  <AuthLayout>                       centered card + legal footer
+    /login, /auth/callback
+  <RequireAuth><AppLayout>           sidebar (260 px, collapsible; drawer on mobile) + <Outlet/>
+    /nuevo                           NewForecastPage (whole-window drop target)
+    /historial                       HistoryPage
+    <ConversationLayout>             loads the conversation; chat column; switches by stage
+      /c/:conversationId             chat-only stages, or chat 40 % + results 60 % when ready
+                                     (?vista=portafolio: results full width + "Preguntar" drawer)
+      /c/:conversationId/productos/:productCode   ProductDetailPage (+ chat drawer)
+  <RequireAuth><SettingsLayout>      settings side nav, no conversation sidebar
+    /configuracion/perfil, /configuracion/preferencias
+  /dev/*                             dev-only (tokens, component gallery)
+```
+
+Shared regions inside layouts are organisms too (`ResultsHeader`, `SplitPane`), so a page only arranges them.
+
+### 8.3 Atomic inventory
+
+Built and tested bottom-up before any page. Each entry lists its states; every data-bound organism also has
+`loading`, `empty` and `error`.
+
+**Atoms**
+
+| Component | Variants / states | Used in |
+|---|---|---|
+| `Button` | primary, secondary, ghost, danger-text; sm/md; loading, disabled; icon left/right | everywhere |
+| `IconButton` | ghost, outline; tooltip label required | toolbar, sidebar, drawers |
+| `TextLink` | inline underline, ink color; external | login footer, "Ver detalle" |
+| `Icon` | one icon set, size tokens | everywhere |
+| `Spinner` | sm/md | sidebar item, buttons, progress |
+| `Skeleton` | line, block, circle | KPIs, chart, table |
+| `Avatar` | initials, sizes | user card, menu, profile |
+| `Logo` | mark "4C", mark + wordmark | auth, sidebar |
+| `Input` | default, error, read-only (lock), disabled; with leading icon | login, profile, search |
+| `Textarea` | autosize, max rows | composer |
+| `OtpCell` | empty, filled, error | code input |
+| `Select` (native-like listbox) | default, error, disabled, with "no tengo esta columna" option | mapping edit, preferences |
+| `Checkbox` | unchecked, checked, indeterminate | table selection |
+| `Radio` / `SegmentedControl` | 2-3 options, selected | theme, scenario toggle, tabs |
+| `Switch` | on/off | (settings later) |
+| `Chip` | outline (suggestion), selectable (answer), removable (filter) | chat, clarification, filters |
+| `Badge` | neutral, "Próximamente", count | source cards, settings nav |
+| `StatusDot` | processing, failed | sidebar item |
+| `NumberValue` | Geist Mono, locale format, unit, range ("280–310 u") | KPIs, tables, cards |
+| `DateValue` | locale date, relative ("hace 3 días") | tables, cards |
+| `Kbd` | key hint | composer hint |
+| `Divider` | horizontal, with label | chat history, menus |
+| `VisuallyHidden` | n/a | a11y labels |
+
+**Molecules**
+
+| Component | Composition / states | Used in |
+|---|---|---|
+| `RiskBadge` | icon + text + color: Crítico / Medio / Óptimo | tables, detail, chat |
+| `ReliabilityBadge` | Alta / Media / Baja, text first | KPIs, detail |
+| `FileChip` | icon, middle-truncated name, size, remove, change; uploading, error | upload, chat bubble |
+| `OtpInput` | 6 `OtpCell`, paste, backspace navigation | login |
+| `FormField` | label, control, hint, error, optional tag | login, profile, mapping |
+| `SearchField` | input + clear; accent-insensitive search is in the service | results |
+| `FilterSelect` | label + select ("Riesgo: Todos") | results |
+| `FocusChip` | "12 de 142 en foco · Restablecer" | results |
+| `KpiCard` | label, value range, caption, link; loading, empty ("—") | results |
+| `StatLine` | label + value, used inside cards | detail cards |
+| `MessageActions` | copy, retry, like, dislike (toggle) | chat |
+| `SuggestionChips` | max 3, outline, disabled while locked | chat |
+| `AnswerChips` | single-select, "Otro" with inline input | clarification |
+| `StageStep` | done, active, pending | job stepper |
+| `ProgressCount` | indeterminate bar + "87 de 142 productos" | calculating |
+| `ConversationItem` | title, active, pinned, processing, failed; hover menu; inline rename | sidebar, history |
+| `UserCard` | avatar, name, company, menu trigger | sidebar |
+| `MenuItem` | icon, label, danger, disabled | menus |
+| `Pagination` | page/total, prev/next | table |
+| `ColumnHeader` | sortable asc/desc, sticky | table |
+| `EditableCell` | lead time inline edit, saving, error | portfolio |
+| `Toast` | info, success, error; with "Deshacer" action | delete, save |
+| `InlineNotice` | info, warning ("Falta stock…"), staleness | confirmation, results |
+| `EmptyState` | icon, title, body, action | no conversations, no results |
+| `ErrorState` | title, body, support ref, primary/secondary actions | 08a, 08d |
+| `NumberStepper` | − value + with unit, min/max | detail cards |
+| `StreamingText` | Markdown render, blinking cursor while streaming | chat |
+| `ToolStatusLine` | spinner + human text | chat |
+
+**Organisms**
+
+| Component | Contains | Used in |
+|---|---|---|
+| `Sidebar` | Logo, collapse, "Nuevo forecast", `ConversationList`, history link, `UserCard` | AppLayout |
+| `ConversationList` | groups Fijados / Hoy / Esta semana / Antes | Sidebar, history |
+| `ConversationMenu` | Fijar, Renombrar, Archivar, Eliminar (+ confirm) | ConversationItem |
+| `UserMenu` | identity, Configuración, theme, language, Cerrar sesión | Sidebar |
+| `ChatThread` | message list, auto-scroll with pause, date dividers | conversation |
+| `ChatMessage` | user (text or file) / assistant (streaming text, tool lines, actions, embedded card) | conversation |
+| `Composer` | textarea, send/stop, locked state with reason, hint | conversation, drawers |
+| `UploadDropzone` | empty, dragging, attached, error; window-level drop overlay | /nuevo, 08a |
+| `SourceCard` | upload (primary), coming soon | /nuevo |
+| `JobProgress` | stepper or simple loader, inline cancel | 03, 05 |
+| `ColumnMappingCard` | read-only rows with samples ↔ edit mode with selects, sheet select | 04 |
+| `ConfirmedDataLine` | "✓ Datos confirmados · Ver detalle" + expandable detail | 04+, 05, 06 |
+| `ClarificationCard` | up to 2 questions, calculate, skip | 05 |
+| `DateColumnPicker` | plausible columns with samples, "no tiene fechas" | 08b |
+| `ResultsHeader` | breadcrumb, Compartir enlace, Exportar menu | results, detail |
+| `ViewTabs` | "Chat + resultados" / "Portafolio" bound to `?vista=` | results |
+| `ResultsFilters` | search, risk, ABC, focus chip | results |
+| `KpiRow` | 3 `KpiCard` | results |
+| `ForecastChart` | aggregate: history, expected, low/high range, past stockouts, today | results |
+| `ProductForecastChart` | + projected stock, arrival, stockout marker | detail |
+| `ProductTable` | sortable, filters, pagination, sticky first column, multi-select, column picker, editable lead time | results, portfolio |
+| `BulkActionBar` | "3 seleccionados", Limpiar, Exportar selección | portfolio |
+| `ProductSummaryCards` | runs-out card, purchase recommendation, reliability with technical detail | detail |
+| `WeeklyProjectionTable` | scenario toggle, low/expected/high, projected stock, shortfall, status | detail |
+| `ParametersDrawer` | horizon, granularity, lead time, threshold, assistant style, Recalcular | results |
+| `AssistantDrawer` | chat scoped to run or product | portfolio, detail |
+| `ExportMenu` | Excel: all, selection, product | results, detail |
+| `SettingsNav` | back link, sections, "Próximamente" items | settings |
+| `ProfileForm` / `PreferencesForm` | dirty/saving/saved states | settings |
+| `Drawer` / `Dialog` / `Popover` | focus trap, Esc, return focus | shared |
+
+### 8.4 Chat behaviour (like current AI chat apps)
+
+Token-by-token rendering from the SSE stream (section 7c), Stop while generating, Retry on the last answer,
+copy / like / dislike, tool status lines while the agent works, Markdown with tables, figures rendered as filter
+links, auto-scroll that stops when the user scrolls up and a "jump to latest" button, composer locked with a
+reason when the stage does not allow questions, optimistic user message, and partial answers kept on error.
 
 TypeScript models (generated from OpenAPI later; hand-written in mock phase with the same names):
 `User`, `Profile`, `Preferences`, `Conversation`, `ConversationStage`, `ConversationGroup`, `Upload`, `FileProfile`,
@@ -379,57 +720,88 @@ TypeScript models (generated from OpenAPI later; hand-written in mock phase with
 `SeriesPoint`, `Scenario`, `Reliability`, `ChatMessage`, `MessageKind`, `FilterLink`, `Feedback`, `ExportRequest`,
 `ShareLink`, `ApiError`.
 
-### Dependencies to add (each needs your OK)
+### 8.5 Dependencies to add
 
-| Need | Proposal | Why |
+Web (`apps/web`):
+
+| Need | Package | Why |
 |---|---|---|
-| Fonts | `geist` (official package, self-hosted woff2) | No CDN at runtime |
-| Routing + URL state | `react-router` 7 | Mature, nested layouts and guards, search-param state for `?vista=` and filters |
-| Server state | `@tanstack/react-query` | Caching, polling/SSE invalidation, optimistic pin/rename/delete |
+| Fonts | `geist` | Official package, self-hosted woff2, no CDN at runtime |
+| Styling | `tailwindcss` v4 + `@tailwindcss/vite` | Decided; tokens via CSS variables |
+| Class composition | `clsx` + `tailwind-merge` | Variant props without class conflicts |
+| Routing + URL state | `react-router` 7 | Layout routes, guards, search-param state for `?vista=` and filters |
+| Server state | `@tanstack/react-query` | Caching, job polling/SSE invalidation, optimistic pin/rename/delete |
 | i18n | `i18next` + `react-i18next` | es/en, interpolation, plurals ("1 producto" / "12 productos") |
-| Tests | `vitest`, `@testing-library/react`, `@testing-library/user-event`, `jsdom` | Component + service tests; none exist |
-| Contracts | `openapi-typescript` (dev) | Generate TS from FastAPI OpenAPI |
-| Styling | Decision D6 | |
-| Accessible primitives (menus, popovers, dialogs, listbox) | Decision D8 | |
-| Visual check | Playwright (dev) | The brief asks for 1440 px and 390 px comparisons |
+| Accessible primitives | `radix-ui` (unstyled) | Focus management and keyboard nav for menus, popovers, dialogs, listbox, tabs |
+| Markdown in chat | `react-markdown` + `remark-gfm` | Assistant answers with lists and tables |
+| Tests | `vitest`, `@testing-library/react`, `@testing-library/user-event`, `jsdom` | None exist today |
+| Component gallery | Storybook (Vite builder) or the dev-only `/dev` routes (D22) | Atoms/molecules/organisms reviewed in isolation before pages |
+| Contracts | `openapi-typescript` (dev) | TS types from FastAPI OpenAPI |
+| Visual check | Playwright (dev) | 1440 px and 390 px comparisons |
+
+API (`apps/api`, via `uv add`): `sqlalchemy[asyncio]`, `asyncpg`, `anthropic`, `structlog`,
+`opentelemetry-sdk`, `opentelemetry-exporter-otlp-proto-http`, `opentelemetry-instrumentation-fastapi`,
+`opentelemetry-instrumentation-sqlalchemy`, `opentelemetry-instrumentation-httpx`, `langfuse` (scores and prompt
+management), `python-multipart` (uploads), `openpyxl` (Excel export).
+
+Worker: `structlog` and the same OpenTelemetry packages; `sqlalchemy` for the shared table definitions.
 
 ---
 
-## 9. Decisions needed
+## 9. Decisions
+
+### Decided (2026-10-23)
+
+| # | Decision |
+|---|---|
+| D1 | Backend stays FastAPI; contracts generated from OpenAPI |
+| D6 | Styling: Tailwind CSS v4 with CSS-variable tokens for light/dark |
+| D16 | Assistant model: `claude-sonnet-5-5` via the official Anthropic SDK, guided by a context-aware agent |
+| D23 | ORM: SQLAlchemy 2.0 async; migrations stay as Supabase SQL |
+| D24 | Multi-tenancy: shared schema + `tenant_id` + RLS, enforced for the API too |
+| D25 | Auditing: row-change triggers + business events in an append-only `audit` schema |
+| D26 | Observability: OpenTelemetry + structured logs to Axiom (dev and prod datasets) |
+| D27 | LangChain not adopted for v1; Langfuse adopted for LLM traces, feedback, prompt versions |
+| D28 | Frontend: layout layer (layout routes) and atomic inventory built before pages |
+
+### Open (recommendation in the second column)
 
 | # | Decision | Recommendation |
 |---|---|---|
-| D1 | Backend: FastAPI vs NestJS | FastAPI (section 4) |
 | D2 | Brief override rules vs `DESIGN.md` (C1-C10) | Override rules win; add an "App overrides" section to `DESIGN.md`; fix line 60 |
-| D3 | Dark theme palette (none designed) | Derive from Geist dark: canvas #0a0a0a, elevated #111, hairline #262626, ink #ededed, primary inverted to #ededed on #0a0a0a; status colors tuned for 4.5:1 |
+| D3 | Dark theme palette (none designed) | Derive from Geist dark: canvas #0a0a0a, elevated #111, hairline #262626, ink #ededed, primary inverted; status colors tuned for 4.5:1 |
 | D4 | Rename `skus` → `products` in the DB | Yes, now, before data exists |
 | D5 | Replace `forecast_jobs` with generic `jobs` (`digest|forecast`) | Yes |
-| D6 | Styling system: plain CSS custom properties + CSS Modules (zero deps) vs Tailwind v4 (faster to port the Stitch HTML) | CSS Modules + tokens: the frames' Tailwind is inconsistent and gets rewritten anyway |
-| D7 | Auth: Supabase Auth email OTP (magic link + 6-digit code in one email) with an allowlist enforced by a `before user created` hook | Yes |
-| D8 | Accessible primitives: hand-rolled vs Radix UI (unstyled) | Radix: focus management and keyboard nav for menus/popovers/dialogs/listbox are hard to get right |
-| D9 | Results header (breadcrumb + Compartir + Exportar) on chat-mode screens: is it the forbidden "top bar"? | Keep it inside the results panel only, not full width |
-| D10 | "Compartir enlace" semantics | Company-internal link (requires login, same tenant). No public links |
+| D7 | Auth: Supabase Auth email OTP (magic link + 6-digit code) with an allowlist enforced by a `before user created` hook | Yes |
+| D8 | Accessible primitives: hand-rolled vs Radix UI (unstyled, styled with Tailwind) | Radix |
+| D9 | Results header (breadcrumb + Compartir + Exportar) on chat-mode screens | Inside the results panel only, not a full-width top bar |
+| D10 | "Compartir enlace" semantics | Company-internal link (login required, same tenant). No public links |
 | D11 | `buffer` in suggested quantity | High scenario minus expected scenario over lead time + target coverage |
-| D12 | ABC class basis (no price in the template) | By volume (quantity share): A 80 %, B 15 %, C 5 % |
-| D13 | Reliability Alta / Media / Baja thresholds | From rolling backtest error per product; thresholds set after the backtest work |
+| D12 | ABC class basis (no price in the template) | By volume share: A 80 %, B 15 %, C 5 % |
+| D13 | Reliability Alta / Media / Baja thresholds | From rolling backtest error per product, set after the backtest work |
 | D14 | Monthly granularity | Forecast weekly, aggregate to months for display |
-| D15 | Exports | Excel only for v1 (frames also show CSV/PDF) |
-| D16 | LLM provider and model for normalization plan + chat | Needs your call (cost, data residency of client files) |
-| D17 | Which single primary per results screen: "Exportar plan de compra" or nothing | None in results; "Exportar" stays secondary. On product detail: none; "Preguntar sobre este producto" secondary |
-| D18 | Magic-link TTL and resend cooldown | 30 s resend (brief); TTL from Supabase default, not shown in copy |
-| D19 | "Pedidos en camino" source (not in the template) | Defaults to 0, editable per product later |
-| D20 | URL slugs in Spanish (`/nuevo`, `/c/:id/productos/:code`, `?vista=portafolio`) | Yes; not localized per language |
+| D15 | Exports | Excel only for v1 |
+| D17 | Single primary per results / detail screen | None in results; "Preguntar sobre este producto" secondary |
+| D18 | Magic-link TTL and resend cooldown | 30 s resend; TTL from Supabase default, not shown in copy |
+| D19 | "Pedidos en camino" source | Defaults to 0, editable per product later |
+| D20 | URL slugs in Spanish | Yes; not localized per language |
+| D21 | Langfuse hosting (prompts contain client sales data) | Langfuse Cloud EU region to start; self-host if a client requires it |
+| D22 | Component gallery: Storybook vs dev-only `/dev` routes | Storybook: isolated states, a11y addon, visual review per component without the app shell |
 
 ## 10. Phase plan
 
+The atomic inventory comes before any page.
+
 | Phase | Output | Depends on |
 |---|---|---|
-| 1 | Geist, tokens light/dark, `/dev/tokens` | D2, D3, D6 |
-| 2 | AppShell, sidebar, menus, router, guards, theme + i18n single source | D7, D8, D20 |
-| 3 | Shared components with loading/empty/error states + tests | Phase 1 |
-| 4 | Services port + mock; login, upload, digestion, confirmation, clarification, errors | Phase 2-3 |
-| 5 | Results, portfolio, product detail; formulas module + fixtures | D11-D14, D17 |
-| 6 | Settings + full dark variant | Phase 2 |
-| 7 | Migration 0002, OpenAPI, real http services screen by screen | D1, D4, D5, D16 |
+| 1 | Tailwind v4, Geist, CSS-variable tokens light/dark, theme store, `/dev/tokens` | D2, D3 |
+| 2 | Atoms → molecules → organisms (section 8.3) with tests and the gallery, all states | Phase 1, D22 |
+| 3 | Layout layer: router, RootLayout, AuthLayout, AppLayout (sidebar, menus), ConversationLayout, SettingsLayout, guards, i18n | Phase 2, D7, D20 |
+| 4 | Services port + mock; login, upload, digestion, confirmation, clarification, errors | Phase 3 |
+| 5 | Results, portfolio, product detail; formulas module + fixtures; streaming chat UI against a mock stream | D11-D14, D17 |
+| 6 | Settings + full dark variant review | Phase 3 |
+| 7 | Backend foundation: migration 0002 (tenancy, audit, new tables), SQLAlchemy layer, errors, logging/OTel to Axiom | D4, D5 |
+| 8 | Assistant agent (Sonnet 5.5, tools, number guard, SSE), Langfuse, OpenAPI codegen, http services screen by screen | Phase 7, D21 |
 
-Formulas module and migration 0002 can start in parallel with Phase 1 since they do not touch the web app.
+Phase 7 (backend foundation) and the formulas module touch no web files, so they can run in parallel with
+phases 1-3.
