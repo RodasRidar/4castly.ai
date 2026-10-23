@@ -4,15 +4,38 @@
  */
 
 export interface paths {
-    "/health": {
+    "/health/live": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Health */
-        get: operations["health"];
+        /**
+         * Live
+         * @description The process is up. Never touches the database.
+         */
+        get: operations["live"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ready
+         * @description The database answers. A failing check lets the platform route away or restart (R9).
+         */
+        get: operations["ready"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2179,7 +2202,7 @@ export type SchemaWeeklyProjectionRow = components['schemas']['WeeklyProjectionR
 export type SchemaChatStreamEvent = components['schemas']['ChatStreamEvent'];
 export type $defs = Record<string, never>;
 export interface operations {
-    health: {
+    live: {
         parameters: {
             query?: never;
             header?: never;
@@ -2197,6 +2220,37 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    ready: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Database down. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiError"];
                 };
             };
         };

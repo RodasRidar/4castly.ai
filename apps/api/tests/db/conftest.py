@@ -137,3 +137,13 @@ def acting(
         yield conn
     finally:
         conn.execute("reset role")
+
+
+@pytest.fixture(scope="session")
+def api_url(pg_dsn: str, seed: Seed) -> str:
+    """SQLAlchemy URL that connects as the real `app_api` role (no BYPASSRLS), like production."""
+    assert seed
+    with psycopg.connect(pg_dsn, autocommit=True) as admin:
+        admin.execute("alter role app_api login password 'test'")
+    parts = dict(item.split("=", 1) for item in pg_dsn.split())
+    return f"postgresql+asyncpg://app_api:test@{parts['host']}:{parts['port']}/{parts['dbname']}"

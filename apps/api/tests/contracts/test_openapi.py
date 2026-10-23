@@ -43,7 +43,8 @@ def test_there_are_no_unplanned_v1_endpoints(spec: dict) -> None:
 
 
 def test_health_stays_outside_the_versioned_contract(spec: dict) -> None:
-    assert "/health" in spec["paths"]
+    assert {"/health/live", "/health/ready"} <= set(spec["paths"])
+    assert "/health" not in spec["paths"]  # legacy alias, hidden from the contract
 
 
 def test_every_operation_requires_the_bearer_token(spec: dict) -> None:
