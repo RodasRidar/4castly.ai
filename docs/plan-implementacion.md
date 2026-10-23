@@ -408,21 +408,25 @@ and an order placed today arrives in week 2, so the product spends about one wee
   client's 37 weeks allow 8 and 12 weeks; 24 is shown disabled with the reason).
 - **Censored weeks** (stockouts, already flagged by `build_demand_frame`) are imputed before fitting, as the
   worker's cleaning step already supports; they never count as low demand.
-- **ABC** (D12, provisional, see Q5 in section 14): computed within each unit of measure by quantity share
+- **ABC** (D12, Q5 decided 2026-10-23): computed within each unit of measure by quantity share
   (A 80 %, B 15 %, C 5 %), because KG, L and units cannot be added together.
 
 ---
 
 ## 6b. Forecaster policy
 
-- **Production v1**: statsforecast AutoETS per product (won the first backtest on the client's Kardex: weekly
-  WAPE 44.5 % vs 53.6 % for TimesFM 3.0, Engram #866). Short history → simple method. Low/expected/high from the
-  model's prediction intervals.
-- **TimesFM 3.0** stays a local experiment only (non-commercial weights, `CLAUDE.md` Licensing). The worker's
-  `timesfm[mlx]` dependency moves to an optional local-only dependency group so the Modal image does not
-  install it.
-- **TimesFM 2.5** (Apache-2.0) or another model can be added behind the `Forecaster` port only after a license
-  check and a backtest win on real data.
+- **Primary model in the pilot (Q4, decided 2026-10-23)**: the latest TimesFM (3.0 today). The pilot is
+  non-commercial, which is what the 3.0 weights allow. TimesFM 3.0 runs in the Modal worker with its PyTorch
+  checkpoint (`google/timesfm-3.0-pytorch`); the current adapter uses the MLX backend (Apple Silicon only), so
+  phase B3 adds a PyTorch adapter and verifies it on Linux (CPU first; GPU only if run times require it).
+  `timesfm[mlx]` moves to a local-only dependency group.
+- **Baseline kept**: statsforecast AutoETS runs in the same backtest for every run. It is the fallback when
+  TimesFM fails for a product or history is too short for it, and the reference that tells us whether TimesFM
+  is earning its place: in the first backtest on the client's Kardex, AutoETS had weekly WAPE 44.5 % vs 53.6 %
+  for TimesFM 3.0 (Engram #866). Short history → simple method.
+- **Before any commercial use**: TimesFM 3.0 weights must be replaced (TimesFM 2.5, Apache-2.0, or another
+  model behind the `Forecaster` port). This is a release gate, not a later cleanup.
+- Low/expected/high come from the model's quantiles (TimesFM deciles 0.1/0.5/0.9) or prediction intervals.
 - **Reliability** (D13): from the rolling backtest error per product (same backtest harness), mapped to
   Alta / Media / Baja with thresholds set from the first backtest; products without enough history are "Baja".
 
@@ -986,7 +990,9 @@ Trust boundaries: browser ↔ API, API/worker ↔ Postgres, API/worker ↔ Stora
   function, documented by Supabase) rejects any email not in `allowed_emails` as a second line of defense.
   The UI shows the same neutral message whatever happens, so it never reveals whether an email exists.
 - **S2 OTP settings.** 6-digit code; expiry set explicitly to 10 minutes. Minimum interval between emails per
-  address set to 30 s to match the resend countdown (S-open-1). **Custom SMTP from day one** in every
+  address set to 30 s to match the resend countdown (S-open-1). **Custom SMTP from day one, via Resend**
+  (decided 2026-10-23; Supabase's Resend integration fills the SMTP settings; free plan: 100 emails/day,
+  3,000/month, sending pauses at the cap; needs a verified sending domain), in every
   environment a pilot user touches: Supabase's default email service only delivers to the project's team
   members, at about 2 emails per hour, and is best-effort for non-production use
   (https://supabase.com/docs/guides/auth/auth-smtp). Custom SMTP is available on the free plan and starts at
@@ -1177,8 +1183,9 @@ tier: requires Workers Paid, and each container is started from a TypeScript Wor
 
 | Service | MVP (development) | First paying client |
 |---|---|---|
-| Vercel | Hobby (non-commercial use only, per Vercel's terms) | Pro is required for commercial use |
+| Vercel | Hobby (non-commercial; the pilot is non-commercial, Q1) | Pro is required for commercial use |
 | Supabase | Free (pauses projects after a week of inactivity; no PITR) | Pro + PITR (R10) |
+| Resend | Free (100 emails/day, 3,000/month) | Pro if auth volume approaches the cap |
 | Modal | Starter (free monthly credits; confirm the current amount on modal.com) | Stays on usage billing |
 | Langfuse, Axiom | Free tiers | Review volume after the first month |
 
@@ -1246,12 +1253,13 @@ first estimate per tenant is written here after the first real run, instead of g
   schema-drift test; quarterly restore drill; per-tenant token budgets (`max_tokens` and a per-user rate limit
   stay).
 
-### Questions for the owner
+### Owner decisions (2026-10-23)
 
-| # | Question | Recommendation |
+| # | Question | Decision |
 |---|---|---|
-| Q1 | Is the pilot with the first client commercial use? Vercel Hobby forbids it and Supabase Free pauses inactive projects | Budget Vercel Pro and Supabase Pro from the pilot |
-| Q2 | v1 ingestion scope: Kardex only, generic template only, or both | Both, Kardex first (it is the client's real file) |
-| Q3 | May product names leave our systems to Anthropic and Langfuse, or must they be pseudonymized? Is written client consent needed? | Send product names (the assistant is useless without them), drop customer names, get written consent |
-| Q4 | statsforecast as the only production forecaster in v1, TimesFM 2.5 only after a backtest win | Yes |
-| Q5 | Mixed units (KG, L, units): ABC per unit of measure, or add a cost/price column | Per unit of measure in v1 |
+| Q1 | Is the pilot with the first client commercial use? | No. Vercel Hobby, Supabase Free and the TimesFM 3.0 weights are acceptable during the pilot; all three are revisited before any commercial use |
+| Q2 | v1 ingestion scope | Both: the Kardex report and the generic template (section 6c) |
+| Q3 | What may leave our systems to Anthropic and Langfuse | Product codes and names, yes; customer/counterparty names, never (dropped before any LLM call, S9) |
+| Q4 | Production forecaster | Latest TimesFM (3.0) in the pilot, with AutoETS as baseline and fallback (section 6b) |
+| Q5 | ABC with mixed units | Per unit of measure |
+| Email | Auth email provider | Resend as custom SMTP for Supabase Auth (S2) |
