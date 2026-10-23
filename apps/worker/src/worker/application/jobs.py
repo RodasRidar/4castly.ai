@@ -10,8 +10,8 @@ import structlog
 
 from worker.domain.errors import JobCancelledError, PermanentJobError
 from worker.domain.jobs import JobClaim, new_ref
+from worker.ports.conversation_stager import ConversationStager
 from worker.ports.job_repository import JobRepository
-from worker.ports.run_repository import DigestRepository
 
 
 class JobOutcome(StrEnum):
@@ -52,7 +52,7 @@ class JobRunner:
     """
 
     def __init__(
-        self, jobs: JobRepository, conversations: DigestRepository, *, max_attempts: int
+        self, jobs: JobRepository, conversations: ConversationStager, *, max_attempts: int
     ) -> None:
         self._jobs = jobs
         self._conversations = conversations

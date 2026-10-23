@@ -70,7 +70,7 @@ def reply(payload: Any, stop_reason: str = "end_turn") -> Any:
 
 def proposer(outcome: Any) -> tuple[AnthropicPlanProposer, FakeClient]:
     client = FakeClient(outcome)
-    return AnthropicPlanProposer(client, DeterministicPlanProposer()), client  # ty: ignore[invalid-argument-type]
+    return AnthropicPlanProposer(client, DeterministicPlanProposer()), client
 
 
 class TestRequest:

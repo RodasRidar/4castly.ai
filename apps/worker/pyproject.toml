@@ -17,6 +17,7 @@ dependencies = [
     "pandera>=0.34.1",
     "polars>=2.0.0",
     "psycopg[binary]>=3.3.6",
+    "pydantic-settings>=2.16.1",
     "sqlalchemy>=2",
     "statsforecast>=2.1.1",
 ]
