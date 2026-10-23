@@ -25,7 +25,8 @@ B2B demand/stock forecasting SaaS. First client: a chemical/pharma importer expo
 - `make install` - install web and Python deps
 - `make lint` / `make format` - oxlint + ruff check/format
 - `make typecheck` - `tsc -b` + `ty check`
-- `make test` - pytest (api, worker)
+- `make test` - pytest (api, worker, inventory); api includes `tests/db`, RLS tests on an ephemeral
+  PostgreSQL (no Docker; see `supabase/README.md`). `REQUIRE_DB_TESTS=1` fails instead of skipping
 - `make check` - everything above; must pass before pushing
 - `make contracts` - export `apps/api/openapi.json` and regenerate `apps/web/src/services/http/schema.gen.ts` (CI fails on drift)
 - `make fixtures` - regenerate `apps/web/src/services/mock/fixtures/` through the API schemas (generated, never hand-edit)
@@ -41,6 +42,9 @@ B2B demand/stock forecasting SaaS. First client: a chemical/pharma importer expo
 - Never commit client data (`*.xlsx`, `*.xls`, `*.csv`, `.env`); real Kardex files live outside
   the repo. Tests use synthetic workbooks only.
 - Manage Python deps with `uv add`, never edit versions by hand or use pip.
+- Every new table in `public` gets RLS, least-privilege grants and an entry in `apps/api/tests/db/test_rls.py`
+  (the suite fails on an unclassified table). Migrations are SQL only, numbered `NNNN_name.sql`.
+- Provision tenants/users with `cd apps/api && uv run python -m api.provisioning --help`.
 
 ## Licensing
 
