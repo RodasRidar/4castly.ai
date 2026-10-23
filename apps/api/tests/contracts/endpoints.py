@@ -110,6 +110,9 @@ IMPLEMENTED = {
     "create_upload",
     "complete_upload",
     "download_sales_template",
+    "get_job",
+    "stream_job_events",
+    "cancel_job",
 }
 """Operations built in B4, tested on their own (`tests/db/endpoints`). B4 ends with only the chat
 operations left as stubs until B5."""

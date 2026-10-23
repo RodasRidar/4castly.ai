@@ -75,7 +75,7 @@ class TestAccessLog:
         [entry] = access_lines(stream)
         assert entry["method"] == "GET"
         assert entry["route"] == "/v1/jobs/{job_id}"
-        assert entry["status"] == 501
+        assert entry["status"] == 401
         assert entry["request_id"] == "req-5"
         assert isinstance(entry["duration_ms"], float)
 

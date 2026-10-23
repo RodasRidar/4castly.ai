@@ -309,7 +309,7 @@ export interface paths {
         };
         /**
          * Stream Job Events
-         * @description Server-sent events for the stepper.
+         * @description Server-sent events for the stepper. The stream ends by itself after a while; reconnect.
          */
         get: operations["stream_job_events"];
         put?: never;

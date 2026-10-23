@@ -120,3 +120,47 @@ def fetch_row(admin: psycopg.Connection, sql: str, params: list) -> tuple:
     row = admin.execute(sql, params).fetchone()  # ty: ignore[invalid-argument-type]
     assert row is not None
     return row
+
+
+def add_conversation(world: World, *, stage: str = "digesting", title: str = "Kardex") -> UUID:
+    conversation = uuid4()
+    with psycopg.connect(world.dsn, autocommit=True) as admin:
+        admin.execute(
+            "insert into public.conversations (id, tenant_id, created_by, title, stage) "
+            "values (%s, %s, %s, %s, %s)",
+            [conversation, world.side.tenant, world.side.user, title, stage],
+        )
+    return conversation
+
+
+def add_job(  # noqa: PLR0913
+    world: World,
+    conversation: UUID,
+    *,
+    kind: str = "digest",
+    status: str = "queued",
+    stage: str | None = None,
+    processed: int | None = None,
+    total: int | None = None,
+    error_ref: str | None = None,
+) -> UUID:
+    job = uuid4()
+    with psycopg.connect(world.dsn, autocommit=True) as admin:
+        admin.execute(
+            "insert into public.jobs (id, tenant_id, conversation_id, kind, status, stage, "
+            "processed, total, error_ref, finished_at) values (%s, %s, %s, %s, %s, %s, %s, %s, "
+            "%s, case when %s in ('succeeded', 'failed', 'cancelled') then now() end)",
+            [
+                job,
+                world.side.tenant,
+                conversation,
+                kind,
+                status,
+                stage,
+                processed,
+                total,
+                error_ref,
+                status,
+            ],
+        )
+    return job
