@@ -57,6 +57,15 @@ def test_no_stockout_in_horizon_has_no_coverage_figure() -> None:
     assert projection.stock[-1] == 920.0
 
 
+def test_float_residue_is_not_a_stockout() -> None:
+    projection = project_scenario(0.3, (0.1, 0.1, 0.1), {})
+
+    assert projection.stockout_week is None
+    assert projection.coverage_weeks is None
+    assert projection.shortfall == (0.0, 0.0, 0.0)
+    assert projection.stock[-1] == 0.0
+
+
 def test_zero_stock_stocks_out_in_week_one_with_zero_coverage() -> None:
     projection = project_scenario(0.0, EXPECTED, {})
 

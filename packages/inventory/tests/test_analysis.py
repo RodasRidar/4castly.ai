@@ -168,6 +168,21 @@ def test_with_purchase_adds_the_order_at_the_lead_time_week() -> None:
     assert analysis.expected.stock[-1] == 30.0
 
 
+def test_a_purchase_sized_to_the_window_covers_it_exactly_without_float_noise() -> None:
+    inputs = ProductInputs(
+        stock=0.0,
+        demand=demand_around((0.1,) * 4, band=0.0),
+        lead_time_days=7,
+        target_coverage_weeks=2,
+    )
+    quantity = analyze_product(inputs).suggested.low  # 3 weeks of 0.1, with float residue
+
+    bought = analyze_product(with_purchase(inputs, quantity))
+
+    assert bought.expected.shortfall[:3] == (0.0, 0.0, 0.0)
+    assert bought.expected.stockout_week == 4  # the fourth week is genuinely uncovered
+
+
 def test_with_purchase_rejects_negative_quantity() -> None:
     with pytest.raises(InvalidInputError):
         with_purchase(worked_vector(), -1.0)

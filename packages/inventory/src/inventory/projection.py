@@ -8,6 +8,9 @@ from collections.abc import Mapping, Sequence
 from inventory.errors import InvalidInputError
 from inventory.models import ScenarioProjection
 
+TOLERANCE = 1e-9
+"""Quantities below this are float residue (0.1 + 0.2 - 0.3), not stock or shortfall."""
+
 
 def lead_time_weeks(lead_time_days: int) -> int:
     """Convert a lead time entered in days to whole weeks, rounding up."""
@@ -39,11 +42,13 @@ def project_scenario(
 
     for week, needed in enumerate(demand, start=1):
         available = on_hand + arrivals.get(week, 0.0)
-        short = max(0.0, needed - available)
+        short = needed - available
+        short = short if short > TOLERANCE else 0.0
         if short > 0 and stockout_week is None:
             stockout_week = week
             coverage = (week - 1) + available / needed
-        on_hand = max(0.0, available - needed)
+        on_hand = available - needed
+        on_hand = on_hand if on_hand > TOLERANCE else 0.0
         stock_by_week.append(on_hand)
         shortfall_by_week.append(short)
 
