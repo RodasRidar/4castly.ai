@@ -14,13 +14,15 @@ interface RenderAppOptions extends MockOptions {
   language?: Locale
   failConversations?: boolean
   failPatch?: boolean
+  failMe?: boolean
 }
 
 /** Mounts the whole app on a memory router with mock services, a private theme store and a detached <html>. */
-export function renderApp({ path = '/nuevo', language = 'es', failConversations, failPatch, ...options }: RenderAppOptions = {}) {
+export function renderApp({ path = '/nuevo', language = 'es', failConversations, failPatch, failMe, ...options }: RenderAppOptions = {}) {
   const services = createMockServices(options)
   services.failConversations = failConversations ?? false
   services.failPatch = failPatch ?? false
+  services.failMe = failMe ?? false
 
   const root = document.createElement('html')
   const store = new Map<string, string>()

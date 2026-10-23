@@ -1,6 +1,8 @@
 import { Navigate, Outlet, useLocation, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { Button } from '../ui/atoms/Button'
 import { Spinner } from '../ui/atoms/Spinner'
+import { ErrorState } from '../ui/molecules/ErrorState'
 import { useSyncPreferences } from './preferences'
 import { safeNext } from './safeNext'
 import { useSession } from './session'
@@ -14,11 +16,26 @@ function Pending() {
   )
 }
 
+function SessionError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-canvas p-6">
+      <ErrorState
+        title={t('pages.sessionErrorTitle')}
+        body={t('pages.sessionErrorBody')}
+        primaryAction={<Button onClick={onRetry}>{t('common.retry')}</Button>}
+      />
+    </div>
+  )
+}
+
 /** Anonymous visitors go to /login and come back to where they were headed. */
 export function RequireAuth() {
-  const { data: user, isPending } = useSession()
+  const { data: user, isPending, isError, refetch } = useSession()
   const location = useLocation()
   if (isPending) return <Pending />
+  // A failed /me is not "signed out": say so and let the user retry instead of bouncing them to /login.
+  if (isError) return <SessionError onRetry={() => void refetch()} />
   if (!user) {
     const next = encodeURIComponent(`${location.pathname}${location.search}`)
     return <Navigate to={`/login?next=${next}`} replace />

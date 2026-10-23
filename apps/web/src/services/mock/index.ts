@@ -25,6 +25,8 @@ export interface MockControls {
   failPatch: boolean
   failUpload: boolean
   failRun: boolean
+  failMe: boolean
+  failUpdateMe: boolean
   failChat: boolean
   /** Delay between streamed chat events (ms). */
   chatDelayMs: number
@@ -198,6 +200,8 @@ export function createMockServices({ signedIn = true, latencyMs = 0, emptyConver
     failPatch: false,
     failUpload: false,
     failRun: false,
+    failMe: false,
+    failUpdateMe: false,
     failChat: false,
     chatDelayMs: 0,
     advance(jobId) {
@@ -235,10 +239,14 @@ export function createMockServices({ signedIn = true, latencyMs = 0, emptyConver
     profile: {
       async getMe() {
         await wait()
+        if (mock.failMe) throw failure('failure')
         return user
       },
       async updateMe(patch) {
         await wait()
+        if (mock.failUpdateMe) throw failure('failure')
+        // Same rule the API applies: a name needs at least 2 characters (fixtures/errors.json `validation`).
+        if (patch.full_name != null && patch.full_name.trim().length < 2) throw failure('validation')
         user = { ...user, ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v != null)) }
         return user
       },
