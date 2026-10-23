@@ -69,6 +69,14 @@ describe('routes', () => {
 })
 
 describe('document structure', () => {
+  it('puts every part of the auth screens inside a landmark', async () => {
+    renderApp({ path: '/login', signedIn: false })
+    await screen.findByRole('heading', { level: 1, name: 'Inicia sesión' })
+    expect(screen.getByRole('banner')).toBeInTheDocument()
+    expect(screen.getByRole('main')).toBeInTheDocument()
+    expect(screen.getAllByRole('contentinfo').length).toBeGreaterThan(0)
+  })
+
   it('gives the not-found page its own main landmark and a level 1 heading', async () => {
     renderApp({ path: '/no-existe' })
     expect(await screen.findByRole('heading', { level: 1, name: 'Página no encontrada' })).toBeInTheDocument()

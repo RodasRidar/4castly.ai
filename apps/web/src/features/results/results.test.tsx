@@ -103,6 +103,11 @@ describe('results screen', () => {
     await waitFor(async () => expect(await bodyRows()).toHaveLength(20))
   })
 
+  it('introduces the KPI cards with a level 2 heading so heading levels do not skip', async () => {
+    renderApp({ path: path() })
+    expect(await screen.findByRole('heading', { level: 2, name: 'Indicadores del pronóstico' })).toBeInTheDocument()
+  })
+
   it('applies the critical filter from the at-risk KPI link', async () => {
     const { router, user } = renderApp({ path: path() })
     const kpis = await screen.findByRole('group', { name: 'Indicadores del pronóstico' })

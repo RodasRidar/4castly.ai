@@ -61,16 +61,20 @@ export function KpiSection({ runId, state, onRetry }: KpiSectionProps) {
   }
 
   return (
-    <KpiRow
-      state={summary.isPending ? 'loading' : summary.isError ? 'error' : 'populated'}
-      items={items}
-      label={t('results.kpi.label')}
-      loadingLabel={t('results.kpi.loading')}
-      error={{
-        title: t('results.kpi.errorTitle'),
-        body: t('results.kpi.errorBody'),
-        action: <Button variant="secondary" onClick={onRetry}>{t('results.kpi.retry')}</Button>,
-      }}
-    />
+    <>
+      {/* Gives the KPI cards (h3) a parent heading under the page h1, so levels never skip. */}
+      <h2 className="sr-only">{t('results.kpi.label')}</h2>
+      <KpiRow
+        state={summary.isPending ? 'loading' : summary.isError ? 'error' : 'populated'}
+        items={items}
+        label={t('results.kpi.label')}
+        loadingLabel={t('results.kpi.loading')}
+        error={{
+          title: t('results.kpi.errorTitle'),
+          body: t('results.kpi.errorBody'),
+          action: <Button variant="secondary" onClick={onRetry}>{t('results.kpi.retry')}</Button>,
+        }}
+      />
+    </>
   )
 }

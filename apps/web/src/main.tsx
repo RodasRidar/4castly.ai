@@ -17,7 +17,9 @@ const language = readStoredLanguage()
 document.documentElement.lang = language
 
 // Mock services until the http implementation lands (F4 swaps this one line).
-const services = createMockServices()
+// Dev only: `?signedout` starts without a session so the login screens can be reviewed.
+const signedIn = !(import.meta.env.DEV && new URLSearchParams(location.search).has('signedout'))
+const services = createMockServices({ signedIn })
 // Dev only: lets QA flip mock states (sign out, failures, advance jobs) from the console.
 if (import.meta.env.DEV) Object.assign(window, { __mock: services })
 const env = { services, i18n: createI18n(language), themeStore, root: document.documentElement }
