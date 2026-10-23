@@ -60,7 +60,7 @@ def movements_to_frame(movements: Iterable[Movement]) -> pl.DataFrame:
     return MovementsSchema.validate(frame)
 
 
-def _with_running_balance(frame: pl.DataFrame) -> pl.DataFrame:
+def with_running_balance(frame: pl.DataFrame) -> pl.DataFrame:
     """Sort per SKU and make sure every row has a balance (forward-filled, else cumulative)."""
     ordered = frame.sort(["sku", "timestamp"], maintain_order=True)
     return ordered.with_columns(
@@ -87,7 +87,7 @@ def build_demand_frame(
     positive period demand.
     """
     interval: Literal["1d", "1w"] = "1d" if freq == "daily" else "1w"
-    prepared = _with_running_balance(movements).with_columns(
+    prepared = with_running_balance(movements).with_columns(
         pl.col("timestamp").dt.truncate(interval).alias("period"),
         pl.when(pl.col("movement_code") == SALE_CODE)
         .then(pl.col("qty_out"))
