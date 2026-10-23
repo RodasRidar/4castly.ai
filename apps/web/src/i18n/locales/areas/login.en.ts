@@ -1,3 +1,30 @@
 import type { loginEs } from './login.es'
 
-export const loginEn: typeof loginEs = {}
+export const loginEn: typeof loginEs = {
+  title: 'Sign in',
+  subtitle: "We'll send you a link and a code to get in.",
+  emailLabel: 'Email',
+  emailPlaceholder: 'name@company.com',
+  submit: 'Email me a sign-in link',
+  invalidEmail: 'Enter a valid email address',
+  rateLimited: 'Too many attempts. Wait a few minutes and try again.',
+  sendFailed: "We couldn't send the link. Try again.",
+  codeTitle: 'Check your email',
+  neutral: 'If your email is enabled, you will receive a link and a 6-digit code.',
+  sentTo: 'Sent to',
+  codeGroup: '6-digit code',
+  codeCell: 'Digit {{n}}',
+  codeInvalid: 'The code is wrong or has expired. Check it and try again.',
+  verifyFailed: "We couldn't validate the code. Try again.",
+  resendIn: 'Resend code in {{seconds}} s',
+  resend: 'Resend code',
+  useOtherEmail: 'Use a different email',
+  callbackTitle: "We couldn't validate your link",
+  callbackBody: 'The link is not valid or has expired. Request a new one from the sign-in screen.',
+  callbackBack: 'Back to sign in',
+  footerNav: 'Legal information',
+  copyright: '© 2026 4Castly',
+  terms: 'Terms',
+  privacy: 'Privacy',
+  support: 'Support',
+}

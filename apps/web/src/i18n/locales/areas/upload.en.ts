@@ -1,3 +1,30 @@
 import type { uploadEs } from './upload.es'
 
-export const uploadEn: typeof uploadEs = {}
+export const uploadEn: typeof uploadEs = {
+  title: 'New forecast',
+  subtitle: 'Upload your movements or sales report and I will prepare the demand projection.',
+  cardTitle: 'Upload a file',
+  cardDescription: 'Excel (.xlsx, .xls) or CSV with your inventory movements or your sales.',
+  prompt: 'Drag your file here or click to choose it',
+  hint: 'Formats: .xlsx, .xls and .csv',
+  inputLabel: 'Select file',
+  changeFile: 'Change file',
+  removeFile: 'Remove file',
+  windowDrop: 'Drop your file to upload it',
+  ready: 'Ready to continue',
+  uploadingStatus: 'Uploading your file…',
+  uploadingChip: 'Uploading… {{percent}} %',
+  continue: 'Continue',
+  privacy: 'Only your company can see your files.',
+  template: 'Download template',
+  unsupported: 'That format is not supported. Upload an .xlsx, .xls or .csv file.',
+  failed: "We couldn't upload your file. Try again.",
+  failedWithRef: "We couldn't upload your file. Try again. Reference: {{ref}}",
+  soon: 'Coming soon',
+  sheets: 'Google Sheets',
+  sheetsDescription: 'Connect a spreadsheet and keep the forecast up to date.',
+  database: 'Database',
+  databaseDescription: 'Read your movements straight from your system.',
+  sizeKb: 'KB',
+  sizeMb: 'MB',
+}
