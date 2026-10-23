@@ -261,3 +261,25 @@ class PlanDocument:
             needs_date_column=data.get("needs_date_column", False),
             version=data.get("version", PLAN_VERSION),
         )
+
+
+@dataclass(frozen=True)
+class Inspection:
+    """Result of opening a file: its profile and which sheet the plan should target."""
+
+    profile: FileProfile
+    selected_sheet: str | None
+    kind: str
+    """`xlsx` or `csv`, for the readers that follow."""
+
+
+@dataclass(frozen=True)
+class Proposal:
+    """A proposed mapping, or what is missing for one."""
+
+    plan: NormalizationPlan | None
+    unmapped_required: tuple[str, ...] = ()
+    needs_date_column: bool = False
+    date_column_candidates: tuple[DateColumnCandidate, ...] = ()
+    proposed_by: str = "rules"
+    """`rules` (deterministic matcher), `llm` or `user`."""

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import unicodedata
-from dataclasses import dataclass
 from datetime import date, datetime
 from itertools import islice
 from pathlib import Path
@@ -20,6 +19,7 @@ from worker.domain.documents import (
     SOURCE_TABULAR,
     ColumnProfile,
     FileProfile,
+    Inspection,
     SheetProfile,
 )
 from worker.domain.errors import UnreadableFileError
@@ -29,14 +29,6 @@ SAMPLE_ROWS = 200
 SAMPLES_PER_COLUMN = 5
 _KARDEX_ARTICLE_COLUMN = 4
 _KARDEX_SIGNATURES = ("S.FINAL", "SALIDAS")
-
-
-@dataclass(frozen=True)
-class Inspection:
-    profile: FileProfile
-    selected_sheet: str | None
-    kind: str
-    """`xlsx` or `csv`, for the readers that follow."""
 
 
 def normalize(name: str) -> str:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +11,7 @@ from worker.adapters.ingestion import sheets
 from worker.adapters.ingestion.inspector import normalize
 from worker.adapters.ingestion.parsing import parse_date, parse_decimal
 from worker.domain.documents import NormalizationPlan
+from worker.ports.sales_reader import SalesRead
 
 SALES_SCHEMA = {
     "sku": pl.Utf8,
@@ -21,13 +21,6 @@ SALES_SCHEMA = {
     "qty": pl.Float64,
     "stock": pl.Float64,
 }
-
-
-@dataclass(frozen=True)
-class SalesRead:
-    frame: pl.DataFrame
-    rows_read: int
-    rows_dropped: int
 
 
 def _text(value: Any) -> str:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Final
 
 from worker.adapters.ingestion.inspector import normalize
@@ -13,6 +12,7 @@ from worker.domain.documents import (
     DateColumnCandidate,
     DateMapping,
     NormalizationPlan,
+    Proposal,
     QuantityMapping,
     SheetProfile,
     UnitMapping,
@@ -80,14 +80,6 @@ COUNTERPARTY: Final = {
     "nombrecliente",
     "supplier",
 }
-
-
-@dataclass(frozen=True)
-class Proposal:
-    plan: NormalizationPlan | None
-    unmapped_required: tuple[str, ...] = ()
-    needs_date_column: bool = False
-    date_column_candidates: tuple[DateColumnCandidate, ...] = ()
 
 
 def _find(
