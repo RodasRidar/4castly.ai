@@ -13,6 +13,7 @@ dependencies = [
     "castly-telemetry",
     "defusedxml>=0.7.1",
     "httpx2>=2.16.0",
+    "modal>=1.6.2",
     "openpyxl>=3.1.5",
     "pandera>=0.34.1",
     "polars>=2.0.0",
@@ -50,6 +51,11 @@ local = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-ra", "--strict-markers", "--cov", "--cov-report=term-missing:skip-covered"]
+asyncio_mode = "auto"
+filterwarnings = [
+    # Calling a Modal function with .local() in tests is intentional.
+    "ignore:.*is executing locally.*:UserWarning",
+]
 
 [tool.ruff]
 line-length = 100

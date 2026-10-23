@@ -32,6 +32,8 @@ B2B demand/stock forecasting SaaS. First client: a chemical/pharma importer expo
 - `make fixtures` - regenerate `apps/web/src/services/mock/fixtures/` through the API schemas (generated, never hand-edit)
 - `make dev-web` / `make dev-api` - run dev servers
 - Hooks: `prek install` (or `pre-commit install`), config in `.pre-commit-config.yaml`
+- Worker deploy: `make modal-requirements`, then `cd apps/worker && uv run modal deploy -m worker.modal_app --env dev`
+  (see `apps/worker/README.md`). TimesFM is local-only: `uv sync --group local`.
 - Real TimesFM test: `cd apps/worker && RUN_TIMESFM=1 uv run pytest -q -k timesfm`
 
 ## Conventions

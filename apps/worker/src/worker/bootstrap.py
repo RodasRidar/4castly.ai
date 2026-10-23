@@ -8,7 +8,7 @@ from pathlib import Path
 from uuid import UUID
 
 import anthropic
-from sqlalchemy import Engine
+from sqlalchemy import Engine, text
 
 from worker.adapters.db.digest import SqlDigestRepository
 from worker.adapters.db.engine import create_worker_engine
@@ -76,6 +76,11 @@ class Worker:
 
     def run_forecast(self, job_id: UUID) -> str:
         return self._forecast_runner.run(job_id, self._forecast)
+
+    def ping_database(self) -> None:
+        """A trivial query, enough to keep a free Supabase project from pausing."""
+        with self.engine.connect() as conn:
+            conn.execute(text("select 1"))
 
     def respawn_stuck(self, spawner: JobSpawner) -> RespawnReport:
         return RespawnStuckJobs(

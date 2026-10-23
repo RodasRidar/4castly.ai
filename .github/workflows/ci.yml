@@ -55,7 +55,7 @@ jobs:
       # the RLS tests against the runner's PostgreSQL binaries and must not skip them.
       - run: uv run pytest -q
         env:
-          REQUIRE_DB_TESTS: ${{ matrix.app == 'apps/api' && '1' || '' }}
+          REQUIRE_DB_TESTS: ${{ (matrix.app == 'apps/api' || matrix.app == 'apps/worker') && '1' || '' }}
 
   contracts:
     name: contract drift

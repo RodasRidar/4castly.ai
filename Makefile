@@ -1,6 +1,6 @@
 APPS_PY := apps/api apps/worker packages/inventory packages/telemetry packages/pgtest
 
-.PHONY: install lint format typecheck test check contracts fixtures dev-web dev-api
+.PHONY: install lint format typecheck test check contracts fixtures modal-requirements dev-web dev-api
 
 install:
 	cd apps/web && pnpm install
@@ -29,6 +29,10 @@ OPENAPI_TS := openapi-typescript@7.13.0
 contracts:
 	cd apps/api && uv run python -m api.export_openapi --out openapi.json
 	cd apps/web && pnpm dlx $(OPENAPI_TS) ../api/openapi.json --root-types -o src/services/http/schema.gen.ts
+
+# Pinned requirements of the Modal image, from the worker lockfile (local-only dependencies excluded).
+modal-requirements:
+	cd apps/worker && uv export --frozen --no-dev --no-hashes --no-emit-project --no-emit-package castly-inventory --no-emit-package castly-telemetry --no-emit-package castly-pgtest > requirements-modal.txt
 
 # Regenerate the frontend mock fixtures: formulas package -> API schemas -> JSON (generated output).
 fixtures:
