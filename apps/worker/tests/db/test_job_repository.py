@@ -164,6 +164,21 @@ class TestProgress:
         assert repo(engine).cancel_requested(claim)
 
 
+class TestRelease:
+    def test_a_released_job_can_be_claimed_again_at_once(
+        self, engine: Engine, admin: DictConnection, tenant: Tenant
+    ) -> None:
+        claim = repo(engine).claim(tenant.job_id)
+        assert claim is not None
+
+        repo(engine).release(claim)
+
+        assert job(admin, tenant)["status"] == "queued"
+        retaken = repo(engine).claim(tenant.job_id)
+        assert retaken is not None
+        assert retaken.attempts == 2
+
+
 class TestFinish:
     def test_success_and_failure_are_recorded_with_a_support_reference(
         self, engine: Engine, admin: DictConnection, tenant: Tenant

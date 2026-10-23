@@ -125,6 +125,16 @@ class SqlJobRepository:
                 {"s": status, "r": error_ref, "j": claim.job_id, "t": claim.tenant_id},
             )
 
+    def release(self, claim: JobClaim) -> None:
+        with self._engine.begin() as conn:
+            conn.execute(
+                text(
+                    "update public.jobs set status = 'queued', heartbeat_at = null "
+                    "where id = :j and tenant_id = :t and status = 'running'"
+                ),
+                {"j": claim.job_id, "t": claim.tenant_id},
+            )
+
     def find_stuck(self, *, queued_after: timedelta, limit: int = 100) -> list[StuckJob]:
         with self._engine.connect() as conn:
             rows = conn.execute(
