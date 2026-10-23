@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-UNREADABLE_CODES = ("password_protected", "corrupt", "unsupported_format", "empty")
+UNREADABLE_CODES = ("password_protected", "corrupt", "unsupported_format", "empty", "too_large")
 
 
 class UnreadableFileError(Exception):
