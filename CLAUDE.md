@@ -8,6 +8,7 @@ B2B demand/stock forecasting SaaS. First client: a chemical/pharma importer expo
 - `apps/web` - React 19 + Vite + TypeScript (pnpm, oxlint, `tsc -b`)
 - `apps/api` - FastAPI, thin: upload, parse, CRUD, job enqueueing (uv, package `api`)
 - `apps/worker` - forecasting worker (uv, package `worker`)
+- `packages/inventory` - pure inventory formulas shared by worker and API (uv, package `inventory`)
 - `supabase/migrations` - SQL only
 
 ## Architecture (worker is hexagonal)

@@ -34,6 +34,14 @@ repos:
         name: ruff format (worker)
         files: ^apps/worker/
         args: [--config=apps/worker/pyproject.toml]
+      - id: ruff-check
+        name: ruff check (inventory)
+        files: ^packages/inventory/
+        args: [--fix, --config=packages/inventory/pyproject.toml]
+      - id: ruff-format
+        name: ruff format (inventory)
+        files: ^packages/inventory/
+        args: [--config=packages/inventory/pyproject.toml]
 
   - repo: local
     hooks:
