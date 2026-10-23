@@ -1,8 +1,13 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
+import { installMatchMedia, resetViewport } from './matchMedia'
 
-afterEach(() => cleanup())
+installMatchMedia()
+afterEach(() => {
+  cleanup()
+  resetViewport()
+})
 
 // jsdom lacks these; Radix (Toast, Select, menus) calls them on pointer events.
 if (!Element.prototype.hasPointerCapture) {
