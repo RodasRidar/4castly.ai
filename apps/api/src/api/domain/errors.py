@@ -64,3 +64,17 @@ class NotImplementedYetError(AppError):
     status = 501
     code = "not_implemented"
     message_key = "errors.notImplemented"
+
+
+class UnauthenticatedError(AppError):
+    """Missing, malformed, expired or untrusted token."""
+
+    status = 401
+    code = "unauthenticated"
+    message_key = "errors.unauthenticated"
+
+
+class TooManyRequestsError(AppError):
+    status = 429
+    code = "rate_limited"
+    message_key = "errors.rateLimited"

@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from api.main import create_app
 
-from .endpoints import ENDPOINTS, concrete
+from .endpoints import ID, STUBS, concrete
 
 
 @pytest.fixture(scope="module")
@@ -15,8 +15,8 @@ def client() -> TestClient:
 
 @pytest.mark.parametrize(
     ("method", "path", "operation_id", "body"),
-    [(m, p, o, b) for m, p, o, _, b in ENDPOINTS],
-    ids=[e[2] for e in ENDPOINTS],
+    [(m, p, o, b) for m, p, o, _, b in STUBS],
+    ids=[e[2] for e in STUBS],
 )
 def test_stub_answers_501_problem_details(
     client: TestClient, method: str, path: str, operation_id: str, body: object
@@ -34,7 +34,7 @@ def test_stub_answers_501_problem_details(
 
 
 def test_invalid_body_is_422_problem_details_with_field_issues(client: TestClient) -> None:
-    response = client.patch("/v1/me", json={"unknown": 1})
+    response = client.post(f"/v1/conversations/{ID}/messages", json={"unknown": 1})
 
     assert response.status_code == 422
     assert response.headers["content-type"].startswith("application/problem+json")

@@ -31,7 +31,7 @@ class Seed:
     """A second member of tenant A (profiles are owner-only, not tenant-wide)."""
 
 
-def _side(conn: psycopg.Connection, name: str, email: str) -> Side:
+def seed_side(conn: psycopg.Connection, name: str, email: str) -> Side:
     tenant, user, product = uuid4(), uuid4(), uuid4()
     conversation, upload, job, run, message = uuid4(), uuid4(), uuid4(), uuid4(), uuid4()
     conn.execute("insert into public.tenants (id, name) values (%s, %s)", [tenant, name])
@@ -146,8 +146,8 @@ def _side(conn: psycopg.Connection, name: str, email: str) -> Side:
 
 
 def seed_two_tenants(conn: psycopg.Connection) -> Seed:
-    side_a = _side(conn, "A", "ana@example.com")
-    side_b = _side(conn, "B", "beto@example.com")
+    side_a = seed_side(conn, "A", "ana@example.com")
+    side_b = seed_side(conn, "B", "beto@example.com")
     second = uuid4()
     conn.execute("insert into auth.users (id, email) values (%s, 'ana2@example.com')", [second])
     conn.execute(

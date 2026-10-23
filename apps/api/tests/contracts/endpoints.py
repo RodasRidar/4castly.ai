@@ -102,6 +102,12 @@ ENDPOINTS: list[tuple[str, str, str, int, Any]] = [
     ("post", "/v1/messages/{message_id}/retry", "retry_message", 200, None),
 ]
 
+IMPLEMENTED = {"get_me", "update_me", "get_preferences", "update_preferences"}
+"""Operations built in B4, tested on their own (`tests/db/endpoints`). B4 ends with only the chat
+operations left as stubs until B5."""
+
+STUBS = [e for e in ENDPOINTS if e[2] not in IMPLEMENTED]
+
 SSE_OPERATIONS = {"stream_job_events", "send_message", "retry_message"}
 
 

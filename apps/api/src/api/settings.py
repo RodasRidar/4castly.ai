@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     """Pooler URL for the `app_api` role (transaction mode). Empty: no database, readiness fails."""
     db_pool_size: int = 2
 
+    jwt_audience: str = "authenticated"
+    jwt_issuer: str = ""
+    """Defaults to `<supabase_url>/auth/v1`."""
+    jwks_url: str = ""
+    """Defaults to `<issuer>/.well-known/jwks.json`."""
+
     environment: str = "local"
     service_version: str = "0.1.0"
     log_json: bool | None = None
@@ -25,6 +31,14 @@ class Settings(BaseSettings):
     """`api.eu.axiom.co` for the EU region."""
     axiom_token: str = ""
     axiom_dataset: str = ""
+
+    @property
+    def resolved_jwt_issuer(self) -> str:
+        return self.jwt_issuer or f"{self.supabase_url.rstrip('/')}/auth/v1"
+
+    @property
+    def resolved_jwks_url(self) -> str:
+        return self.jwks_url or f"{self.resolved_jwt_issuer}/.well-known/jwks.json"
 
 
 @lru_cache

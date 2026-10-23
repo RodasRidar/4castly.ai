@@ -1,9 +1,12 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from dataclasses import replace
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.adapters.jwks import JwksTokenVerifier
+from api.container import Container
 from api.db.engine import create_engine
 from api.errors import register_exception_handlers
 from api.observability.logging import configure_logging
@@ -14,6 +17,7 @@ from api.observability.middleware import (
 )
 from api.observability.tracing import configure_tracing
 from api.openapi import install_openapi
+from api.ports.auth import TokenVerifier
 from api.routers import (
     conversations,
     health,
@@ -30,9 +34,22 @@ from api.settings import Settings, get_settings
 V1_ROUTERS = (me, conversations, uploads, templates, jobs, runs, products, messages)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None, *, verifier: TokenVerifier | None = None
+) -> FastAPI:
+    """Build the app. The keyword arguments replace adapters (tests inject fakes)."""
     settings = settings or get_settings()
     configure_logging(settings)
+
+    container = Container(
+        engine=None,
+        verifier=verifier
+        or JwksTokenVerifier(
+            jwks_url=settings.resolved_jwks_url,
+            issuer=settings.resolved_jwt_issuer,
+            audience=settings.jwt_audience,
+        ),
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
@@ -42,6 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             else None
         )
         app.state.engine = engine
+        app.state.container = replace(container, engine=engine)
         try:
             yield
         finally:
@@ -58,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         separate_input_output_schemas=False,
         generate_unique_id_function=lambda route: route.name,
     )
+    app.state.container = container  # replaced by the lifespan once the engine exists
     register_exception_handlers(app)
     app.include_router(health.router)
     for module in V1_ROUTERS:

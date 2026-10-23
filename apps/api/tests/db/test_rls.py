@@ -408,7 +408,10 @@ class TestRoles:
             [f'{{"sub": "{seed.a.user}"}}'],
         )
 
-        seen = conn.execute("select count(*) as n from public.conversations").fetchone()
+        seen = conn.execute(
+            "select count(*) as n from public.conversations where tenant_id = any(%s)",
+            [[seed.a.tenant, seed.b.tenant]],  # API tests add tenants to the shared database
+        ).fetchone()
         conn.execute("reset role")
 
         assert seen == {"n": 1}
@@ -422,7 +425,10 @@ class TestRoles:
         assert role == {"rolbypassrls": True}
 
         conn.execute("set local role app_worker")
-        seen = conn.execute("select count(*) as n from public.conversations").fetchone()
+        seen = conn.execute(
+            "select count(*) as n from public.conversations where tenant_id = any(%s)",
+            [[seed.a.tenant, seed.b.tenant]],  # API tests add tenants to the shared database
+        ).fetchone()
         conn.execute("update public.forecasts set p50 = 12 where tenant_id = %s", [seed.b.tenant])
         conn.execute("reset role")
         assert seen == {"n": 2}

@@ -114,7 +114,7 @@ class TestBodyLimit:
     def test_a_small_body_passes_through(self, client: TestClient) -> None:
         response = client.patch("/v1/me", json={"full_name": "Ana"})
 
-        assert response.status_code == 501  # reached the stub
+        assert response.status_code == 401  # past the size limit, stopped by auth
 
     async def test_a_streamed_body_over_the_limit_is_cut_off(self) -> None:
         reached_app = False
