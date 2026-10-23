@@ -1,6 +1,6 @@
 """Pydantic schemas: the single source of the API contract."""
 
-from api.schemas.base import ApiError, ApiModel, RequestModel
+from api.schemas.base import ApiError, ApiModel, FieldIssue, RequestModel
 from api.schemas.chat import (
     Annotation,
     AnnotationEvent,
@@ -146,6 +146,7 @@ __all__ = [
     "Feedback",
     "FeedbackCreate",
     "FeedbackValue",
+    "FieldIssue",
     "FilePayload",
     "FileProfile",
     "FilterAnnotation",

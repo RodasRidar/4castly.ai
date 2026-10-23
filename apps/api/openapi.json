@@ -1,0 +1,6320 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "4castly.ai API",
+    "description": "Demand and stock forecasting. The Pydantic schemas are the contract.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Get Me",
+        "description": "The signed-in user, profile and company.",
+        "operationId": "get_me",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Update Me",
+        "description": "Edit name and job title. Email and company are read-only.",
+        "operationId": "update_me",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ]
+      }
+    },
+    "/v1/me/preferences": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Get Preferences",
+        "operationId": "get_preferences",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Update Preferences",
+        "description": "Theme, language, time zone and assistant style (autosaved by the web app).",
+        "operationId": "update_preferences",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Preferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ]
+      }
+    },
+    "/v1/conversations": {
+      "get": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "List Conversations",
+        "description": "Sidebar and history list, newest activity first. Soft-deleted ones are never listed.",
+        "operationId": "list_conversations",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ConversationGroup"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Group"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "include_archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Archived"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}": {
+      "get": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "Get Conversation",
+        "description": "The conversation with its stage (drives the whole screen) and upload.",
+        "operationId": "get_conversation",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "Update Conversation",
+        "description": "Rename, pin or archive.",
+        "operationId": "update_conversation",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "Delete Conversation",
+        "description": "Soft delete; `restore` undoes it for 30 days.",
+        "operationId": "delete_conversation",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}/restore": {
+      "post": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "Restore Conversation",
+        "operationId": "restore_conversation",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}/plan": {
+      "get": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "Get Plan",
+        "description": "Detected sheets, mapping, samples, warnings and plausible date columns.",
+        "operationId": "get_plan",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "Confirm Plan",
+        "description": "Confirm the proposed mapping or replace it, in one call.",
+        "operationId": "confirm_plan",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanConfirmation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The resource is not in a state that allows this operation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}/forecast": {
+      "post": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "Start Forecast",
+        "description": "Answers or `skip: true`, then the forecast job starts.",
+        "operationId": "start_forecast",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Replay protection: the same key returns the first response.",
+              "title": "Idempotency-Key"
+            },
+            "description": "Replay protection: the same key returns the first response."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForecastRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The resource is not in a state that allows this operation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/{conversation_id}/messages": {
+      "get": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "List Messages",
+        "description": "Chat history, oldest first within a page.",
+        "operationId": "list_messages",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "Send Message",
+        "description": "Send a question; the reply streams as server-sent events.",
+        "operationId": "send_message",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The assistant answer, token by token.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatStreamEvent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/uploads": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Create Upload",
+        "description": "Reserve an upload and return a signed URL. The browser then uploads the file straight to\nstorage (Vercel caps request bodies at 4.5 MB).",
+        "operationId": "create_upload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadTicket"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ]
+      }
+    },
+    "/v1/uploads/{upload_id}/complete": {
+      "post": {
+        "tags": [
+          "uploads"
+        ],
+        "summary": "Complete Upload",
+        "description": "Verify the object exists, create the conversation and its digest job, spawn the worker.",
+        "operationId": "complete_upload",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "upload_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Upload Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 8,
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Replay protection: the same key returns the first response.",
+              "title": "Idempotency-Key"
+            },
+            "description": "Replay protection: the same key returns the first response."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadCompleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The resource is not in a state that allows this operation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/templates/sales.xlsx": {
+      "get": {
+        "tags": [
+          "templates"
+        ],
+        "summary": "Download Sales Template",
+        "operationId": "download_sales_template",
+        "responses": {
+          "200": {
+            "description": "The sales template, generated with openpyxl at request time.",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ]
+      }
+    },
+    "/v1/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Get Job",
+        "description": "Real stages and `processed / total`; polling fallback for the event stream.",
+        "operationId": "get_job",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{job_id}/events": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Stream Job Events",
+        "description": "Server-sent events for the stepper.",
+        "operationId": "stream_job_events",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`job.update` on every change.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobUpdateEvent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{job_id}/cancel": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Cancel Job",
+        "description": "Cancel digestion (\"Cancelar\"). The job stops at the next safe point.",
+        "operationId": "cancel_job",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The resource is not in a state that allows this operation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}/summary": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Get Run Summary",
+        "description": "KPIs, risk distribution, aggregate series, defaults used and staleness.",
+        "operationId": "get_run_summary",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}/products": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "List Run Products",
+        "description": "Paginated, filtered table. `q` matches code and name ignoring accents and case.",
+        "operationId": "list_run_products",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "risk",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RiskLevel"
+                  },
+                  "maxItems": 3
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Risk"
+            }
+          },
+          {
+            "name": "abc",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AbcClass"
+                  },
+                  "maxItems": 3
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Abc"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProductSort",
+              "default": "risk"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortOrder",
+              "default": "asc"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}/products/{code}": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Get Run Product",
+        "description": "Cards, weekly table and series, without and with the suggested purchase.",
+        "operationId": "get_run_product",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}/products/{code}/simulate": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Simulate Product",
+        "description": "What-if on lead time, target coverage or purchase. Uses the formulas on the persisted\nforecast; nothing is re-forecast or saved.",
+        "operationId": "simulate_product",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}/parameters": {
+      "put": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Update Run Parameters",
+        "description": "Save the drawer values; they apply on the next `recalculate`.",
+        "operationId": "update_run_parameters",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunParameters"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunParameters"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The resource is not in a state that allows this operation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}/recalculate": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Recalculate Run",
+        "description": "Build a new run with the saved parameters; the previous one becomes superseded.",
+        "operationId": "recalculate_run",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobAccepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The resource is not in a state that allows this operation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{run_id}/exports": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Create Export",
+        "description": "Excel export of everything, a selection or one product.",
+        "operationId": "create_export",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportFile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/products/{code}/overrides": {
+      "put": {
+        "tags": [
+          "products"
+        ],
+        "summary": "Update Product Overrides",
+        "description": "Per-product lead time, target coverage and quantity on order. `null` clears a value.\nResults change after the next recalculation or simulation.",
+        "operationId": "update_product_overrides",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductOverrides"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductOverrides"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/messages/{message_id}/feedback": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Submit Feedback",
+        "description": "Like or dislike an assistant answer; `null` clears it.",
+        "operationId": "submit_feedback",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Message Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Feedback"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/messages/{message_id}/retry": {
+      "post": {
+        "tags": [
+          "messages"
+        ],
+        "summary": "Retry Message",
+        "description": "Regenerate the answer to the previous question (appends; earlier turns never change).",
+        "operationId": "retry_message",
+        "security": [
+          {
+            "SupabaseJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Message Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A new answer, token by token.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatStreamEvent"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit reached.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found, also for another tenant's resource.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The resource is not in a state that allows this operation.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid input; `fields` lists what failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AbcClass": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C"
+        ],
+        "title": "AbcClass"
+      },
+      "AnnotationEvent": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "annotation",
+            "title": "Event",
+            "default": "annotation"
+          },
+          "message_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Message Id"
+          },
+          "annotation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FilterAnnotation"
+              },
+              {
+                "$ref": "#/components/schemas/ProductAnnotation"
+              }
+            ],
+            "title": "Annotation",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "filter": "#/components/schemas/FilterAnnotation",
+                "product": "#/components/schemas/ProductAnnotation"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id",
+          "annotation"
+        ],
+        "title": "AnnotationEvent"
+      },
+      "ApiError": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "about:blank"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Stable machine code, for example `not_found`."
+          },
+          "message_key": {
+            "type": "string",
+            "title": "Message Key",
+            "description": "i18n key translated by the web app, for example `errors.notFound`."
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Ref",
+            "description": "Short support reference, also logged with the trace id."
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldIssue"
+            },
+            "type": "array",
+            "title": "Fields",
+            "description": "Filled for validation errors so forms can mark the fields."
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "status",
+          "code",
+          "message_key",
+          "ref"
+        ],
+        "title": "ApiError",
+        "description": "RFC 9457 problem details. The UI shows `message_key` translated and `ref` as the support\nreference; it never shows `code` or `title`."
+      },
+      "Arrival": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Quantity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "quantity"
+        ],
+        "title": "Arrival"
+      },
+      "AssistantStyle": {
+        "type": "string",
+        "enum": [
+          "brief",
+          "detailed"
+        ],
+        "title": "AssistantStyle"
+      },
+      "BuyBefore": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/BuyBeforeAction"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date",
+            "description": "Place the order before this date (`order_by_date`)."
+          },
+          "earliest_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earliest Date",
+            "description": "Earlier bound from high demand; `null` when high demand does not stock out either."
+          },
+          "weeks_without_stock": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Weeks Without Stock",
+            "description": "How long the product stays empty if the order is placed today."
+          }
+        },
+        "type": "object",
+        "required": [
+          "action",
+          "date",
+          "earliest_date",
+          "weeks_without_stock"
+        ],
+        "title": "BuyBefore"
+      },
+      "BuyBeforeAction": {
+        "type": "string",
+        "enum": [
+          "order_today",
+          "order_by_date",
+          "no_stockout"
+        ],
+        "title": "BuyBeforeAction"
+      },
+      "ChatMessage": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "conversation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Conversation Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/MessageRole"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MessageStatus"
+          },
+          "display_text": {
+            "type": "string",
+            "title": "Display Text"
+          },
+          "payload": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TextPayload"
+              },
+              {
+                "$ref": "#/components/schemas/FilePayload"
+              },
+              {
+                "$ref": "#/components/schemas/MappingPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ClarificationPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ProgressPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ResultPayload"
+              },
+              {
+                "$ref": "#/components/schemas/ErrorPayload"
+              }
+            ],
+            "title": "Payload",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "clarification": "#/components/schemas/ClarificationPayload",
+                "error": "#/components/schemas/ErrorPayload",
+                "file": "#/components/schemas/FilePayload",
+                "mapping": "#/components/schemas/MappingPayload",
+                "progress": "#/components/schemas/ProgressPayload",
+                "result": "#/components/schemas/ResultPayload",
+                "text": "#/components/schemas/TextPayload"
+              }
+            }
+          },
+          "annotations": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FilterAnnotation"
+                },
+                {
+                  "$ref": "#/components/schemas/ProductAnnotation"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "filter": "#/components/schemas/FilterAnnotation",
+                  "product": "#/components/schemas/ProductAnnotation"
+                }
+              }
+            },
+            "type": "array",
+            "title": "Annotations"
+          },
+          "context_product_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Product Code",
+            "description": "Set when the message was asked from a product's detail."
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "conversation_id",
+          "role",
+          "status",
+          "display_text",
+          "created_at"
+        ],
+        "title": "ChatMessage"
+      },
+      "ClarificationAnswers": {
+        "properties": {
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 365.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "had_stockouts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HadStockouts"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Asked only when the file has no stock column."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ClarificationAnswers",
+        "description": "Answers to the clarification card (05). Each is optional; at least one must be given."
+      },
+      "ClarificationOption": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "label_key": {
+            "type": "string",
+            "title": "Label Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "label_key"
+        ],
+        "title": "ClarificationOption"
+      },
+      "ClarificationPayload": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "clarification",
+            "title": "Kind",
+            "default": "clarification"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/ClarificationQuestion"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Questions"
+          },
+          "answers": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClarificationAnswers"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set once the user answered."
+          }
+        },
+        "type": "object",
+        "required": [
+          "questions",
+          "answers"
+        ],
+        "title": "ClarificationPayload"
+      },
+      "ClarificationQuestion": {
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ClarificationQuestionId"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/ClarificationOption"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "allows_other": {
+            "type": "boolean",
+            "title": "Allows Other"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "options",
+          "allows_other"
+        ],
+        "title": "ClarificationQuestion"
+      },
+      "ClarificationQuestionId": {
+        "type": "string",
+        "enum": [
+          "lead_time_days",
+          "had_stockouts"
+        ],
+        "title": "ClarificationQuestionId"
+      },
+      "ColumnMapping": {
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/MappedField"
+          },
+          "column": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column",
+            "description": "`null` when the file has no such column (\"— No tengo esta columna —\")."
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "samples": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "title": "Samples"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail",
+            "description": "Date format or decimal separator detected, when relevant."
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "column",
+          "required",
+          "samples",
+          "detail"
+        ],
+        "title": "ColumnMapping",
+        "description": "One row of the mapping card."
+      },
+      "ColumnProfile": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "inferred_type": {
+            "$ref": "#/components/schemas/ColumnType"
+          },
+          "samples": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "title": "Samples"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "inferred_type",
+          "samples"
+        ],
+        "title": "ColumnProfile"
+      },
+      "ColumnType": {
+        "type": "string",
+        "enum": [
+          "date",
+          "number",
+          "text",
+          "empty"
+        ],
+        "title": "ColumnType"
+      },
+      "Company": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Company"
+      },
+      "Conversation": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/ConversationStage"
+          },
+          "group": {
+            "$ref": "#/components/schemas/ConversationGroup"
+          },
+          "pinned": {
+            "type": "boolean",
+            "title": "Pinned"
+          },
+          "archived": {
+            "type": "boolean",
+            "title": "Archived"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "current_job_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Job Id",
+            "description": "Active job, while digesting or calculating."
+          },
+          "current_run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Run Id",
+            "description": "Latest ready run, once the forecast exists."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_activity_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Activity At"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At",
+            "description": "Set while a soft delete can still be undone (30 days)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "stage",
+          "group",
+          "pinned",
+          "archived",
+          "file_name",
+          "current_job_id",
+          "current_run_id",
+          "created_at",
+          "last_activity_at",
+          "deleted_at"
+        ],
+        "title": "Conversation"
+      },
+      "ConversationDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/ConversationStage"
+          },
+          "group": {
+            "$ref": "#/components/schemas/ConversationGroup"
+          },
+          "pinned": {
+            "type": "boolean",
+            "title": "Pinned"
+          },
+          "archived": {
+            "type": "boolean",
+            "title": "Archived"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "current_job_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Job Id",
+            "description": "Active job, while digesting or calculating."
+          },
+          "current_run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Run Id",
+            "description": "Latest ready run, once the forecast exists."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_activity_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Activity At"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At",
+            "description": "Set while a soft delete can still be undone (30 days)."
+          },
+          "upload": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Upload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "stage",
+          "group",
+          "pinned",
+          "archived",
+          "file_name",
+          "current_job_id",
+          "current_run_id",
+          "created_at",
+          "last_activity_at",
+          "deleted_at",
+          "upload"
+        ],
+        "title": "ConversationDetail"
+      },
+      "ConversationGroup": {
+        "type": "string",
+        "enum": [
+          "pinned",
+          "today",
+          "this_week",
+          "older"
+        ],
+        "title": "ConversationGroup"
+      },
+      "ConversationPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Conversation"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "ConversationPage"
+      },
+      "ConversationStage": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "uploaded",
+          "digesting",
+          "unreadable",
+          "needs_date_column",
+          "awaiting_confirmation",
+          "confirmed",
+          "clarifying",
+          "calculating",
+          "ready",
+          "failed",
+          "cancelled"
+        ],
+        "title": "ConversationStage",
+        "description": "Driven by the backend, never inferred by the client (plan 2.1)."
+      },
+      "ConversationUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "pinned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned"
+          },
+          "archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ConversationUpdate",
+        "description": "PATCH: rename, pin or archive. Omitted fields stay."
+      },
+      "CoverageRange": {
+        "properties": {
+          "lower": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lower"
+          },
+          "expected": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          },
+          "upper": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upper"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lower",
+          "expected",
+          "upper"
+        ],
+        "title": "CoverageRange",
+        "description": "Weeks of coverage. `lower` comes from high demand, `upper` from low demand; `null` means\nno stockout inside the horizon (\"sin quiebre en el horizonte\")."
+      },
+      "DataSummary": {
+        "properties": {
+          "products_found": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Products Found"
+          },
+          "date_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date From"
+          },
+          "date_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date To"
+          },
+          "history_weeks": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "History Weeks"
+          },
+          "rows_read": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Rows Read"
+          },
+          "rows_dropped": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Rows Dropped"
+          }
+        },
+        "type": "object",
+        "required": [
+          "products_found",
+          "date_from",
+          "date_to",
+          "history_weeks",
+          "rows_read",
+          "rows_dropped"
+        ],
+        "title": "DataSummary"
+      },
+      "DataWarning": {
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/WarningCode"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/WarningSeverity"
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Count",
+            "description": "For example how many products have short history."
+          },
+          "params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "count"
+        ],
+        "title": "DataWarning"
+      },
+      "DateColumnCandidate": {
+        "properties": {
+          "column": {
+            "type": "string",
+            "title": "Column"
+          },
+          "samples": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "title": "Samples"
+          }
+        },
+        "type": "object",
+        "required": [
+          "column",
+          "samples"
+        ],
+        "title": "DateColumnCandidate"
+      },
+      "DateMapping": {
+        "properties": {
+          "column": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Column"
+          },
+          "format": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Format",
+            "description": "For example `dd/mm/yyyy`."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "column",
+          "format"
+        ],
+        "title": "DateMapping"
+      },
+      "DateSpan": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "title": "End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "DateSpan"
+      },
+      "DefaultedParameter": {
+        "type": "string",
+        "enum": [
+          "lead_time",
+          "target_coverage",
+          "stockout_censoring"
+        ],
+        "title": "DefaultedParameter",
+        "description": "Parameters the user did not answer, so the run used a default (shown in results)."
+      },
+      "ErrorPayload": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "error",
+            "title": "Kind",
+            "default": "error"
+          },
+          "message_key": {
+            "type": "string",
+            "title": "Message Key"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_key",
+          "ref"
+        ],
+        "title": "ErrorPayload"
+      },
+      "ExportFile": {
+        "properties": {
+          "file_name": {
+            "type": "string",
+            "title": "File Name"
+          },
+          "download_url": {
+            "type": "string",
+            "title": "Download Url",
+            "description": "Signed URL valid for 60 seconds (S6)."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "format": {
+            "type": "string",
+            "const": "xlsx",
+            "title": "Format",
+            "default": "xlsx"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_name",
+          "download_url",
+          "expires_at"
+        ],
+        "title": "ExportFile"
+      },
+      "ExportFormat": {
+        "type": "string",
+        "enum": [
+          "xlsx"
+        ],
+        "title": "ExportFormat"
+      },
+      "ExportRequest": {
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/ExportFormat",
+            "default": "xlsx"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ExportScope"
+          },
+          "codes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scope"
+        ],
+        "title": "ExportRequest"
+      },
+      "ExportScope": {
+        "type": "string",
+        "enum": [
+          "all",
+          "selection",
+          "product"
+        ],
+        "title": "ExportScope"
+      },
+      "Feedback": {
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Message Id"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id",
+          "value"
+        ],
+        "title": "Feedback"
+      },
+      "FeedbackCreate": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "FeedbackCreate",
+        "description": "`null` clears a previous like or dislike."
+      },
+      "FeedbackValue": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down"
+        ],
+        "title": "FeedbackValue"
+      },
+      "FieldIssue": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field",
+            "description": "Dotted path inside the request part, for example `risk_thresholds.medium_margin_weeks`."
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Validation rule that failed, for example `string_too_short`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "code"
+        ],
+        "title": "FieldIssue",
+        "description": "One invalid input. Never echoes the submitted value."
+      },
+      "FilePayload": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "file",
+            "title": "Kind",
+            "default": "file"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_name",
+          "size_bytes"
+        ],
+        "title": "FilePayload"
+      },
+      "FileProfile": {
+        "properties": {
+          "source_kind": {
+            "$ref": "#/components/schemas/SourceKind"
+          },
+          "sheets": {
+            "items": {
+              "$ref": "#/components/schemas/SheetProfile"
+            },
+            "type": "array",
+            "title": "Sheets"
+          },
+          "date_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date From"
+          },
+          "date_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_kind",
+          "sheets",
+          "date_from",
+          "date_to"
+        ],
+        "title": "FileProfile"
+      },
+      "FilterAnnotation": {
+        "properties": {
+          "start": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "End",
+            "description": "Character offsets into `display_text` (Unicode code points, end exclusive)."
+          },
+          "type": {
+            "type": "string",
+            "const": "filter",
+            "title": "Type",
+            "default": "filter"
+          },
+          "link": {
+            "$ref": "#/components/schemas/FilterLink"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "link"
+        ],
+        "title": "FilterAnnotation",
+        "description": "A figure in the text that applies a filter when clicked."
+      },
+      "FilterLink": {
+        "properties": {
+          "q": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "risk": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RiskLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "abc": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AbcClass"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Count",
+            "description": "How many products match the filter."
+          }
+        },
+        "type": "object",
+        "required": [
+          "count"
+        ],
+        "title": "FilterLink",
+        "description": "A figure that maps to a results filter. Omitted fields do not filter."
+      },
+      "ForecastMethod": {
+        "type": "string",
+        "enum": [
+          "model",
+          "simple"
+        ],
+        "title": "ForecastMethod"
+      },
+      "ForecastRequest": {
+        "properties": {
+          "answers": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClarificationAnswers"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "skip": {
+            "type": "boolean",
+            "title": "Skip",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ForecastRequest",
+        "description": "Either the answers or `skip: true` (\"Omitir y pronosticar ahora\")."
+      },
+      "ForecastRun": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "conversation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Conversation Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RunStatus"
+          },
+          "data_until": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Until"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/RunParameters"
+          },
+          "defaults_used": {
+            "items": {
+              "$ref": "#/components/schemas/DefaultedParameter"
+            },
+            "type": "array",
+            "title": "Defaults Used",
+            "description": "Parameters the user skipped, so the results must say a default was used."
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "description": "`data_until` is more than 7 days old."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "conversation_id",
+          "status",
+          "data_until",
+          "parameters",
+          "defaults_used",
+          "stale",
+          "created_at"
+        ],
+        "title": "ForecastRun"
+      },
+      "Granularity": {
+        "type": "string",
+        "enum": [
+          "weekly",
+          "monthly"
+        ],
+        "title": "Granularity"
+      },
+      "HadStockouts": {
+        "type": "string",
+        "enum": [
+          "yes",
+          "no",
+          "unknown"
+        ],
+        "title": "HadStockouts"
+      },
+      "Job": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/JobKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "conversation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Conversation Id"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/JobStageInfo"
+            },
+            "type": "array",
+            "title": "Stages",
+            "description": "Only the stages of this job, in order: the stepper renders exactly these."
+          },
+          "processed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total",
+            "description": "Products processed so far / to process, when known. No percentage is ever sent."
+          },
+          "cancel_requested": {
+            "type": "boolean",
+            "title": "Cancel Requested"
+          },
+          "error_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Ref",
+            "description": "Short support code when the job failed."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "conversation_id",
+          "stage",
+          "stages",
+          "cancel_requested",
+          "error_ref",
+          "created_at",
+          "finished_at"
+        ],
+        "title": "Job"
+      },
+      "JobAccepted": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Job Id"
+          },
+          "conversation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Conversation Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "conversation_id"
+        ],
+        "title": "JobAccepted",
+        "description": "202 body for operations that enqueue a job."
+      },
+      "JobKind": {
+        "type": "string",
+        "enum": [
+          "digest",
+          "forecast"
+        ],
+        "title": "JobKind"
+      },
+      "JobStage": {
+        "type": "string",
+        "enum": [
+          "reading_file",
+          "identifying_columns",
+          "cleaning_data",
+          "calculating_forecast",
+          "ready"
+        ],
+        "title": "JobStage"
+      },
+      "JobStageInfo": {
+        "properties": {
+          "stage": {
+            "$ref": "#/components/schemas/JobStage"
+          },
+          "state": {
+            "$ref": "#/components/schemas/StageState"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stage",
+          "state"
+        ],
+        "title": "JobStageInfo"
+      },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed",
+          "cancelled"
+        ],
+        "title": "JobStatus"
+      },
+      "JobUpdateEvent": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "job.update",
+            "title": "Event",
+            "default": "job.update"
+          },
+          "job": {
+            "$ref": "#/components/schemas/Job"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job"
+        ],
+        "title": "JobUpdateEvent",
+        "description": "SSE `GET /v1/jobs/{id}/events`: sent on every stage or progress change and once at the\nend. Wire format: `event: job.update` and `data: <this object as JSON>`."
+      },
+      "Locale": {
+        "type": "string",
+        "enum": [
+          "es",
+          "en"
+        ],
+        "title": "Locale"
+      },
+      "MappedField": {
+        "type": "string",
+        "enum": [
+          "date",
+          "product_code",
+          "product_name",
+          "quantity",
+          "stock",
+          "unit"
+        ],
+        "title": "MappedField"
+      },
+      "MappingPayload": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "mapping",
+            "title": "Kind",
+            "default": "mapping"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "title": "Confirmed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confirmed"
+        ],
+        "title": "MappingPayload",
+        "description": "The confirmation card; its data comes from `GET /conversations/{id}/plan`."
+      },
+      "MessageCreate": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "context_product_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Product Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "MessageCreate"
+      },
+      "MessageEndEvent": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "message.end",
+            "title": "Event",
+            "default": "message.end"
+          },
+          "message_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Message Id"
+          },
+          "stop_reason": {
+            "$ref": "#/components/schemas/StopReason"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id",
+          "stop_reason",
+          "usage"
+        ],
+        "title": "MessageEndEvent"
+      },
+      "MessagePage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "MessagePage"
+      },
+      "MessageRole": {
+        "type": "string",
+        "enum": [
+          "user",
+          "assistant",
+          "system"
+        ],
+        "title": "MessageRole"
+      },
+      "MessageStartEvent": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "message.start",
+            "title": "Event",
+            "default": "message.start"
+          },
+          "message_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Message Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id"
+        ],
+        "title": "MessageStartEvent"
+      },
+      "MessageStatus": {
+        "type": "string",
+        "enum": [
+          "streaming",
+          "complete",
+          "interrupted",
+          "error"
+        ],
+        "title": "MessageStatus"
+      },
+      "MovementRule": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "treatment": {
+            "$ref": "#/components/schemas/MovementTreatment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "label",
+          "treatment"
+        ],
+        "title": "MovementRule",
+        "description": "Kardex only: which movement codes count as demand (01 sales minus 05 returns)."
+      },
+      "MovementTreatment": {
+        "type": "string",
+        "enum": [
+          "demand",
+          "return",
+          "excluded"
+        ],
+        "title": "MovementTreatment",
+        "description": "How a Kardex movement code is treated: sales minus customer returns are demand."
+      },
+      "NormalizationPlan": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Version",
+            "default": 1
+          },
+          "sheet": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Sheet"
+          },
+          "header_row": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Header Row"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateMapping"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` means the file has no date column (screen 08b, \"Mi archivo no tiene fechas\")."
+          },
+          "product_code": {
+            "$ref": "#/components/schemas/TextMapping"
+          },
+          "product_name": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextMapping"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quantity": {
+            "$ref": "#/components/schemas/QuantityMapping"
+          },
+          "stock": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantityMapping"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unit": {
+            "$ref": "#/components/schemas/UnitMapping"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sheet",
+          "header_row",
+          "date",
+          "product_code",
+          "product_name",
+          "quantity",
+          "stock",
+          "unit"
+        ],
+        "title": "NormalizationPlan"
+      },
+      "PlanAuthor": {
+        "type": "string",
+        "enum": [
+          "llm",
+          "rules",
+          "user"
+        ],
+        "title": "PlanAuthor"
+      },
+      "PlanConfirmation": {
+        "properties": {
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NormalizationPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PlanConfirmation",
+        "description": "PUT body. `plan: null` confirms the proposed plan as is; a plan replaces it (Corregir)."
+      },
+      "PlanStatus": {
+        "type": "string",
+        "enum": [
+          "proposed",
+          "confirmed"
+        ],
+        "title": "PlanStatus"
+      },
+      "PlanView": {
+        "properties": {
+          "source_kind": {
+            "$ref": "#/components/schemas/SourceKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PlanStatus"
+          },
+          "proposed_by": {
+            "$ref": "#/components/schemas/PlanAuthor"
+          },
+          "sheets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sheets"
+          },
+          "selected_sheet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Sheet"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NormalizationPlan"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` while the file has no usable plan (unreadable or needs a date column)."
+          },
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/ColumnMapping"
+            },
+            "type": "array",
+            "title": "Mappings"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "movement_rules": {
+            "items": {
+              "$ref": "#/components/schemas/MovementRule"
+            },
+            "type": "array",
+            "title": "Movement Rules"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/DataWarning"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "date_column_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/DateColumnCandidate"
+            },
+            "type": "array",
+            "title": "Date Column Candidates",
+            "description": "Plausible date columns, for screen 08b."
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_kind",
+          "status",
+          "proposed_by",
+          "sheets",
+          "selected_sheet",
+          "plan",
+          "mappings",
+          "summary",
+          "movement_rules",
+          "warnings",
+          "date_column_candidates"
+        ],
+        "title": "PlanView"
+      },
+      "Preferences": {
+        "properties": {
+          "theme": {
+            "$ref": "#/components/schemas/Theme"
+          },
+          "locale": {
+            "$ref": "#/components/schemas/Locale"
+          },
+          "time_zone": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Time Zone",
+            "description": "IANA name, for example `America/Lima`."
+          },
+          "assistant_style": {
+            "$ref": "#/components/schemas/AssistantStyle"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "theme",
+          "locale",
+          "time_zone",
+          "assistant_style"
+        ],
+        "title": "Preferences",
+        "description": "PUT replaces the whole object. Also used as the response."
+      },
+      "ProductAnnotation": {
+        "properties": {
+          "start": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Start"
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "End",
+            "description": "Character offsets into `display_text` (Unicode code points, end exclusive)."
+          },
+          "type": {
+            "type": "string",
+            "const": "product",
+            "title": "Type",
+            "default": "product"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "code"
+        ],
+        "title": "ProductAnnotation",
+        "description": "A product mention that opens its detail."
+      },
+      "ProductDetail": {
+        "properties": {
+          "product": {
+            "$ref": "#/components/schemas/ProductRow"
+          },
+          "data_until": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Until"
+          },
+          "today": {
+            "type": "string",
+            "format": "date",
+            "title": "Today"
+          },
+          "purchase": {
+            "$ref": "#/components/schemas/PurchaseRecommendation"
+          },
+          "reliability": {
+            "$ref": "#/components/schemas/ReliabilityDetail"
+          },
+          "without_new_purchase": {
+            "$ref": "#/components/schemas/ProductProjection"
+          },
+          "with_suggested_purchase": {
+            "$ref": "#/components/schemas/ProductProjection",
+            "description": "The suggested quantity (low bound) arriving at the lead time (\"Con compra sugerida\")."
+          }
+        },
+        "type": "object",
+        "required": [
+          "product",
+          "data_until",
+          "today",
+          "purchase",
+          "reliability",
+          "without_new_purchase",
+          "with_suggested_purchase"
+        ],
+        "title": "ProductDetail"
+      },
+      "ProductOverrides": {
+        "properties": {
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 365.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "target_coverage_weeks": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 52.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Coverage Weeks"
+          },
+          "on_order_quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Order Quantity"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProductOverrides",
+        "description": "Per-product values. `null` clears the override and falls back to the run defaults."
+      },
+      "ProductPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProductRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total",
+            "description": "Products matching the filters (\"12\" of \"12 de 142 en foco\")."
+          },
+          "total_unfiltered": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Unfiltered"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total",
+          "total_unfiltered"
+        ],
+        "title": "ProductPage"
+      },
+      "ProductProjection": {
+        "properties": {
+          "weekly": {
+            "items": {
+              "$ref": "#/components/schemas/WeeklyProjectionRow"
+            },
+            "type": "array",
+            "title": "Weekly"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesPoint"
+            },
+            "type": "array",
+            "title": "Series",
+            "description": "History, forecast range and projected stock for the chart."
+          },
+          "stockout_zones": {
+            "items": {
+              "$ref": "#/components/schemas/DateSpan"
+            },
+            "type": "array",
+            "title": "Stockout Zones"
+          },
+          "arrivals": {
+            "items": {
+              "$ref": "#/components/schemas/Arrival"
+            },
+            "type": "array",
+            "title": "Arrivals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "weekly",
+          "series",
+          "stockout_zones",
+          "arrivals"
+        ],
+        "title": "ProductProjection"
+      },
+      "ProductRow": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "uom": {
+            "type": "string",
+            "title": "Uom"
+          },
+          "abc_class": {
+            "$ref": "#/components/schemas/AbcClass"
+          },
+          "typical_demand": {
+            "$ref": "#/components/schemas/ScenarioValues",
+            "description": "Mean weekly demand over the next 4 weeks."
+          },
+          "current_stock": {
+            "type": "number",
+            "title": "Current Stock"
+          },
+          "coverage_weeks": {
+            "$ref": "#/components/schemas/CoverageRange"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/RiskLevel"
+          },
+          "reliability": {
+            "$ref": "#/components/schemas/Reliability"
+          },
+          "stockout_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stockout Date"
+          },
+          "suggested_quantity": {
+            "$ref": "#/components/schemas/QuantityRange"
+          },
+          "suggested_truncated": {
+            "type": "boolean",
+            "title": "Suggested Truncated",
+            "description": "The horizon is shorter than lead time + target coverage, so the figure is partial."
+          },
+          "buy_before": {
+            "$ref": "#/components/schemas/BuyBefore"
+          },
+          "lead_time_days": {
+            "type": "integer",
+            "title": "Lead Time Days"
+          },
+          "lead_time_overridden": {
+            "type": "boolean",
+            "title": "Lead Time Overridden"
+          },
+          "target_coverage_weeks": {
+            "type": "integer",
+            "title": "Target Coverage Weeks"
+          },
+          "on_order_quantity": {
+            "type": "number",
+            "title": "On Order Quantity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "uom",
+          "abc_class",
+          "typical_demand",
+          "current_stock",
+          "coverage_weeks",
+          "risk",
+          "reliability",
+          "stockout_date",
+          "suggested_quantity",
+          "suggested_truncated",
+          "buy_before",
+          "lead_time_days",
+          "lead_time_overridden",
+          "target_coverage_weeks",
+          "on_order_quantity"
+        ],
+        "title": "ProductRow"
+      },
+      "ProductSort": {
+        "type": "string",
+        "enum": [
+          "name",
+          "abc_class",
+          "typical_demand",
+          "current_stock",
+          "coverage",
+          "risk",
+          "suggested_quantity",
+          "buy_before",
+          "lead_time"
+        ],
+        "title": "ProductSort"
+      },
+      "ProfileUpdate": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Name"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProfileUpdate",
+        "description": "PATCH semantics: omitted fields stay, `null` clears `job_title`."
+      },
+      "ProgressPayload": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "progress",
+            "title": "Kind",
+            "default": "progress"
+          },
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Job Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id"
+        ],
+        "title": "ProgressPayload"
+      },
+      "PurchaseRecommendation": {
+        "properties": {
+          "lead_time_days": {
+            "type": "integer",
+            "title": "Lead Time Days"
+          },
+          "target_coverage_weeks": {
+            "type": "integer",
+            "title": "Target Coverage Weeks"
+          },
+          "suggested_quantity": {
+            "$ref": "#/components/schemas/QuantityRange"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "buy_before": {
+            "$ref": "#/components/schemas/BuyBefore"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lead_time_days",
+          "target_coverage_weeks",
+          "suggested_quantity",
+          "truncated",
+          "buy_before"
+        ],
+        "title": "PurchaseRecommendation"
+      },
+      "QuantityMapping": {
+        "properties": {
+          "column": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Column"
+          },
+          "decimal_separator": {
+            "type": "string",
+            "enum": [
+              ".",
+              ","
+            ],
+            "title": "Decimal Separator",
+            "default": "."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "column"
+        ],
+        "title": "QuantityMapping"
+      },
+      "QuantityRange": {
+        "properties": {
+          "low": {
+            "type": "number",
+            "title": "Low"
+          },
+          "high": {
+            "type": "number",
+            "title": "High"
+          }
+        },
+        "type": "object",
+        "required": [
+          "low",
+          "high"
+        ],
+        "title": "QuantityRange",
+        "description": "A low-high range, for example the suggested purchase."
+      },
+      "Reliability": {
+        "type": "string",
+        "enum": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "title": "Reliability"
+      },
+      "ReliabilityDetail": {
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/Reliability"
+          },
+          "method": {
+            "$ref": "#/components/schemas/ForecastMethod"
+          },
+          "history_weeks": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "History Weeks"
+          },
+          "non_censored_weeks": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Non Censored Weeks"
+          },
+          "backtest_error_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backtest Error Pct",
+            "description": "Weekly WAPE from the rolling backtest; `null` without enough history."
+          }
+        },
+        "type": "object",
+        "required": [
+          "level",
+          "method",
+          "history_weeks",
+          "non_censored_weeks",
+          "backtest_error_pct"
+        ],
+        "title": "ReliabilityDetail",
+        "description": "Plain-language reliability plus the technical detail behind \"Ver detalle técnico\"."
+      },
+      "ReliabilityDistribution": {
+        "properties": {
+          "high": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "High"
+          },
+          "medium": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Medium"
+          },
+          "low": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Low"
+          }
+        },
+        "type": "object",
+        "required": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "title": "ReliabilityDistribution"
+      },
+      "ReliabilityKpi": {
+        "properties": {
+          "overall": {
+            "$ref": "#/components/schemas/Reliability"
+          },
+          "distribution": {
+            "$ref": "#/components/schemas/ReliabilityDistribution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "overall",
+          "distribution"
+        ],
+        "title": "ReliabilityKpi"
+      },
+      "ResultPayload": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "result",
+            "title": "Kind",
+            "default": "result"
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id"
+        ],
+        "title": "ResultPayload"
+      },
+      "RiskDistribution": {
+        "properties": {
+          "critical": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Critical"
+          },
+          "medium": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Medium"
+          },
+          "optimal": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Optimal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "critical",
+          "medium",
+          "optimal"
+        ],
+        "title": "RiskDistribution"
+      },
+      "RiskLevel": {
+        "type": "string",
+        "enum": [
+          "critical",
+          "medium",
+          "optimal"
+        ],
+        "title": "RiskLevel"
+      },
+      "RiskThresholds": {
+        "properties": {
+          "critical_margin_weeks": {
+            "type": "number",
+            "maximum": 52.0,
+            "minimum": 0.0,
+            "title": "Critical Margin Weeks",
+            "default": 0.0
+          },
+          "medium_margin_weeks": {
+            "type": "number",
+            "maximum": 52.0,
+            "minimum": 0.0,
+            "title": "Medium Margin Weeks",
+            "default": 2.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RiskThresholds",
+        "description": "Risk bands in weeks above the lead time: critical below `lead + critical_margin`, medium\nbelow `lead + medium_margin`."
+      },
+      "RunKpis": {
+        "properties": {
+          "products_at_risk": {
+            "$ref": "#/components/schemas/FilterLink",
+            "description": "Products with critical risk, with the filter that lists them."
+          },
+          "average_coverage_weeks": {
+            "$ref": "#/components/schemas/CoverageRange",
+            "description": "Mean over products; a product without stockout counts as the horizon (lower bound)."
+          },
+          "reliability": {
+            "$ref": "#/components/schemas/ReliabilityKpi"
+          }
+        },
+        "type": "object",
+        "required": [
+          "products_at_risk",
+          "average_coverage_weeks",
+          "reliability"
+        ],
+        "title": "RunKpis"
+      },
+      "RunParameters": {
+        "properties": {
+          "horizon_weeks": {
+            "type": "integer",
+            "title": "Horizon Weeks"
+          },
+          "granularity": {
+            "$ref": "#/components/schemas/Granularity"
+          },
+          "lead_time_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Lead Time Days",
+            "description": "Default lead time; products can override it."
+          },
+          "target_coverage_weeks": {
+            "type": "integer",
+            "maximum": 52.0,
+            "minimum": 0.0,
+            "title": "Target Coverage Weeks"
+          },
+          "risk_thresholds": {
+            "$ref": "#/components/schemas/RiskThresholds"
+          },
+          "assistant_style": {
+            "$ref": "#/components/schemas/AssistantStyle"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "horizon_weeks",
+          "granularity",
+          "lead_time_days",
+          "target_coverage_weeks",
+          "risk_thresholds",
+          "assistant_style"
+        ],
+        "title": "RunParameters",
+        "description": "Parameters drawer. Also used as the response."
+      },
+      "RunStatus": {
+        "type": "string",
+        "enum": [
+          "building",
+          "ready",
+          "superseded"
+        ],
+        "title": "RunStatus"
+      },
+      "RunSummary": {
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/ForecastRun"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/RunKpis"
+          },
+          "risk_distribution": {
+            "$ref": "#/components/schemas/RiskDistribution"
+          },
+          "total_products": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Products"
+          },
+          "series_by_uom": {
+            "items": {
+              "$ref": "#/components/schemas/UomSeries"
+            },
+            "type": "array",
+            "title": "Series By Uom"
+          },
+          "today": {
+            "type": "string",
+            "format": "date",
+            "title": "Today"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run",
+          "kpis",
+          "risk_distribution",
+          "total_products",
+          "series_by_uom",
+          "today"
+        ],
+        "title": "RunSummary"
+      },
+      "ScenarioValues": {
+        "properties": {
+          "low": {
+            "type": "number",
+            "title": "Low"
+          },
+          "expected": {
+            "type": "number",
+            "title": "Expected"
+          },
+          "high": {
+            "type": "number",
+            "title": "High"
+          }
+        },
+        "type": "object",
+        "required": [
+          "low",
+          "expected",
+          "high"
+        ],
+        "title": "ScenarioValues",
+        "description": "One figure per demand scenario (`low <= expected <= high`)."
+      },
+      "SeriesPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "actual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual"
+          },
+          "censored": {
+            "type": "boolean",
+            "title": "Censored",
+            "description": "The week was affected by a stockout, so `actual` is a lower bound.",
+            "default": false
+          },
+          "expected": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          },
+          "low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low"
+          },
+          "high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High"
+          },
+          "projected_stock": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projected Stock"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date"
+        ],
+        "title": "SeriesPoint",
+        "description": "One chart point. Only the fields that apply to the date are set."
+      },
+      "SheetProfile": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "row_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Row Count"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/ColumnProfile"
+            },
+            "type": "array",
+            "title": "Columns"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "row_count",
+          "columns"
+        ],
+        "title": "SheetProfile"
+      },
+      "SimulationRequest": {
+        "properties": {
+          "lead_time_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 365.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Time Days"
+          },
+          "target_coverage_weeks": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 52.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Coverage Weeks"
+          },
+          "with_purchase": {
+            "type": "boolean",
+            "title": "With Purchase",
+            "default": false
+          },
+          "purchase_quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchase Quantity",
+            "description": "Quantity arriving at the lead time; defaults to the suggested low bound."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SimulationRequest",
+        "description": "What-if over the persisted forecast. Omitted fields keep the product's current values."
+      },
+      "SimulationResult": {
+        "properties": {
+          "product": {
+            "$ref": "#/components/schemas/ProductRow"
+          },
+          "purchase": {
+            "$ref": "#/components/schemas/PurchaseRecommendation"
+          },
+          "projection": {
+            "$ref": "#/components/schemas/ProductProjection"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product",
+          "purchase",
+          "projection"
+        ],
+        "title": "SimulationResult"
+      },
+      "SortOrder": {
+        "type": "string",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "title": "SortOrder"
+      },
+      "SourceKind": {
+        "type": "string",
+        "enum": [
+          "kardex",
+          "tabular"
+        ],
+        "title": "SourceKind"
+      },
+      "StageState": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "active",
+          "done"
+        ],
+        "title": "StageState"
+      },
+      "StopReason": {
+        "type": "string",
+        "enum": [
+          "end_turn",
+          "max_tokens",
+          "refusal",
+          "cancelled"
+        ],
+        "title": "StopReason"
+      },
+      "StreamErrorEvent": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "error",
+            "title": "Event",
+            "default": "error"
+          },
+          "message_key": {
+            "type": "string",
+            "title": "Message Key"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_key",
+          "ref"
+        ],
+        "title": "StreamErrorEvent"
+      },
+      "TextDeltaEvent": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "text.delta",
+            "title": "Event",
+            "default": "text.delta"
+          },
+          "message_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Message Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id",
+          "text"
+        ],
+        "title": "TextDeltaEvent"
+      },
+      "TextMapping": {
+        "properties": {
+          "column": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Column"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "column"
+        ],
+        "title": "TextMapping"
+      },
+      "TextPayload": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "text",
+            "title": "Kind",
+            "default": "text"
+          }
+        },
+        "type": "object",
+        "title": "TextPayload"
+      },
+      "Theme": {
+        "type": "string",
+        "enum": [
+          "light",
+          "dark",
+          "system"
+        ],
+        "title": "Theme"
+      },
+      "TokenUsage": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Output Tokens"
+          },
+          "cache_read_tokens": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Cache Read Tokens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "input_tokens",
+          "output_tokens",
+          "cache_read_tokens"
+        ],
+        "title": "TokenUsage"
+      },
+      "ToolEndEvent": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "tool.end",
+            "title": "Event",
+            "default": "tool.end"
+          },
+          "tool_call_id": {
+            "type": "string",
+            "title": "Tool Call Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool_call_id"
+        ],
+        "title": "ToolEndEvent"
+      },
+      "ToolStartEvent": {
+        "properties": {
+          "event": {
+            "type": "string",
+            "const": "tool.start",
+            "title": "Event",
+            "default": "tool.start"
+          },
+          "tool_call_id": {
+            "type": "string",
+            "title": "Tool Call Id"
+          },
+          "status_key": {
+            "type": "string",
+            "title": "Status Key",
+            "description": "i18n key of the human status line (\"Revisando productos críticos…\")."
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool_call_id",
+          "status_key"
+        ],
+        "title": "ToolStartEvent"
+      },
+      "UnitMapping": {
+        "properties": {
+          "column": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column"
+          },
+          "default": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 1,
+            "title": "Default",
+            "description": "Unit of measure used when the file has no unit column.",
+            "default": "u"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UnitMapping"
+      },
+      "UomSeries": {
+        "properties": {
+          "uom": {
+            "type": "string",
+            "title": "Uom"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesPoint"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uom",
+          "points"
+        ],
+        "title": "UomSeries",
+        "description": "Aggregate series for one unit of measure (units cannot be added together)."
+      },
+      "Upload": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "content_type": {
+            "type": "string",
+            "title": "Content Type"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UploadStatus"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UploadErrorCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sheets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sheets"
+          },
+          "selected_sheet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Sheet"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "uploaded_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "file_name",
+          "size_bytes",
+          "content_type",
+          "status",
+          "error_code",
+          "sheets",
+          "selected_sheet",
+          "profile",
+          "uploaded_at"
+        ],
+        "title": "Upload"
+      },
+      "UploadCompleted": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Conversation Id"
+          },
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Job Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "job_id"
+        ],
+        "title": "UploadCompleted",
+        "description": "Step 2 result: the conversation and its digest job."
+      },
+      "UploadCreate": {
+        "properties": {
+          "file_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "File Name"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Size Bytes"
+          },
+          "content_type": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Content Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "file_name",
+          "size_bytes",
+          "content_type"
+        ],
+        "title": "UploadCreate",
+        "description": "Step 1: ask for a signed upload URL. The browser then uploads the file straight to\nstorage, because Vercel caps request bodies at 4.5 MB."
+      },
+      "UploadErrorCode": {
+        "type": "string",
+        "enum": [
+          "password_protected",
+          "corrupt",
+          "unsupported_format",
+          "empty",
+          "too_large"
+        ],
+        "title": "UploadErrorCode"
+      },
+      "UploadStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "uploaded",
+          "readable",
+          "failed"
+        ],
+        "title": "UploadStatus"
+      },
+      "UploadTicket": {
+        "properties": {
+          "upload_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Upload Id"
+          },
+          "upload_url": {
+            "type": "string",
+            "title": "Upload Url",
+            "description": "Signed URL, valid for a short time."
+          },
+          "method": {
+            "type": "string",
+            "const": "PUT",
+            "title": "Method",
+            "default": "PUT"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Headers",
+            "description": "Headers the browser must send with the upload."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "upload_id",
+          "upload_url",
+          "expires_at"
+        ],
+        "title": "UploadTicket"
+      },
+      "User": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email",
+            "description": "Read-only: comes from the identity provider."
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "company": {
+            "$ref": "#/components/schemas/Company",
+            "description": "Read-only: the tenant the user belongs to (one tenant per user in v1)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "full_name",
+          "job_title",
+          "company"
+        ],
+        "title": "User"
+      },
+      "WarningCode": {
+        "type": "string",
+        "enum": [
+          "short_history",
+          "dropped_rows",
+          "missing_stock",
+          "mixed_units",
+          "stale_data"
+        ],
+        "title": "WarningCode"
+      },
+      "WarningSeverity": {
+        "type": "string",
+        "enum": [
+          "info",
+          "warning"
+        ],
+        "title": "WarningSeverity"
+      },
+      "WeekStatus": {
+        "type": "string",
+        "enum": [
+          "in_stock",
+          "arrival",
+          "stockout"
+        ],
+        "title": "WeekStatus"
+      },
+      "WeeklyProjectionRow": {
+        "properties": {
+          "week": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Week"
+          },
+          "week_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Week Start"
+          },
+          "demand": {
+            "$ref": "#/components/schemas/ScenarioValues"
+          },
+          "projected_stock": {
+            "$ref": "#/components/schemas/ScenarioValues"
+          },
+          "shortfall": {
+            "$ref": "#/components/schemas/ScenarioValues"
+          },
+          "arrival_quantity": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Arrival Quantity"
+          },
+          "status": {
+            "$ref": "#/components/schemas/WeekStatus",
+            "description": "Status under the expected scenario."
+          }
+        },
+        "type": "object",
+        "required": [
+          "week",
+          "week_start",
+          "demand",
+          "projected_stock",
+          "shortfall",
+          "arrival_quantity",
+          "status"
+        ],
+        "title": "WeeklyProjectionRow"
+      },
+      "ChatStreamEvent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MessageStartEvent"
+          },
+          {
+            "$ref": "#/components/schemas/TextDeltaEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ToolStartEvent"
+          },
+          {
+            "$ref": "#/components/schemas/ToolEndEvent"
+          },
+          {
+            "$ref": "#/components/schemas/AnnotationEvent"
+          },
+          {
+            "$ref": "#/components/schemas/MessageEndEvent"
+          },
+          {
+            "$ref": "#/components/schemas/StreamErrorEvent"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "event",
+          "mapping": {
+            "message.start": "#/components/schemas/MessageStartEvent",
+            "text.delta": "#/components/schemas/TextDeltaEvent",
+            "tool.start": "#/components/schemas/ToolStartEvent",
+            "tool.end": "#/components/schemas/ToolEndEvent",
+            "annotation": "#/components/schemas/AnnotationEvent",
+            "message.end": "#/components/schemas/MessageEndEvent",
+            "error": "#/components/schemas/StreamErrorEvent"
+          }
+        },
+        "title": "Response 200 Retry Message"
+      }
+    },
+    "securitySchemes": {
+      "SupabaseJWT": {
+        "type": "http",
+        "description": "Supabase access token. The tenant is resolved server-side from membership.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

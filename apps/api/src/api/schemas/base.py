@@ -17,6 +17,15 @@ class RequestModel(ApiModel):
     model_config = ConfigDict(extra="forbid", use_attribute_docstrings=True)
 
 
+class FieldIssue(ApiModel):
+    """One invalid input. Never echoes the submitted value."""
+
+    field: str
+    """Dotted path inside the request part, for example `risk_thresholds.medium_margin_weeks`."""
+    code: str
+    """Validation rule that failed, for example `string_too_short`."""
+
+
 class ApiError(ApiModel):
     """RFC 9457 problem details. The UI shows `message_key` translated and `ref` as the support
     reference; it never shows `code` or `title`."""
@@ -31,3 +40,5 @@ class ApiError(ApiModel):
     ref: str = Field(min_length=1, max_length=32)
     """Short support reference, also logged with the trace id."""
     request_id: str | None = None
+    fields: list[FieldIssue] = Field(default_factory=list)
+    """Filled for validation errors so forms can mark the fields."""

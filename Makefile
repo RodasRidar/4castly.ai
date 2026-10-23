@@ -1,6 +1,6 @@
 APPS_PY := apps/api apps/worker packages/inventory
 
-.PHONY: install lint format typecheck test check fixtures dev-web dev-api
+.PHONY: install lint format typecheck test check contracts fixtures dev-web dev-api
 
 install:
 	cd apps/web && pnpm install
@@ -21,6 +21,14 @@ test:
 	@for app in $(APPS_PY); do (cd $$app && uv run pytest -q) || exit 1; done
 
 check: lint typecheck test
+
+# OpenAPI -> openapi.json -> apps/web/src/services/http/schema.gen.ts (generated, never hand-edit).
+# openapi-typescript runs through `pnpm dlx` at a pinned version, so web dependencies are untouched.
+OPENAPI_TS := openapi-typescript@7.13.0
+
+contracts:
+	cd apps/api && uv run python -m api.export_openapi --out openapi.json
+	cd apps/web && pnpm dlx $(OPENAPI_TS) ../api/openapi.json --root-types -o src/services/http/schema.gen.ts
 
 # Regenerate the frontend mock fixtures from the formulas package (generated output).
 fixtures:

@@ -10,6 +10,7 @@ from api.schemas import (
     ChatMessage,
     ChatStreamEvent,
     ClarificationAnswers,
+    ConversationUpdate,
     ExportRequest,
     FilePayload,
     ForecastRequest,
@@ -80,6 +81,17 @@ class TestProfileAndPreferences:
             Preferences(
                 theme="sepia", locale="es", time_zone="America/Lima", assistant_style="brief"
             )
+
+
+class TestConversationUpdate:
+    def test_needs_at_least_one_field(self) -> None:
+        with pytest.raises(ValidationError):
+            ConversationUpdate()
+        assert ConversationUpdate(pinned=False).pinned is False
+
+    def test_rejects_blank_titles(self) -> None:
+        with pytest.raises(ValidationError):
+            ConversationUpdate(title="")
 
 
 class TestForecastRequest:

@@ -66,6 +66,11 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"src/api/routers/*.py" = [
+    "ARG001",   # stubs until B4: the parameters are the contract and are not used yet
+    "PLR0913",  # a filtered, sorted, paginated list has many query parameters
+    "PLR0917",  # same
+]
 "tests/**/*.py" = [
     "S101",     # pytest relies on bare asserts
     "PLR2004",  # magic values are fine in expected-value assertions

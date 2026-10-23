@@ -53,3 +53,23 @@ jobs:
       - run: uv run ty check
       # Real TimesFM inference is gated by RUN_TIMESFM and stays skipped in CI.
       - run: uv run pytest -q
+
+  contracts:
+    name: contract drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: cd apps/api && uv sync --locked
+      - run: make contracts
+      # Fails when the Pydantic schemas changed without regenerating openapi.json / schema.gen.ts.
+      - run: git diff --exit-code -- apps/api/openapi.json apps/web/src/services/http/schema.gen.ts
