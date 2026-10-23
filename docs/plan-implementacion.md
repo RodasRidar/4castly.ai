@@ -95,7 +95,7 @@ URL slugs are Spanish because they are user-visible (the brief uses `?vista=port
 | `/historial` | none | full conversation list, search, empty state |
 | `/configuracion/perfil` | Perfil | `pristine`, `dirty` (Descartar / Guardar), `saving`, `saved` (toast), leave-with-changes confirm |
 | `/configuracion/preferencias` | Preferencias | theme, language, time zone; autosave |
-| `/dev/tokens` | none | dev-only token/typography/control-state sheet (Phase 1) |
+| `/dev/tokens` | none | dev-only token/typography/control-state sheet (phase F1) |
 
 Conversation stage machine (`/c/:id`), driven by the backend, never inferred client-side:
 
@@ -293,25 +293,32 @@ Existing tables are kept. Changes are additive except D4 (rename `skus` → `pro
 | `tenant_members` (exists) | Membership + role | |
 | `allowed_emails` | Login allowlist per tenant | `tenant_id`, `email` (citext, unique), `invited_at` |
 | `profiles` | User profile + preferences | `user_id` PK, `full_name`, `job_title` null, `theme` (`light|dark|system`), `locale` (`es|en`), `time_zone`, `assistant_style` (`brief|detailed`) |
-| `conversations` | One forecast thread (sidebar item) | `tenant_id`, `created_by`, `title`, `pinned_at`, `archived_at`, `deleted_at` (soft delete for undo), `stage` (enum from 2.1), `last_activity_at` |
+| `conversations` | One forecast thread (sidebar item) | `tenant_id`, `created_by`, `title`, `pinned_at`, `archived_at`, `deleted_at` (soft delete for undo), `stage` (enum from 2.1 plus `queued`), `current_run_id` null, `last_activity_at` |
 | `uploads` | Uploaded file | `conversation_id`, `storage_path` (Supabase Storage, private bucket), `file_name`, `size_bytes`, `content_type`, `sheets` text[], `selected_sheet`, `profile` jsonb (columns, types, date range, sample), `status`, `error_code` |
 | `normalization_plans` | LLM-proposed then user-confirmed mapping | `upload_id`, `plan` jsonb (versioned schema), `proposed_by` (`llm|user`), `confirmed_at`, `confirmed_by` |
-| `jobs` (replaces `forecast_jobs`, D5) | Digestion and forecast jobs | `kind` (`digest|forecast`), `conversation_id`, `status`, `stage`, `processed`, `total`, `error_ref` (short support code), `params` jsonb, timestamps |
+| `jobs` (replaces `forecast_jobs`, D5) | Digestion and forecast jobs | `tenant_id`, `kind` (`digest|forecast`), `conversation_id`, `status` (`queued|running|succeeded|failed|cancelled`), `stage`, `processed`, `total`, `attempts`, `heartbeat_at`, `cancel_requested`, `traceparent`, `error_ref` (short support code), `params` jsonb, timestamps; partial unique index: one `queued|running` job per conversation |
+| `idempotency_keys` | Replay protection for upload-complete and forecast POSTs | `tenant_id`, `key`, `request_hash`, `response` jsonb, `expires_at` |
+| `rate_limits` | Fixed-window counters per user/tenant and action | `scope`, `window_start`, `count` |
 | `job_events` | Real stage transitions for the stepper | `job_id`, `stage`, `at` |
 | `products` (rename of `skus`) | Product catalog | `code`, `name`, `uom` |
 | `sales` | Normalized demand rows from generic files | `tenant_id`, `upload_id`, `product_id`, `date`, `qty`, `stock` null |
 | `movements` (exists) | Kardex movements | |
 | `demand_series` (exists) | Cleaned series | add `upload_id` |
-| `forecast_runs` | One calculation result per conversation version | `conversation_id`, `job_id`, `data_until`, `horizon_weeks`, `granularity`, `params` jsonb (lead time, risk threshold, defaults_used bool), `created_at` |
+| `forecast_runs` | One calculation result per conversation version | `conversation_id`, `job_id`, `status` (`building|ready|superseded`), `data_until`, `horizon_weeks`, `granularity`, `params` jsonb (lead time, risk threshold, defaults_used bool), `created_at` |
 | `forecasts` (exists) | Per product × period scenarios | add `run_id`; keep `p10/p50/p90` columns internally (jargon is banned in the UI only); `model` stays internal |
 | `run_product_metrics` | Precomputed table row per product | `run_id`, `product_id`, `abc_class`, `typical_weekly_demand`, `current_stock`, `coverage_weeks_low/high`, `risk`, `stockout_date`, `suggested_qty_low/high`, `buy_before`, `reliability` (`high|medium|low`), `reliability_detail` jsonb |
 | `product_overrides` | Per-tenant lead time / target coverage | `tenant_id`, `product_id`, `lead_time_days`, `target_coverage_weeks`, `on_order_qty` |
-| `messages` | Chat | `conversation_id`, `role` (`user|assistant`), `kind` (`text|file|mapping|clarification|progress|result|error`), `content`, `payload` jsonb, `context_product_id` null, `created_at` |
+| `messages` | Chat (append-only, section 7c) | `conversation_id`, `role` (`user|assistant|system`), `kind` (`text|file|mapping|clarification|progress|result|error`), `blocks` jsonb (raw API content blocks, never edited), `display_text` (guarded text shown in the UI), `payload` jsonb (annotations, cards), `status` (`streaming|complete|interrupted|error`), `context_product_id` null, `created_at` |
 | `message_feedback` | Like / dislike | `message_id`, `user_id`, `value` (`up|down`) |
-| `share_links` | "Compartir enlace" | `conversation_id`, `token`, `scope` (D10), `expires_at` |
+
+`share_links` is deferred (section 14): with D10 a share is just the conversation URL, which already requires
+login and the same tenant.
+
+Membership: one tenant per user in v1 (`unique (user_id)` on `tenant_members` and on `allowed_emails.email`).
+Users and tenants are provisioned with a CLI script (`scripts/provision_tenant.py`), not a UI.
 
 | `audit.log_entries` | Row-change audit (append-only) | `id`, `at`, `tenant_id`, `actor_id`, `request_id`, `table_name`, `op` (`INSERT|UPDATE|DELETE`), `row_pk`, `old` jsonb, `new` jsonb, `changed_fields` text[] |
-| `audit.events` | Business audit events | `at`, `tenant_id`, `actor_id`, `request_id`, `action` (`auth.login`, `upload.created`, `plan.confirmed`, `run.recalculated`, `export.created`, `share.created`, `conversation.deleted`, `assistant.feedback`), `target_type`, `target_id`, `metadata` jsonb |
+| `audit.events` | Business audit events | `at`, `tenant_id`, `actor_id`, `request_id`, `action` (`auth.login`, `upload.created`, `plan.confirmed`, `run.recalculated`, `export.created`, `conversation.deleted`, `assistant.feedback`), `target_type`, `target_id`, `metadata` jsonb |
 
 ### Multi-tenancy
 
@@ -330,50 +337,145 @@ started; schema-per-tenant or database-per-tenant are not justified for B2B with
 
 ### Auditing
 
-- One generic trigger function `audit.record_change()` attached to every mutable domain table. It stores the old
+- One generic trigger function `audit.record_change()` attached only to low-volume configuration tables:
+  `conversations`, `normalization_plans`, `product_overrides`, `profiles`, `tenant_members`, `allowed_emails`.
+  Bulk fact tables (`sales`, `movements`, `demand_series`, `forecasts`, `run_product_metrics`) are not
+  row-audited; the worker records one business event per run instead (rows written, run id). It stores the old
   and new row, the changed fields, `auth.uid()` as actor and `current_setting('app.request_id', true)`, so each
   DB change joins to the request logs and traces in Axiom by `request_id`.
 - `audit` schema: `insert` only through the trigger and a `audit.log_event()` function; no `update`/`delete`
   grants to any app role, so entries are immutable from the app.
-- Business events (exports, share links, login, assistant feedback) go to `audit.events` from the API service
+- Business events (exports, login, assistant feedback) go to `audit.events` from the API service
   layer, not from routers.
 - Retention: monthly partitions by `at` once volume justifies it; not in the first migration.
 - Large blobs (file contents, chat text) are not copied into audit rows; only ids and metadata.
 
-RLS: every table carries `tenant_id` and gets select/insert/update policies through `current_tenant_ids()`;
-`profiles` is owner-only; `allowed_emails` is service-role only. Indexes on `(tenant_id, last_activity_at desc)`
-for the sidebar and `(run_id, risk)` / `(run_id, abc_class)` for the filtered table.
+RLS: every table carries `tenant_id` and gets select/insert/update/delete policies through
+`current_tenant_ids()` (0001 only has select placeholders and a TODO); storage policies restrict objects to the
+`tenant_id/` folder; `profiles` is owner-only; `allowed_emails` is service-role only. Indexes on
+`(tenant_id, last_activity_at desc)` for the sidebar and `(run_id, risk)` / `(run_id, abc_class)` for the
+filtered table.
+
+Migration 0002 also: `grant authenticated to app_api` (needed for `set local role authenticated`), drops the
+unused pgmq queue from 0001 (`pgmq.drop_queue('forecast_jobs')`), and renames `skus` to `products`. Because RLS
+filters rows instead of raising `42501` on SELECT, the service layer turns an empty single-row result into 404.
 
 ---
 
 ## 6. Formulas module
 
-Single pure module in the worker domain: `apps/worker/src/worker/domain/inventory.py`, tested with pytest, reused
-by the API (what-if endpoint) and by a fixture generator that writes the frontend mock data (`apps/web/src/services/mock/fixtures/*.json`),
-so mocks are coherent by construction.
+### Location
 
-- `projected_stock[t] = max(0, stock[t-1] - expected_demand[t] + arrivals[t])`
-- `shortfall[t] = max(0, expected_demand[t] - (stock[t-1] + arrivals[t]))`
-- `coverage_weeks = current_stock / typical_weekly_demand`, computed for the low and high scenarios so it is a range
-- `risk`: `critical` if coverage < lead time; `medium` if < lead time + 2 weeks; `optimal` otherwise (thresholds from parameters)
-- `suggested_qty = max(0, expected demand over target coverage + buffer - current_stock - on_order)`
-- `buy_before = stockout_date - lead_time`; if in the past, return `order_today` with `days_without_stock`
-- Projection starts at the file's cut-off date (`data_until`); emit a staleness warning when it is older than today
-- Always ranges, never negative stock
+A pure, dependency-free Python package `packages/inventory` (uv package `castly-inventory`), used by the worker
+and by the API through a path dependency. The API must not depend on `castly-worker`, which would pull Polars,
+statsforecast and TimesFM into the Vercel bundle. Phase B2b verifies that Vercel's Python build resolves a path
+dependency outside `apps/api`; fallback: build the package as a wheel into `apps/api/vendor/` in CI.
 
-Open: definition of `buffer`, ABC basis, reliability thresholds, monthly granularity (D11-D14).
+The same package ships `generate_fixtures` (synthetic tenant: demand series + scenarios → formulas → JSON in
+`apps/web/src/services/mock/fixtures/`), so the frontend mocks are coherent by construction.
+
+### Spec (inputs per product)
+
+All quantities in the product's unit of measure (`uom`), time in ISO weeks starting at the week after
+`data_until`. Lead time is entered in days and converted once: `L = ceil(lead_time_days / 7)` weeks.
+`d_s[t]` is weekly demand for scenario `s ∈ {low, expected, high}` (forecaster output, `low ≤ expected ≤ high`).
+`S0` = stock at `data_until`, `A[t]` = arrivals in week `t` (on-order quantities and, in the "Con compra
+sugerida" view, the suggested order arriving at week `L`), `C` = target coverage weeks.
+
+| Output | Definition |
+|---|---|
+| Projected stock per scenario | `stock_s[0] = S0`; `stock_s[t] = max(0, stock_s[t-1] - d_s[t] + A[t])` |
+| Shortfall per scenario | `short_s[t] = max(0, d_s[t] - (stock_s[t-1] + A[t]))` |
+| Stockout week per scenario | first `t` with `short_s[t] > 0` (none within horizon → "sin quiebre en el horizonte") |
+| Coverage (range) | fractional weeks until stockout: with `t*` the stockout week, `cov_s = (t* - 1) + (stock_s[t*-1] + A[t*]) / d_s[t*]`; under `high` demand it is the lower bound, under `low` demand the upper bound; the expected value is the central figure |
+| Typical weekly demand ("Demanda típica") | mean of `d_expected` over the next 4 weeks, shown as the low–high range of the same window |
+| Risk | from expected coverage `c`: `critical` if `c < L`; `medium` if `c < L + 2`; `optimal` otherwise (thresholds editable in Parámetros) |
+| Suggested quantity (range) | `H = L + C`; low = `max(0, Σ_{t≤H} d_expected[t] - S0 - on_order)`; high = low + buffer, with buffer = `Σ_{t≤L} (d_high[t] - d_expected[t])` (exposure during replenishment, D11) |
+| Buy-before date | `stockout_week_expected - L` (earliest bound from `high`); if already past: `order_today` with `weeks_without_stock` |
+| Staleness | warning when `data_until` is more than 7 days before today |
+
+Worked test vector (goes into the tests verbatim): `S0 = 290`, `d_expected = [310, 300, 320, 310, 300, 310]`,
+`d_high = d_expected + 40`, `L = 2`, `C = 4`, no on-order → stock `[0, 0, 0, …]` from week 1, shortfall
+week 1 = 20, coverage expected = `0 + 290 / 310 ≈ 0.94` weeks (`critical`, since `0.94 < 2`), suggested
+low = `1850 - 290 = 1560`, high = `1560 + 80 = 1640`, buy-before = week `1 - 2` (already past) → `order_today`,
+and an order placed today arrives in week 2, so the product spends about one week without stock.
+
+### Rules that come with it
+
+- Never negative stock; always a range; no figure without its unit.
+- **Minimum history**: under 8 weeks of non-censored history → simple method (mean of observed weeks) and
+  reliability "Baja". A horizon is offered only if the history covers at least twice that horizon (the first
+  client's 37 weeks allow 8 and 12 weeks; 24 is shown disabled with the reason).
+- **Censored weeks** (stockouts, already flagged by `build_demand_frame`) are imputed before fitting, as the
+  worker's cleaning step already supports; they never count as low demand.
+- **ABC** (D12, provisional, see Q5 in section 14): computed within each unit of measure by quantity share
+  (A 80 %, B 15 %, C 5 %), because KG, L and units cannot be added together.
 
 ---
 
-## 7. API contract (outline; OpenAPI written in Phase 7)
+## 6b. Forecaster policy
+
+- **Production v1**: statsforecast AutoETS per product (won the first backtest on the client's Kardex: weekly
+  WAPE 44.5 % vs 53.6 % for TimesFM 3.0, Engram #866). Short history → simple method. Low/expected/high from the
+  model's prediction intervals.
+- **TimesFM 3.0** stays a local experiment only (non-commercial weights, `CLAUDE.md` Licensing). The worker's
+  `timesfm[mlx]` dependency moves to an optional local-only dependency group so the Modal image does not
+  install it.
+- **TimesFM 2.5** (Apache-2.0) or another model can be added behind the `Forecaster` port only after a license
+  check and a backtest win on real data.
+- **Reliability** (D13): from the rolling backtest error per product (same backtest harness), mapped to
+  Alta / Media / Baja with thresholds set from the first backtest; products without enough history are "Baja".
+
+---
+
+## 6c. Ingestion: format detection and digestion
+
+The first client's file is a printed Kardex report (header blocks per article, movement codes 01 sale,
+02 import, 05 customer return, 11 transfer, 99 adjustment). A generic column mapping cannot describe it, so
+digestion detects the format first.
+
+| Step (job, stage shown) | Kardex file | Tabular file (template or similar) |
+|---|---|---|
+| Digest job: "Leyendo archivo" | open with openpyxl read-only + `defusedxml` | same |
+| Digest job: "Identificando columnas" | detect the Kardex signature (article header blocks + movement-code column) → `KardexExcelSource` | build the file profile (columns, types, date range, 5 sample rows of candidate columns only) → LLM proposes a `NormalizationPlan`; deterministic name/type matcher as fallback |
+| Confirmation screen (04) | read-only summary: products found, date range, which movements count as demand (01 sales minus 05 returns) and which are excluded (02, 11, 99) | mapping card with samples; "Corregir" edits the plan |
+| Forecast job: "Limpiando datos" | `build_demand_frame` (censoring, imputation) | execute the plan, then the same cleaning |
+| Forecast job: "Calculando pronóstico" | forecaster + formulas → `forecast_runs`, `run_product_metrics` | same |
+
+The digest job runs in the worker (Modal), so the worker holds the Anthropic key and Langfuse keys as Modal
+secrets. Cleaning never runs before the mapping is confirmed; the stepper shows only the stages of the job that
+is actually running.
+
+`NormalizationPlan` v1 (JSON schema, used as the structured-output schema):
+
+```json
+{
+  "version": 1,
+  "sheet": "Ventas",
+  "header_row": 1,
+  "date": {"column": "Fecha Doc", "format": "dd/mm/yyyy"},
+  "product_code": {"column": "Cod Art"},
+  "product_name": {"column": "Artículo"},
+  "quantity": {"column": "Cant", "decimal_separator": ","},
+  "stock": null,
+  "unit": {"column": null, "default": "u"}
+}
+```
+
+Executor rules: rows without date or product code are dropped and counted (shown as a warning); dates must
+parse with the declared format; quantities parse with the declared separator; duplicate product + date rows
+are summed; negative quantities are treated as returns.
+
+---
+
+## 7. API contract (outline; Pydantic schemas and OpenAPI written in phase B2a, before the mocks, contract-first)
 
 All under `/v1`, Supabase JWT bearer, tenant resolved from membership. Errors are `{code, message_key, ref}`, no
 internal codes shown in the UI.
 
 | Method + path | Purpose |
 |---|---|
-| `POST /auth/otp` | Request magic link + code. Always 202 with the same body (no enumeration) |
-| `POST /auth/verify` | Verify 6-digit code (or done client-side via Supabase, D7) |
+| (auth) | No API endpoints: the web app calls Supabase `signInWithOtp({ shouldCreateUser: false })` and `verifyOtp` directly (D7, S1) |
 | `GET /me` · `PATCH /me` | Profile (name, job title) |
 | `GET /me/preferences` · `PUT /me/preferences` | Theme, locale, time zone, assistant style |
 | `GET /conversations?group=&cursor=` | Sidebar list (pinned, today, week, older) |
@@ -381,7 +483,7 @@ internal codes shown in the UI.
 | `DELETE /conversations/{id}` · `POST /conversations/{id}/restore` | Soft delete + undo |
 | `POST /uploads` | Returns a signed Supabase Storage upload URL + `upload_id` (the browser uploads the file directly; Vercel caps request bodies at 4.5 MB) |
 | `POST /uploads/{id}/complete` | Verifies the object exists, creates conversation + digest job, spawns the worker; returns `{conversation_id, job_id}` |
-| `GET /templates/sales.xlsx` | Template download |
+| `GET /templates/sales.xlsx` | Template download, generated with openpyxl at request time (the repo hooks block committed `*.xlsx`) |
 | `GET /jobs/{id}` · `GET /jobs/{id}/events` (SSE) | Real stages and `processed/total` |
 | `POST /jobs/{id}/cancel` | Cancel digestion |
 | `GET /conversations/{id}/plan` | Detected sheets, mapping, samples, warnings, plausible date columns |
@@ -396,10 +498,9 @@ internal codes shown in the UI.
 | `POST /runs/{id}/exports` | `{format: xlsx, scope: all|selection|product, codes?}` → file |
 | `GET /conversations/{id}/messages` · `POST .../messages` (SSE stream) | Chat; optional `context_product_code` |
 | `POST /messages/{id}/feedback` · `POST /messages/{id}/retry` | Message actions |
-| `POST /conversations/{id}/share` | Share link (D10) |
 
-LLM principles: the LLM only interprets; every number comes from `run_product_metrics` / `forecasts` and is sent as
-a fixed context block; the assistant response is validated so that every figure it cites exists in that context,
+LLM principles: the LLM only interprets; every number comes from `run_product_metrics` / `forecasts` through
+tools and is rendered by reference (section 7c), so the assistant cannot cite a figure that is not there,
 and figures map to filter links (`{type: "filter", risk: "critical", count: 12}`). Normalization is two-step: the
 LLM proposes a JSON plan from the file profile, and the worker executes it deterministically on the full file.
 
@@ -507,8 +608,9 @@ tests, contract test that regenerates OpenAPI and diffs it.
   (`medium` for the chat agent, re-tuned with evals). Forced `tool_choice` is not supported on this model, so
   tools run with `auto` + `strict: true` schemas.
 - Streaming with the official `anthropic` Python SDK (`client.messages.stream`), never an OpenAI-compatible shim.
-- The server-side refusal fallback (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`) is enabled
-  by default on the Claude API.
+- Refusal fallback is opt-in per request: send beta `server-side-fallback-2026-07-01` with `fallbacks: "default"`
+  (Claude API); refusals are still checked via `stop_reason` before reading content.
+- Effort: start the chat route at `low` and the normalization call at `medium`, then tune with evals.
 - Prompt caching: frozen system prompt and tool list first, per-conversation data after the cache breakpoint;
   `usage.cache_read_input_tokens` logged per turn.
 
@@ -520,12 +622,22 @@ The agent is a tool-using loop, owned by us, behind an `AssistantAgent` port (sa
 - **Tools** (all read the persisted run, never compute new forecasts): `get_run_summary`, `find_products`
   (filters: risk, ABC, query), `get_product_detail`, `simulate_purchase` (formulas module), `get_parameters`,
   `explain_reliability`. Every number the assistant may cite comes back from a tool.
-- **Number guard**: after the turn, every figure in the answer is checked against the tool results of that turn.
-  Unknown figures are removed and the turn is logged as a guard hit.
+- **Figures by reference, not by generation**: every tool result returns its figures with ids
+  (`{"id": "f3", "value": 12, "unit": "productos", "filter": {...}}`), including derived values (sums,
+  dates, week counts), so the model never has to compute. The system prompt requires figures to be written as
+  `[[f3]]`. The SSE layer replaces each reference with the exact value formatted for the user's locale (es-PE:
+  `1.355`, `0,9 sem`) before it reaches the browser, and attaches the filter link annotation.
+- **Number guard while streaming**: the stream filter buffers any run of digits the model writes on its own and
+  masks it before forwarding (allowed only: digits inside a `[[ref]]`, and day/month numbers of dates returned
+  by tools). A mask is logged as a guard hit; nothing is shown and later retracted.
 - **Filter links**: figures that correspond to a filter (`12 productos críticos`) are emitted as structured
   annotations so the web app renders them as links that apply the filter.
-- **Context**: conversation scope (run) or product scope (detail drawer); assistant style (brief/detailed) and
-  language come from preferences.
+- **Context**: conversation scope (run) or product scope (detail drawer).
+- **Append-only history** (required on `claude-sonnet-5-5`: editing earlier turns, `system` or `tools` is rejected
+  for newer accounts): `system` and `tools` are frozen per conversation; assistant turns are stored as the raw
+  API content blocks (`messages.blocks`) and replayed unchanged; the guarded text the user sees lives in
+  `messages.display_text`. A recalculated run, a changed assistant style or language is appended as a
+  mid-conversation `role: "system"` message, never by editing what came before.
 - **Normalization plan**: a separate single call with structured outputs (`output_config.format`, JSON schema
   of the plan) over the file profile; not part of the chat agent.
 
@@ -565,8 +677,9 @@ prompt versions and evaluation datasets.
 
 - Ingest over OpenTelemetry: Langfuse exposes an OTLP endpoint (`/api/public/otel`, Basic auth with the project
   keys; self-hosted from v3.22). The Anthropic Python SDK emits GenAI spans natively, so the same OTel setup
-  sends them; a second span processor routes only LLM spans to Langfuse, while Axiom gets them without prompt
-  content.
+  sends them; one span processor exports LLM spans to Langfuse, and the Axiom exporter is wrapped in an
+  attribute-filtering exporter that drops prompt/completion attributes (span processors cannot strip attributes
+  from finished spans).
 - Like / dislike in the chat become Langfuse scores linked to the turn's trace.
 - System prompts versioned in Langfuse prompt management; each generation records the prompt version.
 - Evaluation datasets from real conversations (anonymized) to tune effort and prompts.
@@ -773,9 +886,12 @@ Web (`apps/web`):
 API (`apps/api`, via `uv add`): `sqlalchemy[asyncio]`, `asyncpg`, `anthropic`, `structlog`,
 `opentelemetry-sdk`, `opentelemetry-exporter-otlp-proto-http`, `opentelemetry-instrumentation-fastapi`,
 `opentelemetry-instrumentation-sqlalchemy`, `opentelemetry-instrumentation-httpx`, `langfuse` (scores and prompt
-management), `python-multipart` (uploads), `openpyxl` (Excel export).
+management), `modal` (spawn worker functions), `openpyxl` (template and Excel export). Path dependency on
+`castly-inventory` (section 6).
 
-Worker: `structlog` and the same OpenTelemetry packages; `sqlalchemy` for the shared table definitions.
+Worker: `modal`, `anthropic` (normalization plan), `defusedxml` (S11), `structlog` and the same OpenTelemetry
+packages, `sqlalchemy` for the shared table definitions, path dependency on `castly-inventory`; `timesfm[mlx]`
+moves to a local-only dependency group (section 6b).
 
 ---
 
@@ -823,23 +939,31 @@ Worker: `structlog` and the same OpenTelemetry packages; `sqlalchemy` for the sh
 
 ## 10. Phase plan
 
-The atomic inventory comes before any page.
+Two tracks. The frontend track builds the atomic inventory before any page; the backend track starts with the
+pure formulas package because the mocks depend on it. Every phase ends the same way (brief rule): summary of
+what was done, decisions, doubts, one commit per work unit, and a **stop for approval**.
 
-| Phase | Output | Depends on |
-|---|---|---|
-| 1 | Tailwind v4, Geist, CSS-variable tokens light/dark, theme store, `/dev/tokens` | D2, D3 |
-| 2 | Atoms → molecules → organisms (section 8.3) with tests and the gallery, all states | Phase 1, D22 |
-| 3 | Layout layer: router, RootLayout, AuthLayout, AppLayout (sidebar, menus), ConversationLayout, SettingsLayout, guards, i18n | Phase 2, D7, D20 |
-| 4 | Services port + mock; login, upload, digestion, confirmation, clarification, errors | Phase 3 |
-| 5 | Results, portfolio, product detail; formulas module + fixtures; streaming chat UI against a mock stream | D11-D14, D17 |
-| 6 | Settings + full dark variant review | Phase 3 |
-| 7 | Backend foundation: migration 0002 (tenancy, audit, new tables), SQLAlchemy layer, errors, logging/OTel to Axiom | D4, D5 |
-| 8 | Assistant agent (Sonnet 5.5, tools, number guard, SSE), Langfuse, OpenAPI codegen, http services screen by screen | Phase 7, D21 |
+### Frontend track
 
-Phase 7 (backend foundation) and the formulas module touch no web files, so they can run in parallel with
-phases 1-3.
+| Phase | Output | Acceptance criteria | Depends on |
+|---|---|---|---|
+| F1 Theme | Tailwind v4, Geist, CSS-variable tokens light/dark, theme store, `/dev/tokens` | Both themes render on `/dev/tokens`; text/background pairs pass 4.5:1; lint fails on raw hex or Tailwind palette colors in components; `make check` green | D2, D3 |
+| F2 Atomic components | Atoms → molecules → organisms (8.3) in the gallery, every state | Each component has gallery stories for all states and tests (render, keyboard, accessible name/role); nothing in `ui/` fetches data | F1, D22 |
+| F3 Layouts | Router, Root/Auth/App/Conversation/Settings layouts, guards, i18n (es, en keys), theme store wired to preferences | Sidebar stays mounted across conversations; guards redirect; language switch works; screenshots at 1440 and 390 px | F2 |
+| F4 Entry flow | Login → upload → digestion → confirmation → clarification + error screens, on mock services implementing the generated types | Each frame's states reproducible from fixtures; no violations from 2.3 | F3, B1, B2a |
+| F5 Results | Results, portfolio, product detail, streaming chat UI against a mock SSE stream | Filters drive table, chart and KPIs together; figures rendered by reference; Stop/Retry work | F4 |
+| F6 Settings | Profile, preferences, full dark review of all screens | Dirty/leave-confirm states; every screen checked in dark | F3 |
 
----
+### Backend track (runs in parallel with F1-F3)
+
+| Phase | Output | Acceptance criteria | Depends on |
+|---|---|---|---|
+| B1 Formulas | `packages/inventory` + test vectors (6) + fixture generator | Worked vector and edge cases (no stock, arrivals, no stockout in horizon, short history) pass | - |
+| B2a Contracts | Pydantic schemas for every endpoint in 7, OpenAPI export, `schema.gen.ts`, stub routes returning 501 | CI fails on contract drift | - |
+| B2b Foundation | Migration 0002 (tenancy, RLS for all verbs, storage policies, audit, new tables), SQLAlchemy layer, errors, logging/OTel to Axiom; local Supabase + dev project; custom SMTP; `provision_tenant.py` | RLS tests: zero cross-tenant rows on every table; login works for an invited user | D4, D5 |
+| B3 Worker on Modal | Modal app (image, secrets, volume), digest job (format detection, Kardex route, profile, plan + fallback), forecast job (plan execution, cleaning, AutoETS, formulas, publish run), scheduled re-spawn, reliability from backtest | A synthetic Kardex and a synthetic template file go end to end to a ready run; a killed job is re-spawned | B1, B2b |
+| B4 Real API | Endpoints implemented; web services switched from mock to http screen by screen | Each switched screen passes its F4/F5 checks against the real API | B2a, B2b, B3 |
+| B5 Assistant | Agent loop, tools with figure ids, reference rendering, streaming guard, append-only storage, SSE, Langfuse traces + like/dislike scores | No raw digits reach the browser in an adversarial test set; history replays without edits | B4 |
 
 ## 11. Security, end to end (proposal for review)
 
@@ -861,10 +985,12 @@ Trust boundaries: browser ↔ API, API/worker ↔ Postgres, API/worker ↔ Stora
   Login calls `signInWithOtp` with `shouldCreateUser: false`. A `before user created` auth hook (Postgres
   function, documented by Supabase) rejects any email not in `allowed_emails` as a second line of defense.
   The UI shows the same neutral message whatever happens, so it never reveals whether an email exists.
-- **S2 OTP settings.** 6-digit code. Expiry lowered to 10 minutes (Supabase default `GOTRUE_MAILER_OTP_EXP` is
-  24 h). Minimum interval between emails per address: Supabase defaults to 1 minute, the brief asks for a 30 s
-  resend countdown, so we either set the limit to 30 s or show a 60 s countdown (S-open-1). Custom SMTP
-  provider in production.
+- **S2 OTP settings.** 6-digit code; expiry set explicitly to 10 minutes. Minimum interval between emails per
+  address set to 30 s to match the resend countdown (S-open-1). **Custom SMTP from day one** in every
+  environment a pilot user touches: Supabase's default email service only delivers to the project's team
+  members, at about 2 emails per hour, and is best-effort for non-production use
+  (https://supabase.com/docs/guides/auth/auth-smtp). Custom SMTP is available on the free plan and starts at
+  30 messages per hour (adjustable).
 - **S3 Tokens.** Access token TTL 1 h, refresh token rotation with reuse detection (Supabase defaults). The
   SPA keeps the session in browser storage, so XSS is the main session risk; the strict CSP (S12) is the
   mitigation. "Cerrar sesión" revokes the refresh token.
@@ -881,14 +1007,20 @@ Trust boundaries: browser ↔ API, API/worker ↔ Postgres, API/worker ↔ Stora
   Downloads only through signed URLs valid for 60 s. Originals deleted after a retention period (proposal:
   30 days, S-open-2); derived data stays.
 - **S7 Secrets.** No secrets in the repo (already enforced by hooks). Service-role key and DB passwords only on
-  the server side; the web app gets only the Supabase URL and anon key. Each environment has its own Supabase
+  the server side; the web app gets only the Supabase URL and publishable (anon) key. Each environment has its own Supabase
   project, keys and Axiom/Langfuse datasets. Keys rotated on staff change.
 - **S8 Database roles.** `app_api` (no `BYPASSRLS`, `statement_timeout` 5 s), `app_worker` (bypasses RLS, always
   filters by the job's tenant, longer timeout), migrations applied only by CI with a separate role.
-- **S9 Third parties.** Anthropic receives the file profile (column names, types, a small sample of rows) and
-  aggregated run metrics, never the full file. Langfuse receives prompts and answers (EU region). Axiom receives
-  no client content. This list goes into the privacy policy; data-retention terms with Anthropic and Langfuse are
-  reviewed before the first client (zero data retention can be requested if a client requires it).
+- **S9 Third parties (what actually leaves).**
+  - Anthropic: the file profile (column names, types, up to 5 sample rows of candidate columns only) for the
+    normalization plan; in chat, product codes, product names and per-product figures returned by the tools.
+    Never the full file. Customer/counterparty columns (the Kardex lists about 200 clients) are dropped before
+    any LLM call.
+  - Langfuse (EU): the same prompts, tool results and answers, for tracing and feedback.
+  - Axiom: no client content (attribute-filtering exporter, section 7c).
+  - Before the first client: review Anthropic's and Langfuse's data-processing and retention terms, the
+    client's consent, and cross-border transfer rules for the client's country (unverified; Q3 in section 14).
+    Pseudonymizing product names is possible if the client requires it (Q3).
 - **S10 Offboarding.** Tenant deletion removes rows by cascade and the storage folder; audit rows are kept for
   the legal retention period.
 
@@ -906,7 +1038,8 @@ Trust boundaries: browser ↔ API, API/worker ↔ Postgres, API/worker ↔ Stora
   sort and filter fields from allowlists.
 - **S14 Excel exports.** Cells from user data that start with `=`, `+`, `-`, `@`, tab or carriage return are
   written as text, so a malicious product name cannot run a formula.
-- **S15 Share links.** Tenant-internal only, login required, 128-bit random token, expiry, revocable, audited.
+- **S15 Sharing.** "Compartir enlace" copies the conversation URL; opening it requires login in the same tenant
+  (D10). Token-based share links are deferred (section 14).
 
 ### Assistant (LLM)
 
@@ -955,7 +1088,8 @@ persisted, so they keep working when the assistant, the forecaster or a third pa
 - **R2 Retries.** Up to 3 attempts with exponential backoff for transient errors (DB, network, LLM 429/5xx),
   using Modal's function retries. Deterministic errors (unreadable file, no date column) fail fast with their own
   stage and message, no retry. After the last attempt the job is `failed` with a support `ref`.
-- **R3 Stuck jobs.** Workers write `heartbeat_at`; a Vercel cron (every 5 minutes) re-spawns `queued` jobs that
+- **R3 Stuck jobs.** Workers write `heartbeat_at`; a Modal scheduled function (every 5 minutes; Vercel Hobby crons
+  run at most once a day) re-spawns `queued` jobs that
   were never claimed and `running` jobs whose heartbeat is older than the timeout. Cancellation ("Cancelar" in
   digestion) sets a flag checked between stages.
 - **R4 Per-product isolation.** If one product's forecast fails, it falls back to the baseline model, then to the
@@ -967,14 +1101,14 @@ persisted, so they keep working when the assistant, the forecaster or a third pa
 
 - **R6 Timeouts everywhere.** DB statement timeouts per role, Anthropic client timeout with the SDK's built-in
   retries (429, 5xx, connection errors), outbound HTTP timeouts, upload size and time limits.
-- **R7 Idempotency keys.** `Idempotency-Key` header on upload, forecast, export and chat-message POSTs, stored per
-  tenant for 24 h, so a double click or a network retry never creates two jobs or two answers.
+- **R7 Idempotency keys.** `Idempotency-Key` on upload-complete and forecast POSTs, stored per tenant for 24 h
+  (`idempotency_keys`); one active job per conversation is also a DB constraint. Other POSTs get it after the MVP.
 - **R8 Streaming.** SSE keep-alive comments every 15 s. If the client disconnects mid-answer, generation stops,
   the partial answer is saved as `interrupted`, and the UI offers "Reintentar". Job progress uses SSE with a
   polling fallback (`GET /jobs/{id}` every few seconds).
 - **R9 Health.** `/health/live` (process up) and `/health/ready` (DB reachable). Graceful shutdown:
-  the API drains in-flight requests; the worker finishes its current stage or lets the message become visible
-  again.
+  the API drains in-flight requests; the worker finishes its current stage or leaves the job `running` so the
+  scheduled re-spawn (R3) picks it up.
 
 ### Data
 
@@ -1036,7 +1170,7 @@ tier: requires Workers Paid, and each container is started from a TypeScript Wor
   stuck jobs (section 12, R1-R3). The pgmq queue from `0001_init.sql` is no longer used.
 - **Worker image.** TimesFM weights are downloaded once into a Modal volume, not on each run.
 - **Secrets.** Vercel environment variables (API), Modal secrets (worker), one set per environment; the web app
-  only gets the Supabase URL and anon key.
+  only gets the Supabase URL and publishable (anon) key.
 - **Region.** API region pinned next to the Supabase project's region; Modal region as close as available.
 
 ### Plans and when to upgrade
@@ -1047,3 +1181,77 @@ tier: requires Workers Paid, and each container is started from a TypeScript Wor
 | Supabase | Free (pauses projects after a week of inactivity; no PITR) | Pro + PITR (R10) |
 | Modal | Starter (free monthly credits; confirm the current amount on modal.com) | Stays on usage billing |
 | Langfuse, Axiom | Free tiers | Review volume after the first month |
+
+---
+
+## 14. Independent review (2026-10-23) and refinements
+
+An independent reviewer (Claude Opus 5.5, high effort, clean context: this plan, the repo and the project's
+Engram memory) judged the plan "ready with fixes" for the frontend phases and "not ready" for the backend and
+worker. Findings were spot-checked (repo files, Vercel and Supabase docs) and applied:
+
+| Finding | Applied in |
+|---|---|
+| No worker pipeline phase | 10 (B3) |
+| Production forecaster unnamed; TimesFM 3.0 is non-commercial and pinned as `timesfm[mlx]` | 6b |
+| Printed Kardex report has no ingestion path; digestion order unclear | 6c |
+| Number guard ran after streaming; locale formats | 7c (figures by reference, streaming guard) |
+| Chat history must be append-only on Sonnet 5.5 | 5 (`messages.blocks`), 7c |
+| "uv workspace" did not exist; API would bundle worker deps | 6 (`packages/inventory`) |
+| Vercel Hobby crons run at most daily | 12 R3 (Modal schedule) |
+| Supabase default email only reaches team members | 11 S2 (custom SMTP from day one) |
+| Tables missing columns used by 12 and 13 | 5 |
+| Formulas not testable as written | 6 (spec + worked vector) |
+| Contracts came last; formulas after mocks | 10 (B1, B2a before F4) |
+| Privacy statement did not match the chat design | 11 S9 |
+| Row audit on bulk tables | 5 (audit scope) |
+| Stale pgmq / auth endpoints / committed template / missing deps / role grants | 5, 7, 8.5, 12 |
+
+### Added: environments and delivery
+
+- Environments: local (Supabase CLI), `dev` (Supabase project + Vercel preview + Modal `dev` environment),
+  `prod`. No production data outside `prod`.
+- CI: `make check`, contract drift check, RLS tests against local Supabase. Migrations applied to `dev` and
+  `prod` only by CI. Vercel monorepo projects: web (`apps/web`) and API (`apps/api`, Python 3.12).
+
+### Added: locale and units
+
+- Locale `es-PE` by default: thousands `.`, decimals `,`, dates `dd/mm/aaaa`; `en` uses its own formats.
+- Every quantity shows its product's unit of measure (`kg`, `L`, `u`), never a fixed "u".
+- i18n keys: `feature.screen.element` (for example `results.kpi.atRisk.label`), plurals through i18next.
+
+### Added: exports and retention
+
+- Excel export (D15): one sheet per scope with columns Código, Producto, Unidad, Clase ABC, Demanda típica
+  (rango), Stock actual, Cobertura (rango), Riesgo, Cantidad sugerida (rango), Comprar antes de, Tiempo de
+  reposición; plus a "Parámetros" sheet with the values used. Formula-injection escaping (S14).
+- Deleting a conversation: soft delete with undo for 30 days, then hard delete of its messages, runs and
+  storage objects; audit events kept.
+
+### Added: cost estimate (to measure, not assume)
+
+B3 and B5 record per-run Modal cost and per-turn token usage (input, cached, output) in Langfuse and Axiom. The
+first estimate per tenant is written here after the first real run, instead of guessing now.
+
+### Deferred after the MVP
+
+- `share_links` table (a share is the conversation URL, D10).
+- Row-change audit on bulk tables and audit partitioning.
+- Langfuse prompt management and evaluation datasets (traces and like/dislike scores stay).
+- `/v1/client-logs`, the full Axiom monitor list, trace propagation into Modal.
+- Idempotency keys beyond upload-complete and forecast.
+- Portfolio extras: column picker, export selection, inline lead-time edit, monthly granularity; horizon,
+  granularity and assistant-style controls in the parameters drawer (lead time and risk threshold stay).
+- Product-scoped chat drawer (07c); English content (the i18n setup stays); Playwright visual diffs;
+  schema-drift test; quarterly restore drill; per-tenant token budgets (`max_tokens` and a per-user rate limit
+  stay).
+
+### Questions for the owner
+
+| # | Question | Recommendation |
+|---|---|---|
+| Q1 | Is the pilot with the first client commercial use? Vercel Hobby forbids it and Supabase Free pauses inactive projects | Budget Vercel Pro and Supabase Pro from the pilot |
+| Q2 | v1 ingestion scope: Kardex only, generic template only, or both | Both, Kardex first (it is the client's real file) |
+| Q3 | May product names leave our systems to Anthropic and Langfuse, or must they be pseudonymized? Is written client consent needed? | Send product names (the assistant is useless without them), drop customer names, get written consent |
+| Q4 | statsforecast as the only production forecaster in v1, TimesFM 2.5 only after a backtest win | Yes |
+| Q5 | Mixed units (KG, L, units): ABC per unit of measure, or add a cost/price column | Per unit of measure in v1 |
