@@ -4706,7 +4706,7 @@
                 "type": "null"
               }
             ],
-            "description": "`null` while the file has no usable plan (unreadable or needs a date column)."
+            "description": "`null` for Kardex files (fixed layout, see `movement_rules`) and while no usable plan\nexists (needs a date column)."
           },
           "mappings": {
             "items": {
@@ -5540,7 +5540,7 @@
           "high"
         ],
         "title": "ScenarioValues",
-        "description": "One figure per demand scenario (`low <= expected <= high`)."
+        "description": "One figure per demand scenario. For derived figures such as projected stock, `low` is the\nfigure under low demand, so it is not necessarily the smallest value."
       },
       "SeriesPoint": {
         "properties": {

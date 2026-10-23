@@ -6,5 +6,7 @@ shortfall, coverage, risk, suggested purchase, buy-before date, ABC, history rul
 ```bash
 uv sync
 uv run pytest -q
-uv run python -m inventory.fixtures --out ../../apps/web/src/services/mock/fixtures
+uv run python -m inventory.fixtures --out /tmp/inventory-dataset   # neutral dataset, for inspection
 ```
+
+The web mock fixtures are contract-shaped and built from this dataset by `apps/api` (`make fixtures`).

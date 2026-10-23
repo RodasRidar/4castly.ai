@@ -1,0 +1,1471 @@
+{
+ "run": {
+  "id": "b3984a50-ec9f-5ff8-acdc-763d348729cf",
+  "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+  "status": "ready",
+  "data_until": "2026-10-18",
+  "parameters": {
+   "horizon_weeks": 12,
+   "granularity": "weekly",
+   "lead_time_days": 30,
+   "target_coverage_weeks": 4,
+   "risk_thresholds": {
+    "critical_margin_weeks": 0.0,
+    "medium_margin_weeks": 2.0
+   },
+   "assistant_style": "brief"
+  },
+  "defaults_used": [],
+  "stale": false,
+  "created_at": "2026-10-23T08:45:00-05:00"
+ },
+ "kpis": {
+  "products_at_risk": {
+   "q": null,
+   "risk": "critical",
+   "abc": null,
+   "count": 7
+  },
+  "average_coverage_weeks": {
+   "lower": 4.56,
+   "expected": 5.91,
+   "upper": 8.17
+  },
+  "reliability": {
+   "overall": "low",
+   "distribution": {
+    "high": 8,
+    "medium": 9,
+    "low": 9
+   }
+  }
+ },
+ "risk_distribution": {
+  "critical": 7,
+  "medium": 9,
+  "optimal": 10
+ },
+ "total_products": 26,
+ "series_by_uom": [
+  {
+   "uom": "L",
+   "points": [
+    {
+     "date": "2026-01-12",
+     "actual": 3615.9,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-01-19",
+     "actual": 3414.3,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-01-26",
+     "actual": 3909.5,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-02",
+     "actual": 4016.7,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-09",
+     "actual": 4027.0,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-16",
+     "actual": 3689.9,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-23",
+     "actual": 3392.7,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-02",
+     "actual": 3126.0,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-09",
+     "actual": 3289.4,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-16",
+     "actual": 3970.2,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-23",
+     "actual": 3793.5,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-30",
+     "actual": 3525.1,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-06",
+     "actual": 4422.8,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-13",
+     "actual": 3865.7,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-20",
+     "actual": 3859.6,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-27",
+     "actual": 4339.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-04",
+     "actual": 4106.3,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-11",
+     "actual": 3834.5,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-18",
+     "actual": 3762.0,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-25",
+     "actual": 4075.5,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-01",
+     "actual": 4971.8,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-08",
+     "actual": 4252.7,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-15",
+     "actual": 4333.3,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-22",
+     "actual": 3057.9,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-29",
+     "actual": 3787.6,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-06",
+     "actual": 4578.1,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-13",
+     "actual": 5109.3,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-20",
+     "actual": 4525.0,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-27",
+     "actual": 4478.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-03",
+     "actual": 5388.7,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-10",
+     "actual": 4309.5,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-17",
+     "actual": 3703.9,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-24",
+     "actual": 4894.0,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-31",
+     "actual": 3790.2,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-07",
+     "actual": 4410.3,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-14",
+     "actual": 3866.9,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-21",
+     "actual": 4011.8,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-28",
+     "actual": 4369.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-05",
+     "actual": 4307.4,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-12",
+     "actual": 4866.3,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-19",
+     "actual": null,
+     "censored": false,
+     "expected": 4069.8,
+     "low": 3020.8,
+     "high": 5119.0,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-26",
+     "actual": null,
+     "censored": false,
+     "expected": 4015.3,
+     "low": 2924.8,
+     "high": 5105.9,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-02",
+     "actual": null,
+     "censored": false,
+     "expected": 3963.0,
+     "low": 2831.0,
+     "high": 5095.2,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-09",
+     "actual": null,
+     "censored": false,
+     "expected": 3913.7,
+     "low": 2740.2,
+     "high": 5087.4,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-16",
+     "actual": null,
+     "censored": false,
+     "expected": 3868.2,
+     "low": 2653.1,
+     "high": 5083.3,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-23",
+     "actual": null,
+     "censored": false,
+     "expected": 3827.0,
+     "low": 2570.5,
+     "high": 5083.4,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-30",
+     "actual": null,
+     "censored": false,
+     "expected": 3790.9,
+     "low": 2493.0,
+     "high": 5088.6,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-07",
+     "actual": null,
+     "censored": false,
+     "expected": 3760.0,
+     "low": 2421.0,
+     "high": 5099.6,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-14",
+     "actual": null,
+     "censored": false,
+     "expected": 3735.2,
+     "low": 2354.6,
+     "high": 5116.2,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-21",
+     "actual": null,
+     "censored": false,
+     "expected": 3716.9,
+     "low": 2294.8,
+     "high": 5139.1,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-28",
+     "actual": null,
+     "censored": false,
+     "expected": 3705.2,
+     "low": 2241.4,
+     "high": 5168.8,
+     "projected_stock": null
+    },
+    {
+     "date": "2027-01-04",
+     "actual": null,
+     "censored": false,
+     "expected": 3700.0,
+     "low": 2195.0,
+     "high": 5205.1,
+     "projected_stock": null
+    }
+   ]
+  },
+  {
+   "uom": "kg",
+   "points": [
+    {
+     "date": "2026-01-12",
+     "actual": 6062.6,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-01-19",
+     "actual": 6887.0,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-01-26",
+     "actual": 6251.8,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-02",
+     "actual": 5573.5,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-09",
+     "actual": 5572.0,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-16",
+     "actual": 6213.5,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-23",
+     "actual": 6012.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-02",
+     "actual": 5591.7,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-09",
+     "actual": 4956.1,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-16",
+     "actual": 5454.5,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-23",
+     "actual": 5777.6,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-30",
+     "actual": 5393.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-06",
+     "actual": 5687.4,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-13",
+     "actual": 5170.8,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-20",
+     "actual": 5357.7,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-27",
+     "actual": 4741.7,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-04",
+     "actual": 4653.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-11",
+     "actual": 5293.1,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-18",
+     "actual": 5282.8,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-25",
+     "actual": 4765.6,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-01",
+     "actual": 5498.8,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-08",
+     "actual": 5089.3,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-15",
+     "actual": 5420.6,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-22",
+     "actual": 4696.8,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-29",
+     "actual": 5475.6,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-06",
+     "actual": 4510.4,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-13",
+     "actual": 5226.5,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-20",
+     "actual": 6169.9,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-27",
+     "actual": 5879.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-03",
+     "actual": 5651.0,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-10",
+     "actual": 5776.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-17",
+     "actual": 5376.5,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-24",
+     "actual": 5213.2,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-31",
+     "actual": 4310.0,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-07",
+     "actual": 5143.9,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-14",
+     "actual": 6048.0,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-21",
+     "actual": 6263.2,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-28",
+     "actual": 5000.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-05",
+     "actual": 6117.1,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-12",
+     "actual": 6124.0,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-19",
+     "actual": null,
+     "censored": false,
+     "expected": 6083.5,
+     "low": 4689.6,
+     "high": 7477.4,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-26",
+     "actual": null,
+     "censored": false,
+     "expected": 6138.6,
+     "low": 4689.3,
+     "high": 7588.1,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-02",
+     "actual": null,
+     "censored": false,
+     "expected": 6187.4,
+     "low": 4682.5,
+     "high": 7692.1,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-09",
+     "actual": null,
+     "censored": false,
+     "expected": 6229.1,
+     "low": 4668.7,
+     "high": 7789.3,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-16",
+     "actual": null,
+     "censored": false,
+     "expected": 6263.0,
+     "low": 4647.4,
+     "high": 7878.9,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-23",
+     "actual": null,
+     "censored": false,
+     "expected": 6288.8,
+     "low": 4617.4,
+     "high": 7960.0,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-30",
+     "actual": null,
+     "censored": false,
+     "expected": 6305.9,
+     "low": 4579.1,
+     "high": 8032.8,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-07",
+     "actual": null,
+     "censored": false,
+     "expected": 6314.4,
+     "low": 4532.1,
+     "high": 8096.5,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-14",
+     "actual": null,
+     "censored": false,
+     "expected": 6313.9,
+     "low": 4476.2,
+     "high": 8151.5,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-21",
+     "actual": null,
+     "censored": false,
+     "expected": 6304.4,
+     "low": 4411.3,
+     "high": 8197.5,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-28",
+     "actual": null,
+     "censored": false,
+     "expected": 6286.0,
+     "low": 4337.6,
+     "high": 8234.8,
+     "projected_stock": null
+    },
+    {
+     "date": "2027-01-04",
+     "actual": null,
+     "censored": false,
+     "expected": 6259.3,
+     "low": 4255.1,
+     "high": 8263.4,
+     "projected_stock": null
+    }
+   ]
+  },
+  {
+   "uom": "u",
+   "points": [
+    {
+     "date": "2026-01-12",
+     "actual": 16390.1,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-01-19",
+     "actual": 15503.2,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-01-26",
+     "actual": 14302.7,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-02",
+     "actual": 16551.1,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-09",
+     "actual": 19337.3,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-16",
+     "actual": 19047.8,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-02-23",
+     "actual": 15162.8,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-02",
+     "actual": 15184.2,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-09",
+     "actual": 17642.1,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-16",
+     "actual": 15050.0,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-23",
+     "actual": 17626.9,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-03-30",
+     "actual": 14967.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-06",
+     "actual": 14973.1,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-13",
+     "actual": 14971.6,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-20",
+     "actual": 17413.9,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-04-27",
+     "actual": 15845.6,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-04",
+     "actual": 16088.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-11",
+     "actual": 15432.7,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-18",
+     "actual": 15507.1,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-05-25",
+     "actual": 12652.9,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-01",
+     "actual": 12969.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-08",
+     "actual": 11994.5,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-15",
+     "actual": 15747.9,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-22",
+     "actual": 15279.3,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-06-29",
+     "actual": 15280.9,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-06",
+     "actual": 11375.6,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-13",
+     "actual": 13896.6,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-20",
+     "actual": 13815.7,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-07-27",
+     "actual": 10917.9,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-03",
+     "actual": 9108.5,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-10",
+     "actual": 10820.6,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-17",
+     "actual": 12881.2,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-24",
+     "actual": 12791.5,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-08-31",
+     "actual": 11540.2,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-07",
+     "actual": 14651.3,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-14",
+     "actual": 12125.9,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-21",
+     "actual": 11800.5,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-09-28",
+     "actual": 12058.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-05",
+     "actual": 12318.7,
+     "censored": true,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-12",
+     "actual": 14818.4,
+     "censored": false,
+     "expected": null,
+     "low": null,
+     "high": null,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-19",
+     "actual": null,
+     "censored": false,
+     "expected": 14000.9,
+     "low": 9565.4,
+     "high": 18436.2,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-10-26",
+     "actual": null,
+     "censored": false,
+     "expected": 14195.9,
+     "low": 9587.5,
+     "high": 18804.6,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-02",
+     "actual": null,
+     "censored": false,
+     "expected": 14404.3,
+     "low": 9622.5,
+     "high": 19186.3,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-09",
+     "actual": null,
+     "censored": false,
+     "expected": 14622.6,
+     "low": 9667.5,
+     "high": 19577.8,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-16",
+     "actual": null,
+     "censored": false,
+     "expected": 14847.6,
+     "low": 9719.2,
+     "high": 19976.1,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-23",
+     "actual": null,
+     "censored": false,
+     "expected": 15076.2,
+     "low": 9774.3,
+     "high": 20378.0,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-11-30",
+     "actual": null,
+     "censored": false,
+     "expected": 15305.0,
+     "low": 9830.1,
+     "high": 20780.2,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-07",
+     "actual": null,
+     "censored": false,
+     "expected": 15530.9,
+     "low": 9882.4,
+     "high": 21179.1,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-14",
+     "actual": null,
+     "censored": false,
+     "expected": 15750.0,
+     "low": 9928.3,
+     "high": 21571.5,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-21",
+     "actual": null,
+     "censored": false,
+     "expected": 15959.5,
+     "low": 9964.8,
+     "high": 21954.5,
+     "projected_stock": null
+    },
+    {
+     "date": "2026-12-28",
+     "actual": null,
+     "censored": false,
+     "expected": 16156.6,
+     "low": 9988.4,
+     "high": 22324.6,
+     "projected_stock": null
+    },
+    {
+     "date": "2027-01-04",
+     "actual": null,
+     "censored": false,
+     "expected": 16337.8,
+     "low": 9996.5,
+     "high": 22679.3,
+     "projected_stock": null
+    }
+   ]
+  }
+ ],
+ "today": "2026-10-23"
+}

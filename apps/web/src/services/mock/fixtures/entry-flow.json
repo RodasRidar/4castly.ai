@@ -1,0 +1,635 @@
+{
+ "upload_ticket": {
+  "upload_id": "ddeda705-d060-5d38-98b2-e16d5cef0129",
+  "upload_url": "https://storage.example.invalid/object/upload/sign/uploads/mock?token=mock",
+  "method": "PUT",
+  "headers": {
+   "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  },
+  "expires_at": "2026-10-23T09:40:00-05:00"
+ },
+ "upload_completed": {
+  "conversation_id": "613ff002-83a2-53bd-bce4-8cd093092263",
+  "job_id": "f29c7d55-4994-50e7-bc4f-26527daf9170"
+ },
+ "jobs": {
+  "digest_running": {
+   "id": "aec141e2-4e8a-50fc-b681-9d82ce4bbec8",
+   "kind": "digest",
+   "status": "running",
+   "conversation_id": "1c83c75b-dc59-5910-a286-b7d4f2b7d931",
+   "stage": "identifying_columns",
+   "stages": [
+    {
+     "stage": "reading_file",
+     "state": "done"
+    },
+    {
+     "stage": "identifying_columns",
+     "state": "active"
+    },
+    {
+     "stage": "ready",
+     "state": "pending"
+    }
+   ],
+   "processed": null,
+   "total": null,
+   "cancel_requested": false,
+   "error_ref": null,
+   "created_at": "2026-10-23T09:22:00-05:00",
+   "finished_at": null
+  },
+  "digest_succeeded": {
+   "id": "dd022b17-08fc-5b29-9e94-ab7653481ddb",
+   "kind": "digest",
+   "status": "succeeded",
+   "conversation_id": "1c83c75b-dc59-5910-a286-b7d4f2b7d931",
+   "stage": null,
+   "stages": [
+    {
+     "stage": "reading_file",
+     "state": "done"
+    },
+    {
+     "stage": "identifying_columns",
+     "state": "done"
+    },
+    {
+     "stage": "ready",
+     "state": "done"
+    }
+   ],
+   "processed": null,
+   "total": null,
+   "cancel_requested": false,
+   "error_ref": null,
+   "created_at": "2026-10-23T09:22:00-05:00",
+   "finished_at": "2026-10-23T09:28:00-05:00"
+  },
+  "digest_cancelled": {
+   "id": "86d3f5b8-dd10-56a9-beb5-aaa85e028b82",
+   "kind": "digest",
+   "status": "cancelled",
+   "conversation_id": "1c83c75b-dc59-5910-a286-b7d4f2b7d931",
+   "stage": null,
+   "stages": [
+    {
+     "stage": "reading_file",
+     "state": "done"
+    },
+    {
+     "stage": "identifying_columns",
+     "state": "pending"
+    },
+    {
+     "stage": "ready",
+     "state": "pending"
+    }
+   ],
+   "processed": null,
+   "total": null,
+   "cancel_requested": false,
+   "error_ref": null,
+   "created_at": "2026-10-23T09:22:00-05:00",
+   "finished_at": "2026-10-23T09:28:00-05:00"
+  },
+  "digest_failed": {
+   "id": "99571e22-e9ea-57ef-8e7e-c209614d4837",
+   "kind": "digest",
+   "status": "failed",
+   "conversation_id": "1c83c75b-dc59-5910-a286-b7d4f2b7d931",
+   "stage": null,
+   "stages": [
+    {
+     "stage": "reading_file",
+     "state": "done"
+    },
+    {
+     "stage": "identifying_columns",
+     "state": "pending"
+    },
+    {
+     "stage": "ready",
+     "state": "pending"
+    }
+   ],
+   "processed": null,
+   "total": null,
+   "cancel_requested": false,
+   "error_ref": "K7Q2WX",
+   "created_at": "2026-10-23T09:22:00-05:00",
+   "finished_at": "2026-10-23T09:28:00-05:00"
+  },
+  "forecast_running": {
+   "id": "33a34c9a-d64f-5b06-ae92-0abe6c0ed83e",
+   "kind": "forecast",
+   "status": "running",
+   "conversation_id": "1f17e33b-9af2-505c-839c-3635dd414f56",
+   "stage": "calculating_forecast",
+   "stages": [
+    {
+     "stage": "cleaning_data",
+     "state": "done"
+    },
+    {
+     "stage": "calculating_forecast",
+     "state": "active"
+    },
+    {
+     "stage": "ready",
+     "state": "pending"
+    }
+   ],
+   "processed": 14,
+   "total": 26,
+   "cancel_requested": false,
+   "error_ref": null,
+   "created_at": "2026-10-23T09:22:00-05:00",
+   "finished_at": null
+  },
+  "forecast_succeeded": {
+   "id": "e32bad6f-91a1-56cb-b273-dd40f4fe05a5",
+   "kind": "forecast",
+   "status": "succeeded",
+   "conversation_id": "1f17e33b-9af2-505c-839c-3635dd414f56",
+   "stage": null,
+   "stages": [
+    {
+     "stage": "cleaning_data",
+     "state": "done"
+    },
+    {
+     "stage": "calculating_forecast",
+     "state": "done"
+    },
+    {
+     "stage": "ready",
+     "state": "done"
+    }
+   ],
+   "processed": null,
+   "total": null,
+   "cancel_requested": false,
+   "error_ref": null,
+   "created_at": "2026-10-23T09:22:00-05:00",
+   "finished_at": "2026-10-23T09:28:00-05:00"
+  },
+  "forecast_failed": {
+   "id": "3b1bea34-b9b7-51eb-9ec3-2e2da72f9860",
+   "kind": "forecast",
+   "status": "failed",
+   "conversation_id": "1f17e33b-9af2-505c-839c-3635dd414f56",
+   "stage": null,
+   "stages": [
+    {
+     "stage": "cleaning_data",
+     "state": "done"
+    },
+    {
+     "stage": "calculating_forecast",
+     "state": "pending"
+    },
+    {
+     "stage": "ready",
+     "state": "pending"
+    }
+   ],
+   "processed": null,
+   "total": null,
+   "cancel_requested": false,
+   "error_ref": "K7Q2WX",
+   "created_at": "2026-10-23T09:22:00-05:00",
+   "finished_at": "2026-10-23T09:28:00-05:00"
+  }
+ },
+ "plans": {
+  "kardex_proposed": {
+   "source_kind": "kardex",
+   "status": "proposed",
+   "proposed_by": "rules",
+   "sheets": [
+    "Kardex"
+   ],
+   "selected_sheet": "Kardex",
+   "plan": null,
+   "mappings": [],
+   "summary": {
+    "products_found": 26,
+    "date_from": "2026-01-12",
+    "date_to": "2026-10-18",
+    "history_weeks": 40,
+    "rows_read": 4812,
+    "rows_dropped": 3
+   },
+   "movement_rules": [
+    {
+     "code": "01",
+     "label": "Venta",
+     "treatment": "demand"
+    },
+    {
+     "code": "05",
+     "label": "Devolución de cliente",
+     "treatment": "return"
+    },
+    {
+     "code": "02",
+     "label": "Importación",
+     "treatment": "excluded"
+    },
+    {
+     "code": "11",
+     "label": "Transferencia",
+     "treatment": "excluded"
+    },
+    {
+     "code": "99",
+     "label": "Ajuste",
+     "treatment": "excluded"
+    }
+   ],
+   "warnings": [
+    {
+     "code": "short_history",
+     "severity": "warning",
+     "count": 3,
+     "params": {}
+    }
+   ],
+   "date_column_candidates": []
+  },
+  "tabular_proposed": {
+   "source_kind": "tabular",
+   "status": "proposed",
+   "proposed_by": "llm",
+   "sheets": [
+    "Ventas",
+    "Resumen"
+   ],
+   "selected_sheet": "Ventas",
+   "plan": {
+    "version": 1,
+    "sheet": "Ventas",
+    "header_row": 1,
+    "date": {
+     "column": "Fecha Doc",
+     "format": "dd/mm/yyyy"
+    },
+    "product_code": {
+     "column": "Cod Art"
+    },
+    "product_name": {
+     "column": "Artículo"
+    },
+    "quantity": {
+     "column": "Cant",
+     "decimal_separator": ","
+    },
+    "stock": null,
+    "unit": {
+     "column": null,
+     "default": "u"
+    }
+   },
+   "mappings": [
+    {
+     "field": "date",
+     "column": "Fecha Doc",
+     "required": true,
+     "samples": [
+      "12/01/2026",
+      "13/01/2026"
+     ],
+     "detail": "dd/mm/yyyy"
+    },
+    {
+     "field": "product_code",
+     "column": "Cod Art",
+     "required": true,
+     "samples": [
+      "QF-0001",
+      "QF-0002",
+      "QF-0003"
+     ],
+     "detail": null
+    },
+    {
+     "field": "product_name",
+     "column": "Artículo",
+     "required": false,
+     "samples": [
+      "Ácido cítrico anhidro",
+      "Glicerina vegetal USP"
+     ],
+     "detail": null
+    },
+    {
+     "field": "quantity",
+     "column": "Cant",
+     "required": true,
+     "samples": [
+      "1.850,5",
+      "320"
+     ],
+     "detail": "decimal ,"
+    },
+    {
+     "field": "stock",
+     "column": null,
+     "required": false,
+     "samples": [],
+     "detail": null
+    },
+    {
+     "field": "unit",
+     "column": null,
+     "required": false,
+     "samples": [],
+     "detail": null
+    }
+   ],
+   "summary": {
+    "products_found": 26,
+    "date_from": "2026-01-12",
+    "date_to": "2026-10-18",
+    "history_weeks": 40,
+    "rows_read": 4812,
+    "rows_dropped": 3
+   },
+   "movement_rules": [],
+   "warnings": [
+    {
+     "code": "short_history",
+     "severity": "warning",
+     "count": 3,
+     "params": {}
+    },
+    {
+     "code": "dropped_rows",
+     "severity": "info",
+     "count": 3,
+     "params": {}
+    },
+    {
+     "code": "missing_stock",
+     "severity": "info",
+     "count": null,
+     "params": {}
+    }
+   ],
+   "date_column_candidates": []
+  },
+  "tabular_confirmed": {
+   "source_kind": "tabular",
+   "status": "confirmed",
+   "proposed_by": "user",
+   "sheets": [
+    "Ventas",
+    "Resumen"
+   ],
+   "selected_sheet": "Ventas",
+   "plan": {
+    "version": 1,
+    "sheet": "Ventas",
+    "header_row": 1,
+    "date": {
+     "column": "Fecha Doc",
+     "format": "dd/mm/yyyy"
+    },
+    "product_code": {
+     "column": "Cod Art"
+    },
+    "product_name": {
+     "column": "Artículo"
+    },
+    "quantity": {
+     "column": "Cant",
+     "decimal_separator": ","
+    },
+    "stock": null,
+    "unit": {
+     "column": null,
+     "default": "u"
+    }
+   },
+   "mappings": [
+    {
+     "field": "date",
+     "column": "Fecha Doc",
+     "required": true,
+     "samples": [
+      "12/01/2026",
+      "13/01/2026"
+     ],
+     "detail": "dd/mm/yyyy"
+    },
+    {
+     "field": "product_code",
+     "column": "Cod Art",
+     "required": true,
+     "samples": [
+      "QF-0001",
+      "QF-0002",
+      "QF-0003"
+     ],
+     "detail": null
+    },
+    {
+     "field": "product_name",
+     "column": "Artículo",
+     "required": false,
+     "samples": [
+      "Ácido cítrico anhidro",
+      "Glicerina vegetal USP"
+     ],
+     "detail": null
+    },
+    {
+     "field": "quantity",
+     "column": "Cant",
+     "required": true,
+     "samples": [
+      "1.850,5",
+      "320"
+     ],
+     "detail": "decimal ,"
+    },
+    {
+     "field": "stock",
+     "column": null,
+     "required": false,
+     "samples": [],
+     "detail": null
+    },
+    {
+     "field": "unit",
+     "column": null,
+     "required": false,
+     "samples": [],
+     "detail": null
+    }
+   ],
+   "summary": {
+    "products_found": 26,
+    "date_from": "2026-01-12",
+    "date_to": "2026-10-18",
+    "history_weeks": 40,
+    "rows_read": 4812,
+    "rows_dropped": 3
+   },
+   "movement_rules": [],
+   "warnings": [
+    {
+     "code": "short_history",
+     "severity": "warning",
+     "count": 3,
+     "params": {}
+    },
+    {
+     "code": "dropped_rows",
+     "severity": "info",
+     "count": 3,
+     "params": {}
+    },
+    {
+     "code": "missing_stock",
+     "severity": "info",
+     "count": null,
+     "params": {}
+    }
+   ],
+   "date_column_candidates": []
+  },
+  "needs_date_column": {
+   "source_kind": "tabular",
+   "status": "proposed",
+   "proposed_by": "rules",
+   "sheets": [
+    "Stock"
+   ],
+   "selected_sheet": "Stock",
+   "plan": null,
+   "mappings": [
+    {
+     "field": "date",
+     "column": null,
+     "required": true,
+     "samples": [],
+     "detail": null
+    }
+   ],
+   "summary": null,
+   "movement_rules": [],
+   "warnings": [],
+   "date_column_candidates": [
+    {
+     "column": "Periodo",
+     "samples": [
+      "2026-01",
+      "2026-02",
+      "2026-03"
+     ]
+    },
+    {
+     "column": "Emisión",
+     "samples": [
+      "12/01/2026",
+      "20/01/2026"
+     ]
+    }
+   ]
+  }
+ },
+ "clarification": {
+  "kind": "clarification",
+  "questions": [
+   {
+    "id": "lead_time_days",
+    "options": [
+     {
+      "value": "7",
+      "label_key": "clarification.leadTime.days7"
+     },
+     {
+      "value": "14",
+      "label_key": "clarification.leadTime.days14"
+     },
+     {
+      "value": "30",
+      "label_key": "clarification.leadTime.days30"
+     }
+    ],
+    "allows_other": true
+   },
+   {
+    "id": "had_stockouts",
+    "options": [
+     {
+      "value": "yes",
+      "label_key": "clarification.stockouts.yes"
+     },
+     {
+      "value": "no",
+      "label_key": "clarification.stockouts.no"
+     },
+     {
+      "value": "unknown",
+      "label_key": "clarification.stockouts.unknown"
+     }
+    ],
+    "allows_other": false
+   }
+  ],
+  "answers": null
+ },
+ "clarification_answered": {
+  "kind": "clarification",
+  "questions": [
+   {
+    "id": "lead_time_days",
+    "options": [
+     {
+      "value": "7",
+      "label_key": "clarification.leadTime.days7"
+     },
+     {
+      "value": "14",
+      "label_key": "clarification.leadTime.days14"
+     },
+     {
+      "value": "30",
+      "label_key": "clarification.leadTime.days30"
+     }
+    ],
+    "allows_other": true
+   },
+   {
+    "id": "had_stockouts",
+    "options": [
+     {
+      "value": "yes",
+      "label_key": "clarification.stockouts.yes"
+     },
+     {
+      "value": "no",
+      "label_key": "clarification.stockouts.no"
+     },
+     {
+      "value": "unknown",
+      "label_key": "clarification.stockouts.unknown"
+     }
+    ],
+    "allows_other": false
+   }
+  ],
+  "answers": {
+   "lead_time_days": 30,
+   "had_stockouts": "no"
+  }
+ },
+ "forecast_accepted": {
+  "job_id": "1838583c-b3bf-50d8-8566-36102510b1ce",
+  "conversation_id": "1f17e33b-9af2-505c-839c-3635dd414f56"
+ }
+}

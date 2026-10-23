@@ -1,0 +1,18 @@
+{
+ "user": {
+  "id": "fc7c49f0-ef8a-58b2-95e4-efb4609076d6",
+  "email": "ana.torres@example.com",
+  "full_name": "Ana Torres",
+  "job_title": "Jefa de compras",
+  "company": {
+   "id": "3496f8e8-4f1d-5ab9-9972-306943ed593d",
+   "name": "Droguería Demo S.A.C."
+  }
+ },
+ "preferences": {
+  "theme": "system",
+  "locale": "es",
+  "time_zone": "America/Lima",
+  "assistant_style": "brief"
+ }
+}

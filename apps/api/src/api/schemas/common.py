@@ -11,7 +11,8 @@ from api.schemas.enums import AbcClass, RiskLevel
 
 
 class ScenarioValues(ApiModel):
-    """One figure per demand scenario (`low <= expected <= high`)."""
+    """One figure per demand scenario. For derived figures such as projected stock, `low` is the
+    figure under low demand, so it is not necessarily the smallest value."""
 
     low: float
     expected: float

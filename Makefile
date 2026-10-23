@@ -30,9 +30,9 @@ contracts:
 	cd apps/api && uv run python -m api.export_openapi --out openapi.json
 	cd apps/web && pnpm dlx $(OPENAPI_TS) ../api/openapi.json --root-types -o src/services/http/schema.gen.ts
 
-# Regenerate the frontend mock fixtures from the formulas package (generated output).
+# Regenerate the frontend mock fixtures: formulas package -> API schemas -> JSON (generated output).
 fixtures:
-	cd packages/inventory && uv run python -m inventory.fixtures --out ../../apps/web/src/services/mock/fixtures
+	cd apps/api && uv run python -m api.mock_fixtures --out ../web/src/services/mock/fixtures
 
 dev-web:
 	cd apps/web && pnpm dev

@@ -1369,7 +1369,10 @@ export interface components {
             sheets: string[];
             /** Selected Sheet */
             selected_sheet: string | null;
-            /** @description `null` while the file has no usable plan (unreadable or needs a date column). */
+            /**
+             * @description `null` for Kardex files (fixed layout, see `movement_rules`) and while no usable plan
+             *     exists (needs a date column).
+             */
             plan: components["schemas"]["NormalizationPlan"] | null;
             /** Mappings */
             mappings: components["schemas"]["ColumnMapping"][];
@@ -1701,7 +1704,8 @@ export interface components {
         };
         /**
          * ScenarioValues
-         * @description One figure per demand scenario (`low <= expected <= high`).
+         * @description One figure per demand scenario. For derived figures such as projected stock, `low` is the
+         *     figure under low demand, so it is not necessarily the smallest value.
          */
         ScenarioValues: {
             /** Low */

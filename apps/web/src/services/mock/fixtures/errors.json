@@ -1,0 +1,47 @@
+{
+ "not_found": {
+  "type": "about:blank",
+  "title": "Not Found",
+  "status": 404,
+  "code": "not_found",
+  "message_key": "errors.notFound",
+  "ref": "K7Q2WX",
+  "request_id": "req-mock-1",
+  "fields": []
+ },
+ "validation": {
+  "type": "about:blank",
+  "title": "Unprocessable Content",
+  "status": 422,
+  "code": "validation_error",
+  "message_key": "errors.validation",
+  "ref": "K7Q2WX",
+  "request_id": "req-mock-1",
+  "fields": [
+   {
+    "field": "full_name",
+    "code": "string_too_short"
+   }
+  ]
+ },
+ "rate_limited": {
+  "type": "about:blank",
+  "title": "Too Many Requests",
+  "status": 429,
+  "code": "rate_limited",
+  "message_key": "errors.rateLimited",
+  "ref": "K7Q2WX",
+  "request_id": "req-mock-1",
+  "fields": []
+ },
+ "failure": {
+  "type": "about:blank",
+  "title": "Internal Server Error",
+  "status": 500,
+  "code": "internal_error",
+  "message_key": "errors.internal",
+  "ref": "K7Q2WX",
+  "request_id": "req-mock-1",
+  "fields": []
+ }
+}

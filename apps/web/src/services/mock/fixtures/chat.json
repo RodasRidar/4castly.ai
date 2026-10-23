@@ -1,0 +1,333 @@
+{
+ "messages": [
+  {
+   "id": "cf333226-81ec-5712-80aa-0b5c5938b797",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "user",
+   "status": "complete",
+   "display_text": "",
+   "payload": {
+    "kind": "file",
+    "file_name": "kardex_oct.xlsx",
+    "size_bytes": 482113
+   },
+   "annotations": [],
+   "context_product_code": null,
+   "feedback": null,
+   "created_at": "2026-10-23T08:40:00-05:00"
+  },
+  {
+   "id": "0ff0f702-9721-588c-8c57-c4be0a279b82",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "assistant",
+   "status": "complete",
+   "display_text": "Estoy leyendo tu archivo.",
+   "payload": {
+    "kind": "progress",
+    "job_id": "dd022b17-08fc-5b29-9e94-ab7653481ddb"
+   },
+   "annotations": [],
+   "context_product_code": null,
+   "feedback": null,
+   "created_at": "2026-10-23T08:41:00-05:00"
+  },
+  {
+   "id": "6cc0202c-56ad-5c15-8f23-ce6e8c786d87",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "assistant",
+   "status": "complete",
+   "display_text": "Así entendí tu archivo.",
+   "payload": {
+    "kind": "mapping",
+    "confirmed": true
+   },
+   "annotations": [],
+   "context_product_code": null,
+   "feedback": null,
+   "created_at": "2026-10-23T08:44:00-05:00"
+  },
+  {
+   "id": "4dea398c-9234-5a38-b969-76d1172849f6",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "assistant",
+   "status": "complete",
+   "display_text": "Dos preguntas rápidas.",
+   "payload": {
+    "kind": "clarification",
+    "questions": [
+     {
+      "id": "lead_time_days",
+      "options": [
+       {
+        "value": "7",
+        "label_key": "clarification.leadTime.days7"
+       },
+       {
+        "value": "14",
+        "label_key": "clarification.leadTime.days14"
+       },
+       {
+        "value": "30",
+        "label_key": "clarification.leadTime.days30"
+       }
+      ],
+      "allows_other": true
+     },
+     {
+      "id": "had_stockouts",
+      "options": [
+       {
+        "value": "yes",
+        "label_key": "clarification.stockouts.yes"
+       },
+       {
+        "value": "no",
+        "label_key": "clarification.stockouts.no"
+       },
+       {
+        "value": "unknown",
+        "label_key": "clarification.stockouts.unknown"
+       }
+      ],
+      "allows_other": false
+     }
+    ],
+    "answers": {
+     "lead_time_days": 30,
+     "had_stockouts": "no"
+    }
+   },
+   "annotations": [],
+   "context_product_code": null,
+   "feedback": null,
+   "created_at": "2026-10-23T08:46:00-05:00"
+  },
+  {
+   "id": "cb2240fb-8250-5178-972a-8d4a6effc228",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "assistant",
+   "status": "complete",
+   "display_text": "Calculando el pronóstico.",
+   "payload": {
+    "kind": "progress",
+    "job_id": "e32bad6f-91a1-56cb-b273-dd40f4fe05a5"
+   },
+   "annotations": [],
+   "context_product_code": null,
+   "feedback": null,
+   "created_at": "2026-10-23T08:48:00-05:00"
+  },
+  {
+   "id": "12f4b83d-2cb1-5f26-aaa3-9647d8fccaec",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "assistant",
+   "status": "complete",
+   "display_text": "Tu pronóstico está listo.",
+   "payload": {
+    "kind": "result",
+    "run_id": "b3984a50-ec9f-5ff8-acdc-763d348729cf"
+   },
+   "annotations": [],
+   "context_product_code": null,
+   "feedback": null,
+   "created_at": "2026-10-23T08:50:00-05:00"
+  },
+  {
+   "id": "b90019e2-c82c-531f-bd3a-e5e5732f145e",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "user",
+   "status": "complete",
+   "display_text": "¿Qué debo comprar primero?",
+   "payload": {
+    "kind": "text"
+   },
+   "annotations": [],
+   "context_product_code": null,
+   "feedback": null,
+   "created_at": "2026-10-23T09:10:00-05:00"
+  },
+  {
+   "id": "bdfaedb8-8b1d-54f5-b56a-9b95a583f0b6",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "assistant",
+   "status": "complete",
+   "display_text": "7 productos críticos. Empieza por Acetona grado reactivo y Ácido cítrico anhidro.",
+   "payload": {
+    "kind": "text"
+   },
+   "annotations": [
+    {
+     "start": 0,
+     "end": 20,
+     "type": "filter",
+     "link": {
+      "q": null,
+      "risk": "critical",
+      "abc": null,
+      "count": 7
+     }
+    },
+    {
+     "start": 34,
+     "end": 56,
+     "type": "product",
+     "code": "QF-0011"
+    },
+    {
+     "start": 59,
+     "end": 80,
+     "type": "product",
+     "code": "QF-0001"
+    }
+   ],
+   "context_product_code": null,
+   "feedback": "up",
+   "created_at": "2026-10-23T09:11:00-05:00"
+  },
+  {
+   "id": "f46f515b-9bb3-50eb-b518-079a63e4b70f",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "user",
+   "status": "complete",
+   "display_text": "¿Y los de clase A?",
+   "payload": {
+    "kind": "text"
+   },
+   "annotations": [],
+   "context_product_code": null,
+   "feedback": null,
+   "created_at": "2026-10-23T09:22:00-05:00"
+  },
+  {
+   "id": "6f8ee610-2d9d-5b50-aec2-fe6fbb0b7372",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "assistant",
+   "status": "interrupted",
+   "display_text": "Esa respuesta se cortó antes de terminar",
+   "payload": {
+    "kind": "text"
+   },
+   "annotations": [],
+   "context_product_code": null,
+   "feedback": null,
+   "created_at": "2026-10-23T09:23:00-05:00"
+  },
+  {
+   "id": "a5465f77-bfc3-565e-8ef3-ca4ad55e1afc",
+   "conversation_id": "c5d30c23-398a-5d64-a690-c2086b0def35",
+   "role": "assistant",
+   "status": "error",
+   "display_text": "",
+   "payload": {
+    "kind": "error",
+    "message_key": "errors.assistant",
+    "ref": "K7Q2WX"
+   },
+   "annotations": [],
+   "context_product_code": null,
+   "feedback": null,
+   "created_at": "2026-10-23T09:27:00-05:00"
+  }
+ ],
+ "stream_example": [
+  {
+   "event": "message.start",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4"
+  },
+  {
+   "event": "tool.start",
+   "tool_call_id": "tool-1",
+   "status_key": "assistant.tool.reviewingCritical"
+  },
+  {
+   "event": "tool.end",
+   "tool_call_id": "tool-1"
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "7 "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "productos "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "críticos. "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "Empieza "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "por "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "Acetona "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "grado "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "reactivo "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "y "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "Ácido "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "cítrico "
+  },
+  {
+   "event": "text.delta",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "text": "anhidro."
+  },
+  {
+   "event": "annotation",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "annotation": {
+    "start": 0,
+    "end": 20,
+    "type": "filter",
+    "link": {
+     "q": null,
+     "risk": "critical",
+     "abc": null,
+     "count": 7
+    }
+   }
+  },
+  {
+   "event": "message.end",
+   "message_id": "dd4a34a6-79ab-5f28-91b8-5c045e985fd4",
+   "stop_reason": "end_turn",
+   "usage": {
+    "input_tokens": 1840,
+    "output_tokens": 96,
+    "cache_read_tokens": 1520
+   }
+  }
+ ],
+ "stream_example_text": "7 productos críticos. Empieza por Acetona grado reactivo y Ácido cítrico anhidro."
+}

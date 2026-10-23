@@ -38,6 +38,7 @@ name = "castly-api"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "castly-inventory" },
     { name = "fastapi" },
     { name = "pydantic-settings" },
     { name = "supabase" },
@@ -55,6 +56,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "castly-inventory", editable = "../../packages/inventory" },
     { name = "fastapi", specifier = ">=0.160.0" },
     { name = "pydantic-settings", specifier = ">=2.16.1" },
     { name = "supabase", specifier = ">=2.33.0" },
@@ -68,6 +70,21 @@ dev = [
     { name = "pytest-cov", specifier = ">=7.1.0" },
     { name = "ruff", specifier = ">=0.17.1" },
     { name = "ty", specifier = ">=0.0.90" },
+]
+
+[[package]]
+name = "castly-inventory"
+version = "0.1.0"
+source = { editable = "../../packages/inventory" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "ruff", specifier = ">=0.17.2" },
+    { name = "ty", specifier = ">=0.0.91" },
 ]
 
 [[package]]

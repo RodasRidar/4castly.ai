@@ -125,12 +125,3 @@ def test_risk_mix_is_believable_for_a_demo(dataset: dict) -> None:
 
     assert risks.count("critical") / len(risks) <= 0.4
     assert risks.count("optimal") >= 8
-
-
-COMMITTED = Path(__file__).resolve().parents[3] / "apps/web/src/services/mock/fixtures" / DATA_FILE
-
-
-@pytest.mark.skipif(not COMMITTED.exists(), reason="web fixtures not present")
-def test_committed_fixtures_match_the_generator() -> None:
-    """Fails when formulas or the generator change without regenerating the mocks."""
-    assert json.loads(COMMITTED.read_text(encoding="utf-8")) == build_dataset()

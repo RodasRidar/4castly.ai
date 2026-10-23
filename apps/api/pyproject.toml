@@ -5,6 +5,7 @@ description = "4castly.ai thin HTTP API: upload, parse, CRUD and job enqueueing"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "castly-inventory",
     "fastapi>=0.160.0",
     "pydantic-settings>=2.16.1",
     "supabase>=2.33.0",
@@ -17,6 +18,9 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-name = "api"
+
+[tool.uv.sources]
+castly-inventory = { path = "../../packages/inventory", editable = true }
 
 [dependency-groups]
 dev = [
@@ -70,6 +74,10 @@ ignore = [
     "ARG001",   # stubs until B4: the parameters are the contract and are not used yet
     "PLR0913",  # a filtered, sorted, paginated list has many query parameters
     "PLR0917",  # same
+]
+"src/api/mock_fixtures/*.py" = [
+    "PLR0913",  # fixture builders take many named fields
+    "E501",     # data tables with long literals (Spanish copy, sample values)
 ]
 "tests/**/*.py" = [
     "S101",     # pytest relies on bare asserts

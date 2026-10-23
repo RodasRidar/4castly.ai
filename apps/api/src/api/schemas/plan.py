@@ -106,7 +106,8 @@ class PlanView(ApiModel):
     sheets: list[str]
     selected_sheet: str | None
     plan: NormalizationPlan | None
-    """`null` while the file has no usable plan (unreadable or needs a date column)."""
+    """`null` for Kardex files (fixed layout, see `movement_rules`) and while no usable plan
+    exists (needs a date column)."""
     mappings: list[ColumnMapping]
     summary: DataSummary | None
     movement_rules: list[MovementRule]

@@ -1,0 +1,914 @@
+{
+ "items": [
+  {
+   "code": "QF-0001",
+   "name": "Ácido cítrico anhidro",
+   "uom": "kg",
+   "abc_class": "A",
+   "typical_demand": {
+    "low": 1479.5,
+    "expected": 1931.8,
+    "high": 2384.2
+   },
+   "current_stock": 1931.8,
+   "coverage_weeks": {
+    "lower": 0.84,
+    "expected": 1.03,
+    "upper": 1.32
+   },
+   "risk": "critical",
+   "reliability": "high",
+   "stockout_date": "2026-10-26",
+   "suggested_quantity": {
+    "low": 11894.7,
+    "high": 13226.3
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_today",
+    "date": null,
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 1.97
+   },
+   "lead_time_days": 21,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0002",
+   "name": "Glicerina vegetal USP",
+   "uom": "kg",
+   "abc_class": "A",
+   "typical_demand": {
+    "low": 1028.8,
+    "expected": 1273.3,
+    "high": 1517.9
+   },
+   "current_stock": 11460.1,
+   "coverage_weeks": {
+    "lower": 7.4,
+    "expected": 8.86,
+    "upper": 11.22
+   },
+   "risk": "optimal",
+   "reliability": "high",
+   "stockout_date": "2026-12-14",
+   "suggested_quantity": {
+    "low": 186.2,
+    "high": 1431.9
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-11-09",
+    "earliest_date": "2026-11-02",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 30,
+   "lead_time_overridden": false,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0003",
+   "name": "Lactosa monohidrato",
+   "uom": "kg",
+   "abc_class": "A",
+   "typical_demand": {
+    "low": 808.1,
+    "expected": 1052.6,
+    "high": 1297.2
+   },
+   "current_stock": 6315.8,
+   "coverage_weeks": {
+    "lower": 4.84,
+    "expected": 5.96,
+    "upper": 7.87
+   },
+   "risk": "medium",
+   "reliability": "high",
+   "stockout_date": "2026-11-23",
+   "suggested_quantity": {
+    "low": 3281.7,
+    "high": 4527.5
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-10-19",
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 30,
+   "lead_time_overridden": false,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0004",
+   "name": "Paracetamol polvo",
+   "uom": "kg",
+   "abc_class": "A",
+   "typical_demand": {
+    "low": 485.0,
+    "expected": 702.4,
+    "high": 919.8
+   },
+   "current_stock": 1404.7,
+   "coverage_weeks": {
+    "lower": 1.55,
+    "expected": 2.0,
+    "upper": 2.87
+   },
+   "risk": "critical",
+   "reliability": "medium",
+   "stockout_date": "2026-11-02",
+   "suggested_quantity": {
+    "low": 4989.8,
+    "high": 6597.7
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_today",
+    "date": null,
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 5.0
+   },
+   "lead_time_days": 45,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 1280.0
+  },
+  {
+   "code": "QF-0005",
+   "name": "Almidón de maíz",
+   "uom": "kg",
+   "abc_class": "B",
+   "typical_demand": {
+    "low": 460.6,
+    "expected": 545.3,
+    "high": 630.1
+   },
+   "current_stock": 4362.6,
+   "coverage_weeks": {
+    "lower": 6.89,
+    "expected": 8.04,
+    "upper": 9.76
+   },
+   "risk": "optimal",
+   "reliability": "high",
+   "stockout_date": "2026-12-14",
+   "suggested_quantity": {
+    "low": 0.0,
+    "high": 163.2
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-11-30",
+    "earliest_date": "2026-11-16",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 14,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0006",
+   "name": "Sorbitol 70 %",
+   "uom": "kg",
+   "abc_class": "B",
+   "typical_demand": {
+    "low": 236.2,
+    "expected": 362.6,
+    "high": 488.9
+   },
+   "current_stock": 1450.3,
+   "coverage_weeks": {
+    "lower": 2.97,
+    "expected": 4.0,
+    "upper": 6.47
+   },
+   "risk": "medium",
+   "reliability": "medium",
+   "stockout_date": "2026-11-16",
+   "suggested_quantity": {
+    "low": 1035.1,
+    "high": 1407.0
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-10-26",
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 21,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0007",
+   "name": "Estearato de magnesio",
+   "uom": "kg",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 55.6,
+    "expected": 100.8,
+    "high": 145.9
+   },
+   "current_stock": 4032.0,
+   "coverage_weeks": {
+    "lower": null,
+    "expected": null,
+    "upper": null
+   },
+   "risk": "optimal",
+   "reliability": "low",
+   "stockout_date": null,
+   "suggested_quantity": {
+    "low": 0.0,
+    "high": 86.9
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "no_stockout",
+    "date": null,
+    "earliest_date": null,
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 14,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0008",
+   "name": "Dióxido de titanio",
+   "uom": "kg",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 102.3,
+    "expected": 144.2,
+    "high": 186.0
+   },
+   "current_stock": 864.9,
+   "coverage_weeks": {
+    "lower": 4.65,
+    "expected": 6.07,
+    "upper": 9.22
+   },
+   "risk": "critical",
+   "reliability": "medium",
+   "stockout_date": "2026-11-30",
+   "suggested_quantity": {
+    "low": 657.8,
+    "high": 967.3
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_today",
+    "date": null,
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 0.93
+   },
+   "lead_time_days": 45,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0009",
+   "name": "Etanol 96°",
+   "uom": "L",
+   "abc_class": "A",
+   "typical_demand": {
+    "low": 1861.1,
+    "expected": 2382.8,
+    "high": 2904.4
+   },
+   "current_stock": 5956.9,
+   "coverage_weeks": {
+    "lower": 2.04,
+    "expected": 2.47,
+    "upper": 3.16
+   },
+   "risk": "medium",
+   "reliability": "high",
+   "stockout_date": "2026-11-02",
+   "suggested_quantity": {
+    "low": 8138.3,
+    "high": 9142.2
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-10-19",
+    "earliest_date": "2026-10-19",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 14,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0010",
+   "name": "Propilenglicol",
+   "uom": "L",
+   "abc_class": "A",
+   "typical_demand": {
+    "low": 522.6,
+    "expected": 729.1,
+    "high": 935.6
+   },
+   "current_stock": 5103.7,
+   "coverage_weeks": {
+    "lower": 5.45,
+    "expected": 7.11,
+    "upper": 10.75
+   },
+   "risk": "optimal",
+   "reliability": "high",
+   "stockout_date": "2026-12-07",
+   "suggested_quantity": {
+    "low": 0.0,
+    "high": 607.7
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-11-16",
+    "earliest_date": "2026-11-02",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 21,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0011",
+   "name": "Acetona grado reactivo",
+   "uom": "L",
+   "abc_class": "B",
+   "typical_demand": {
+    "low": 221.3,
+    "expected": 384.8,
+    "high": 548.4
+   },
+   "current_stock": 230.9,
+   "coverage_weeks": {
+    "lower": 0.42,
+    "expected": 0.59,
+    "upper": 0.97
+   },
+   "risk": "critical",
+   "reliability": "medium",
+   "stockout_date": "2026-10-19",
+   "suggested_quantity": {
+    "low": 760.9,
+    "high": 1075.7
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_today",
+    "date": null,
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 1.41
+   },
+   "lead_time_days": 14,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 1290.0
+  },
+  {
+   "code": "QF-0012",
+   "name": "Isopropanol 99 %",
+   "uom": "L",
+   "abc_class": "A",
+   "typical_demand": {
+    "low": 182.2,
+    "expected": 311.3,
+    "high": 440.4
+   },
+   "current_stock": 2490.6,
+   "coverage_weeks": {
+    "lower": 5.63,
+    "expected": 8.08,
+    "upper": null
+   },
+   "risk": "optimal",
+   "reliability": "medium",
+   "stockout_date": "2026-12-14",
+   "suggested_quantity": {
+    "low": 283.0,
+    "high": 940.4
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-11-09",
+    "earliest_date": "2026-10-19",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 30,
+   "lead_time_overridden": false,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0013",
+   "name": "Metanol",
+   "uom": "L",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 59.2,
+    "expected": 108.1,
+    "high": 157.1
+   },
+   "current_stock": 324.4,
+   "coverage_weeks": {
+    "lower": 2.09,
+    "expected": 3.0,
+    "upper": 5.61
+   },
+   "risk": "medium",
+   "reliability": "medium",
+   "stockout_date": "2026-11-09",
+   "suggested_quantity": {
+    "low": 325.2,
+    "high": 419.4
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-10-26",
+    "earliest_date": "2026-10-19",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 14,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0014",
+   "name": "Aceite de silicona",
+   "uom": "L",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 16.3,
+    "expected": 40.7,
+    "high": 65.2
+   },
+   "current_stock": 244.4,
+   "coverage_weeks": {
+    "lower": 3.75,
+    "expected": 5.97,
+    "upper": null
+   },
+   "risk": "medium",
+   "reliability": "low",
+   "stockout_date": "2026-11-23",
+   "suggested_quantity": {
+    "low": 128.7,
+    "high": 253.4
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-10-19",
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 30,
+   "lead_time_overridden": false,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0015",
+   "name": "Frasco PET 120 ml",
+   "uom": "u",
+   "abc_class": "A",
+   "typical_demand": {
+    "low": 3381.6,
+    "expected": 4794.4,
+    "high": 6207.2
+   },
+   "current_stock": 43149.6,
+   "coverage_weeks": {
+    "lower": 6.8,
+    "expected": 8.78,
+    "upper": null
+   },
+   "risk": "optimal",
+   "reliability": "high",
+   "stockout_date": "2026-12-14",
+   "suggested_quantity": {
+    "low": 1119.4,
+    "high": 8316.8
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-11-09",
+    "earliest_date": "2026-10-26",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 30,
+   "lead_time_overridden": false,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0016",
+   "name": "Tapa rosca 28 mm",
+   "uom": "u",
+   "abc_class": "A",
+   "typical_demand": {
+    "low": 3249.8,
+    "expected": 4553.9,
+    "high": 5858.1
+   },
+   "current_stock": 6830.9,
+   "coverage_weeks": {
+    "lower": 1.19,
+    "expected": 1.52,
+    "upper": 2.1
+   },
+   "risk": "critical",
+   "reliability": "high",
+   "stockout_date": "2026-10-26",
+   "suggested_quantity": {
+    "low": 16012.0,
+    "high": 19850.7
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_today",
+    "date": null,
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 1.48
+   },
+   "lead_time_days": 21,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 9600.0
+  },
+  {
+   "code": "QF-0017",
+   "name": "Etiqueta adhesiva 80 x 50",
+   "uom": "u",
+   "abc_class": "A",
+   "typical_demand": {
+    "low": 1972.1,
+    "expected": 3439.2,
+    "high": 4906.4
+   },
+   "current_stock": 34392.5,
+   "coverage_weeks": {
+    "lower": 6.71,
+    "expected": 9.25,
+    "upper": null
+   },
+   "risk": "optimal",
+   "reliability": "medium",
+   "stockout_date": "2026-12-21",
+   "suggested_quantity": {
+    "low": 0.0,
+    "high": 2823.6
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-12-07",
+    "earliest_date": "2026-11-16",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 14,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0018",
+   "name": "Caja corrugada x 12",
+   "uom": "u",
+   "abc_class": "B",
+   "typical_demand": {
+    "low": 632.7,
+    "expected": 895.7,
+    "high": 1158.7
+   },
+   "current_stock": 3135.0,
+   "coverage_weeks": {
+    "lower": 2.73,
+    "expected": 3.51,
+    "upper": 4.95
+   },
+   "risk": "medium",
+   "reliability": "medium",
+   "stockout_date": "2026-11-09",
+   "suggested_quantity": {
+    "low": 2298.8,
+    "high": 2804.9
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-10-26",
+    "earliest_date": "2026-10-19",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 14,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0019",
+   "name": "Blíster PVC",
+   "uom": "u",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 143.9,
+    "expected": 262.8,
+    "high": 381.7
+   },
+   "current_stock": 525.6,
+   "coverage_weeks": {
+    "lower": 1.41,
+    "expected": 2.02,
+    "upper": 3.64
+   },
+   "risk": "critical",
+   "reliability": "low",
+   "stockout_date": "2026-11-02",
+   "suggested_quantity": {
+    "low": 1337.1,
+    "high": 1686.9
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_today",
+    "date": null,
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 0.98
+   },
+   "lead_time_days": 21,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0020",
+   "name": "Filtro de membrana 0,22 µm",
+   "uom": "u",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 4.5,
+    "expected": 14.0,
+    "high": 23.5
+   },
+   "current_stock": 56.0,
+   "coverage_weeks": {
+    "lower": 2.41,
+    "expected": 4.0,
+    "upper": null
+   },
+   "risk": "critical",
+   "reliability": "low",
+   "stockout_date": "2026-11-16",
+   "suggested_quantity": {
+    "low": 98.0,
+    "high": 168.3
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_today",
+    "date": null,
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 3.0
+   },
+   "lead_time_days": 45,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0021",
+   "name": "Colorante azul alimentario",
+   "uom": "kg",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 11.6,
+    "expected": 18.5,
+    "high": 25.3
+   },
+   "current_stock": 92.5,
+   "coverage_weeks": {
+    "lower": 3.66,
+    "expected": 5.0,
+    "upper": 7.97
+   },
+   "risk": "medium",
+   "reliability": "low",
+   "stockout_date": "2026-11-23",
+   "suggested_quantity": {
+    "low": 74.0,
+    "high": 108.0
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-10-19",
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 30,
+   "lead_time_overridden": false,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0022",
+   "name": "Aroma de cereza",
+   "uom": "L",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 14.5,
+    "expected": 27.6,
+    "high": 40.8
+   },
+   "current_stock": 331.2,
+   "coverage_weeks": {
+    "lower": 8.12,
+    "expected": null,
+    "upper": null
+   },
+   "risk": "optimal",
+   "reliability": "low",
+   "stockout_date": null,
+   "suggested_quantity": {
+    "low": 0.0,
+    "high": 26.4
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "no_stockout",
+    "date": null,
+    "earliest_date": "2026-11-30",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 14,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0023",
+   "name": "Tapa dosificadora",
+   "uom": "u",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 202.4,
+    "expected": 305.8,
+    "high": 409.3
+   },
+   "current_stock": 917.4,
+   "coverage_weeks": {
+    "lower": 2.24,
+    "expected": 3.0,
+    "upper": 4.53
+   },
+   "risk": "medium",
+   "reliability": "low",
+   "stockout_date": "2026-11-09",
+   "suggested_quantity": {
+    "low": 1223.2,
+    "high": 1533.7
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-10-19",
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 21,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0024",
+   "name": "Reactivo Karl Fischer",
+   "uom": "L",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 1.9,
+    "expected": 6.0,
+    "high": 10.1
+   },
+   "current_stock": 48.0,
+   "coverage_weeks": {
+    "lower": 4.73,
+    "expected": 8.0,
+    "upper": null
+   },
+   "risk": "medium",
+   "reliability": "low",
+   "stockout_date": "2026-12-14",
+   "suggested_quantity": {
+    "low": 18.0,
+    "high": 48.2
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-10-26",
+    "earliest_date": "2026-10-23",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 45,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0025",
+   "name": "Papel filtro cualitativo",
+   "uom": "u",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 23.7,
+    "expected": 40.0,
+    "high": 56.3
+   },
+   "current_stock": 800.0,
+   "coverage_weeks": {
+    "lower": null,
+    "expected": null,
+    "upper": null
+   },
+   "risk": "optimal",
+   "reliability": "medium",
+   "stockout_date": null,
+   "suggested_quantity": {
+    "low": 0.0,
+    "high": 31.4
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "no_stockout",
+    "date": null,
+    "earliest_date": null,
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 14,
+   "lead_time_overridden": true,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  },
+  {
+   "code": "QF-0026",
+   "name": "Carbómero 940",
+   "uom": "kg",
+   "abc_class": "C",
+   "typical_demand": {
+    "low": 14.9,
+    "expected": 28.2,
+    "high": 41.5
+   },
+   "current_stock": 253.6,
+   "coverage_weeks": {
+    "lower": 6.09,
+    "expected": 9.29,
+    "upper": null
+   },
+   "risk": "optimal",
+   "reliability": "low",
+   "stockout_date": "2026-12-21",
+   "suggested_quantity": {
+    "low": 0.0,
+    "high": 67.8
+   },
+   "suggested_truncated": false,
+   "buy_before": {
+    "action": "order_by_date",
+    "date": "2026-11-16",
+    "earliest_date": "2026-10-26",
+    "weeks_without_stock": 0.0
+   },
+   "lead_time_days": 30,
+   "lead_time_overridden": false,
+   "target_coverage_weeks": 4,
+   "on_order_quantity": 0.0
+  }
+ ]
+}
