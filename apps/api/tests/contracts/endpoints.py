@@ -126,6 +126,9 @@ IMPLEMENTED = {
     "list_run_products",
     "get_run_product",
     "simulate_product",
+    "update_run_parameters",
+    "recalculate_run",
+    "update_product_overrides",
 }
 """Operations built in B4, tested on their own (`tests/db/endpoints`). B4 ends with only the chat
 operations left as stubs until B5."""

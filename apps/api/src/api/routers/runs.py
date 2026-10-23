@@ -25,7 +25,7 @@ from api.schemas import (
     SimulationResult,
     SortOrder,
 )
-from api.services import run_product_detail, run_products, runs
+from api.services import run_parameters, run_product_detail, run_products, runs
 
 router = APIRouter(
     prefix="/v1/runs", tags=["runs"], dependencies=[Depends(bearer_scheme)], responses=errors()
@@ -75,15 +75,15 @@ async def simulate_product(
 
 
 @router.put("/{run_id}/parameters", responses=errors(404, 409, 422))
-async def update_run_parameters(run_id: UUID, body: RunParameters) -> RunParameters:
+async def update_run_parameters(run_id: UUID, body: RunParameters, tx: CurrentTx) -> RunParameters:
     """Save the drawer values; they apply on the next `recalculate`."""
-    raise NotImplementedYetError
+    return await tx.run(run_parameters.save_parameters, run_id, body)
 
 
 @router.post("/{run_id}/recalculate", status_code=202, responses=errors(404, 409, 422))
-async def recalculate_run(run_id: UUID) -> JobAccepted:
+async def recalculate_run(run_id: UUID, tx: CurrentTx) -> JobAccepted:
     """Build a new run with the saved parameters; the previous one becomes superseded."""
-    raise NotImplementedYetError
+    return await run_parameters.recalculate(tx, run_id)
 
 
 @router.post("/{run_id}/exports", status_code=201, responses=errors(404, 422))
