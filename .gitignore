@@ -45,3 +45,5 @@ supabase/.temp/
 # Coverage
 .coverage
 htmlcov/
+# Local AI runtime state
+.atl/
