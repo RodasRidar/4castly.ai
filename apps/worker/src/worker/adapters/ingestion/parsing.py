@@ -54,8 +54,11 @@ def parse_date(value: Any, fmt: str) -> date | None:
         return None
 
 
-def detect_date_format(samples: Sequence[Any]) -> str | None:
-    """The first known format that every non-empty sample fits (day first when ambiguous)."""
+def detect_date_format(samples: Sequence[Any], min_share: float = 1.0) -> str | None:
+    """The first known format that at least `min_share` of the non-empty string samples fit.
+
+    Ambiguous samples resolve day first. The default requires every sample to fit.
+    """
     present = [s for s in samples if s not in (None, "")]
     if not present:
         return None
@@ -63,7 +66,8 @@ def detect_date_format(samples: Sequence[Any]) -> str | None:
     if not strings:
         return "yyyy-mm-dd" if all(isinstance(s, date) for s in present) else None
     for fmt in DATE_FORMATS:
-        if all(parse_date(s, fmt) is not None for s in strings):
+        fits = sum(parse_date(s, fmt) is not None for s in strings)
+        if fits / len(strings) >= min_share:
             return fmt
     return None
 
