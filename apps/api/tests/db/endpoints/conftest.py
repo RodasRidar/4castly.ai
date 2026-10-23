@@ -14,6 +14,7 @@ from uuid import UUID, uuid4
 import psycopg
 import pytest
 from fastapi.testclient import TestClient
+from psycopg.types.json import Jsonb
 
 from api.adapters.jwks import JwksTokenVerifier
 from api.main import create_app
@@ -164,3 +165,32 @@ def add_job(  # noqa: PLR0913
             ],
         )
     return job
+
+
+def add_message(  # noqa: PLR0913
+    world: World,
+    conversation: UUID,
+    *,
+    role: str = "user",
+    kind: str = "text",
+    text: str = "hola",
+    payload: dict | None = None,
+    product: UUID | None = None,
+) -> UUID:
+    message = uuid4()
+    with psycopg.connect(world.dsn, autocommit=True) as admin:
+        admin.execute(
+            "insert into public.messages (id, tenant_id, conversation_id, role, kind, "
+            "display_text, payload, context_product_id) values (%s, %s, %s, %s, %s, %s, %s, %s)",
+            [
+                message,
+                world.side.tenant,
+                conversation,
+                role,
+                kind,
+                text,
+                Jsonb(payload or {}),
+                product,
+            ],
+        )
+    return message

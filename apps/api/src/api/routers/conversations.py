@@ -7,6 +7,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response
 
+from api.auth import CurrentTx
 from api.domain.errors import NotImplementedYetError
 from api.routers._common import (
     EventStreamResponse,
@@ -28,6 +29,7 @@ from api.schemas import (
     PlanConfirmation,
     PlanView,
 )
+from api.services import conversations, messages
 
 router = APIRouter(
     prefix="/v1/conversations",
@@ -44,32 +46,37 @@ async def list_conversations(
     include_archived: bool = False,
     cursor: Annotated[str | None, Query(max_length=200)] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 30,
+    *,
+    tx: CurrentTx,
 ) -> ConversationPage:
     """Sidebar and history list, newest activity first. Soft-deleted ones are never listed."""
-    raise NotImplementedYetError
+    return await tx.run(conversations.list_conversations, group, q, include_archived, cursor, limit)
 
 
 @router.get("/{conversation_id}", responses=errors(404, 422))
-async def get_conversation(conversation_id: UUID) -> ConversationDetail:
+async def get_conversation(conversation_id: UUID, tx: CurrentTx) -> ConversationDetail:
     """The conversation with its stage (drives the whole screen) and upload."""
-    raise NotImplementedYetError
+    return await tx.run(conversations.get_conversation, conversation_id)
 
 
 @router.patch("/{conversation_id}", responses=errors(404, 422))
-async def update_conversation(conversation_id: UUID, body: ConversationUpdate) -> Conversation:
+async def update_conversation(
+    conversation_id: UUID, body: ConversationUpdate, tx: CurrentTx
+) -> Conversation:
     """Rename, pin or archive."""
-    raise NotImplementedYetError
+    return await tx.run(conversations.update_conversation, conversation_id, body)
 
 
 @router.delete("/{conversation_id}", status_code=204, responses=errors(404, 422))
-async def delete_conversation(conversation_id: UUID) -> Response:
+async def delete_conversation(conversation_id: UUID, tx: CurrentTx) -> Response:
     """Soft delete; `restore` undoes it for 30 days."""
-    raise NotImplementedYetError
+    await tx.run(conversations.delete_conversation, conversation_id)
+    return Response(status_code=204)
 
 
 @router.post("/{conversation_id}/restore", responses=errors(404, 422))
-async def restore_conversation(conversation_id: UUID) -> Conversation:
-    raise NotImplementedYetError
+async def restore_conversation(conversation_id: UUID, tx: CurrentTx) -> Conversation:
+    return await tx.run(conversations.restore_conversation, conversation_id)
 
 
 @router.get("/{conversation_id}/plan", responses=errors(404, 422))
@@ -99,9 +106,11 @@ async def list_messages(
     conversation_id: UUID,
     cursor: Annotated[str | None, Query(max_length=200)] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    *,
+    tx: CurrentTx,
 ) -> MessagePage:
     """Chat history, oldest first within a page."""
-    raise NotImplementedYetError
+    return await tx.run(messages.list_messages, conversation_id, cursor, limit)
 
 
 @router.post(

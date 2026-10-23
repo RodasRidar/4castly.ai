@@ -113,6 +113,12 @@ IMPLEMENTED = {
     "get_job",
     "stream_job_events",
     "cancel_job",
+    "list_conversations",
+    "get_conversation",
+    "update_conversation",
+    "delete_conversation",
+    "restore_conversation",
+    "list_messages",
 }
 """Operations built in B4, tested on their own (`tests/db/endpoints`). B4 ends with only the chat
 operations left as stubs until B5."""
