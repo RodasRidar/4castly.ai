@@ -243,7 +243,7 @@ export function ForecastCanvas({
         tick={tick}
         tickLine={false}
         axisLine={false}
-        width={48}
+        width={64}
         tickFormatter={(v: number) => fmt(v)}
         label={axisLabels?.demand ? { value: axisLabels.demand, angle: -90, position: 'insideLeft', fill: 'var(--mute)', fontSize: 12 } : undefined}
       />
@@ -254,7 +254,7 @@ export function ForecastCanvas({
           tick={tick}
           tickLine={false}
           axisLine={false}
-          width={48}
+          width={64}
           tickFormatter={(v: number) => fmt(v)}
           label={axisLabels?.stock ? { value: axisLabels.stock, angle: 90, position: 'insideRight', fill: 'var(--mute)', fontSize: 12 } : undefined}
         />

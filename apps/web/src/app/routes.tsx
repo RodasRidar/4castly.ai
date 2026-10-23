@@ -1,6 +1,6 @@
 import { Navigate, type RouteObject } from 'react-router'
 import { AuthCallbackPage, LoginPage } from '../features/auth/LoginPage'
-import { ConversationPage, ProductDetailPage } from '../features/conversation/ConversationPage'
+import { ConversationPage } from '../features/conversation/ConversationPage'
 import { NotFoundPage } from '../features/errors/NotFoundPage'
 import { RouteError } from '../features/errors/RouteError'
 import { NewForecastPage } from '../features/forecast/NewForecastPage'
@@ -47,7 +47,10 @@ export function createRoutes(devRoutes: RouteObject[] = []): RouteObject[] {
                   element: <ConversationLayout />,
                   children: [
                     { index: true, element: <ConversationPage /> },
-                    { path: 'productos/:productCode', element: <ProductDetailPage /> },
+                    {
+                      path: 'productos/:productCode',
+                      lazy: async () => ({ Component: (await import('../features/product/ProductDetailPage')).ProductDetailPage }),
+                    },
                   ],
                 },
               ],

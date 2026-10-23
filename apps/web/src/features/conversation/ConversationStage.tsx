@@ -6,7 +6,9 @@ import { ConfirmationStage } from './ConfirmationStage'
 import { DateColumnStage } from './DateColumnStage'
 import { DigestStage } from './DigestStage'
 import { FailedStage } from './FailedStage'
-import { ResultsStage } from './ResultsStage'
+import { lazy, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Spinner } from '../../ui/atoms/Spinner'
 import { UnreadableStage } from './UnreadableStage'
 
 /** The only place that maps the backend's stage to a screen (plan 2.1). It never infers a stage itself. */
@@ -32,6 +34,22 @@ export function ConversationStage({ conversation }: { conversation: Conversation
     case 'cancelled':
       return <CancelledStage conversation={conversation} />
     case 'ready':
-      return <ResultsStage conversation={conversation} />
+      return (
+        <Suspense fallback={<LoadingResults />}>
+          <ResultsStage conversation={conversation} />
+        </Suspense>
+      )
   }
+}
+
+// Charts and markdown are heavy and only the `ready` stage needs them.
+const ResultsStage = lazy(() => import('./ResultsStage').then((m) => ({ default: m.ResultsStage })))
+
+function LoadingResults() {
+  const { t } = useTranslation()
+  return (
+    <div className="flex h-full items-center justify-center">
+      <Spinner label={t('common.loading')} />
+    </div>
+  )
 }
