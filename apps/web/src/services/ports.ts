@@ -1,4 +1,22 @@
 import type {
+  ChatMessage,
+  ChatStreamEvent,
+  ExportFile,
+  ExportRequest,
+  Feedback,
+  FeedbackValue,
+  MessageCreate,
+  ProductDetail,
+  ProductOverrides,
+  ProductPage,
+  ProductSort,
+  RiskLevel,
+  AbcClass,
+  RunParameters,
+  RunSummary,
+  SimulationRequest,
+  SimulationResult,
+  SortOrder,
   ConversationDetail,
   Conversation,
   ConversationUpdate,
@@ -61,10 +79,43 @@ export interface JobService {
   cancel(id: string): Promise<Job>
 }
 
+export interface ProductQuery {
+  q?: string
+  risk?: RiskLevel[]
+  abc?: AbcClass[]
+  sort?: ProductSort
+  order?: SortOrder
+  page?: number
+  pageSize?: number
+}
+
+export interface RunService {
+  summary(runId: string): Promise<RunSummary>
+  products(runId: string, query?: ProductQuery): Promise<ProductPage>
+  product(runId: string, code: string): Promise<ProductDetail>
+  /** What-if for lead time, coverage and the purchase toggle. No re-forecast. */
+  simulate(runId: string, code: string, request: SimulationRequest): Promise<SimulationResult>
+  updateParameters(runId: string, parameters: RunParameters): Promise<RunParameters>
+  /** Starts a forecast job; the conversation goes back to `calculating` until it settles. */
+  recalculate(runId: string): Promise<JobAccepted>
+  setOverrides(code: string, overrides: ProductOverrides): Promise<ProductOverrides>
+  createExport(runId: string, request: ExportRequest): Promise<ExportFile>
+}
+
+export interface ChatService {
+  list(conversationId: string): Promise<ChatMessage[]>
+  /** Token-by-token stream (SSE in the real implementation). Aborting ends it with `stop_reason: cancelled`. */
+  send(conversationId: string, message: MessageCreate, signal?: AbortSignal): AsyncIterable<ChatStreamEvent>
+  retry(messageId: string, signal?: AbortSignal): AsyncIterable<ChatStreamEvent>
+  feedback(messageId: string, value: FeedbackValue | null): Promise<Feedback>
+}
+
 export interface Services {
   auth: AuthService
   profile: ProfileService
   conversations: ConversationService
   uploads: UploadService
   jobs: JobService
+  runs: RunService
+  chat: ChatService
 }

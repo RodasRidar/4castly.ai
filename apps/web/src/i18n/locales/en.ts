@@ -1,4 +1,7 @@
 import type { Messages } from './es'
+import { chatEn } from './areas/chat.en'
+import { productEn } from './areas/product.en'
+import { resultsEn } from './areas/results.en'
 import { conversationEn } from './areas/conversation.en'
 import { loginEn } from './areas/login.en'
 import { uploadEn } from './areas/upload.en'
@@ -7,6 +10,9 @@ export const en: Messages = {
   login: loginEn,
   upload: uploadEn,
   conversation: conversationEn,
+  results: resultsEn,
+  product: productEn,
+  chat: chatEn,
   common: {
     appName: '4Castly',
     loading: 'Loading…',

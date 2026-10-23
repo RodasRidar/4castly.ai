@@ -1,8 +1,9 @@
-import chat from './fixtures/chat.json'
 import conversationsFx from './fixtures/conversations.json'
 import entryFlow from './fixtures/entry-flow.json'
 import session from './fixtures/session.json'
+import { createChatService } from './chat'
 import { failure } from './errors'
+import { createRunService } from './runs'
 import type { Services } from '../ports'
 import type {
   Conversation,
@@ -15,8 +16,6 @@ import type {
   User,
 } from '../types'
 
-void chat
-
 /** Code accepted by the mock OTP verification. */
 export const MOCK_OTP_CODE = '123456'
 
@@ -25,6 +24,10 @@ export interface MockControls {
   failConversations: boolean
   failPatch: boolean
   failUpload: boolean
+  failRun: boolean
+  failChat: boolean
+  /** Delay between streamed chat events (ms). */
+  chatDelayMs: number
   /** Job ids whose next `advance()` is held back (to look at a running state). */
   advance(jobId?: string): void
   /** Advances running jobs by one step every `ms`; returns the stop function. */
@@ -151,7 +154,8 @@ export function createMockServices({ signedIn = true, latencyMs = 0, emptyConver
     if (!c) return
     c.stage = 'ready'
     c.current_job_id = null
-    c.current_run_id = (conversationsFx.details as unknown as ConversationDetail[]).find((d) => d.current_run_id)?.current_run_id ?? null
+    // A recalculation keeps its run; a first forecast gets the fixture run.
+    c.current_run_id ??= (conversationsFx.details as unknown as ConversationDetail[]).find((d) => d.current_run_id)?.current_run_id ?? null
     touch(c)
   }
 
@@ -182,10 +186,20 @@ export function createMockServices({ signedIn = true, latencyMs = 0, emptyConver
     else finishForecast(job)
   }
 
+  // The run and chat mocks read these live, so toggling `mock.failRun` etc. takes effect immediately.
+  const runControls = { get failRun() { return mock.failRun } }
+  const chatControls = {
+    get failChat() { return mock.failChat },
+    get chatDelayMs() { return mock.chatDelayMs },
+  }
+
   const mock: MockServices = {
     failConversations: false,
     failPatch: false,
     failUpload: false,
+    failRun: false,
+    failChat: false,
+    chatDelayMs: 0,
     advance(jobId) {
       for (const job of jobs.values()) if (!jobId || job.id === jobId) stepJob(job)
     },
@@ -388,6 +402,31 @@ export function createMockServices({ signedIn = true, latencyMs = 0, emptyConver
       },
       templateUrl: () => '/v1/templates/sales.xlsx',
     },
+
+    runs: createRunService({
+      controls: runControls,
+      startRecalculation(runId) {
+        const c = [...conversations.values()].find((x) => x.current_run_id === runId)
+        if (!c) throw failure('not_found')
+        const job: Job = {
+          ...clone(jobsFx.forecast_running),
+          id: uuid(),
+          conversation_id: c.id,
+          status: 'queued',
+          stage: null,
+          stages: jobsFx.forecast_running.stages.map((s) => ({ ...s, state: 'pending' as const })),
+          processed: null,
+          total: null,
+          created_at: new Date().toISOString(),
+        }
+        jobs.set(job.id, job)
+        c.stage = 'calculating'
+        c.current_job_id = job.id
+        touch(c)
+        return { job_id: job.id, conversation_id: c.id }
+      },
+    }),
+    chat: createChatService({ controls: chatControls }),
 
     jobs: {
       async get(id) {
