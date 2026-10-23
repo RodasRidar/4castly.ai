@@ -102,7 +102,15 @@ ENDPOINTS: list[tuple[str, str, str, int, Any]] = [
     ("post", "/v1/messages/{message_id}/retry", "retry_message", 200, None),
 ]
 
-IMPLEMENTED = {"get_me", "update_me", "get_preferences", "update_preferences"}
+IMPLEMENTED = {
+    "get_me",
+    "update_me",
+    "get_preferences",
+    "update_preferences",
+    "create_upload",
+    "complete_upload",
+    "download_sales_template",
+}
 """Operations built in B4, tested on their own (`tests/db/endpoints`). B4 ends with only the chat
 operations left as stubs until B5."""
 

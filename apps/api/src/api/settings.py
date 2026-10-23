@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     jwks_url: str = ""
     """Defaults to `<issuer>/.well-known/jwks.json`."""
 
+    storage_bucket: str = "uploads"
+    modal_app_name: str = "castly-worker"
+    modal_environment: str = ""
+    """Modal environment (`dev` or `main`); empty uses the one the token belongs to."""
+
     environment: str = "local"
     service_version: str = "0.1.0"
     log_json: bool | None = None

@@ -6,6 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.adapters.jwks import JwksTokenVerifier
+from api.adapters.modal_spawner import ModalJobSpawner
+from api.adapters.supabase_storage import SupabaseStorage
 from api.container import Container
 from api.db.engine import create_engine
 from api.errors import register_exception_handlers
@@ -18,6 +20,8 @@ from api.observability.middleware import (
 from api.observability.tracing import configure_tracing
 from api.openapi import install_openapi
 from api.ports.auth import TokenVerifier
+from api.ports.jobs import JobSpawner
+from api.ports.storage import ObjectStorage
 from api.routers import (
     conversations,
     health,
@@ -35,7 +39,11 @@ V1_ROUTERS = (me, conversations, uploads, templates, jobs, runs, products, messa
 
 
 def create_app(
-    settings: Settings | None = None, *, verifier: TokenVerifier | None = None
+    settings: Settings | None = None,
+    *,
+    verifier: TokenVerifier | None = None,
+    storage: ObjectStorage | None = None,
+    spawner: JobSpawner | None = None,
 ) -> FastAPI:
     """Build the app. The keyword arguments replace adapters (tests inject fakes)."""
     settings = settings or get_settings()
@@ -48,6 +56,16 @@ def create_app(
             jwks_url=settings.resolved_jwks_url,
             issuer=settings.resolved_jwt_issuer,
             audience=settings.jwt_audience,
+        ),
+        storage=storage
+        or SupabaseStorage(
+            base_url=settings.supabase_url,
+            service_key=settings.supabase_service_role_key,
+            bucket=settings.storage_bucket,
+        ),
+        spawner=spawner
+        or ModalJobSpawner(
+            app_name=settings.modal_app_name, environment=settings.modal_environment
         ),
     )
 

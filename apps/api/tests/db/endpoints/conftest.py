@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -16,11 +17,52 @@ from fastapi.testclient import TestClient
 
 from api.adapters.jwks import JwksTokenVerifier
 from api.main import create_app
+from api.ports.storage import SignedDownload, SignedUpload, StoredObject
 from api.settings import Settings
 from authn.keys import AUDIENCE, ISSUER, TestKey, jwks
 from db.seed import Side, seed_side
 
 PROBLEM = "application/problem+json"
+
+
+class FakeStorage:
+    """In-memory bucket: tests put objects in `objects` as the browser would."""
+
+    def __init__(self) -> None:
+        self.objects: dict[str, bytes] = {}
+        self.upload_requests: list[tuple[str, str]] = []
+
+    async def create_upload_url(self, path: str, content_type: str) -> SignedUpload:
+        self.upload_requests.append((path, content_type))
+        return SignedUpload(
+            url=f"https://storage.test/upload/{path}?token=t",
+            headers={"Content-Type": content_type},
+            expires_at=datetime.now(UTC) + timedelta(hours=2),
+        )
+
+    async def stat(self, path: str) -> StoredObject | None:
+        data = self.objects.get(path)
+        return None if data is None else StoredObject(len(data), data[:8192])
+
+    async def create_download_url(self, path: str, *, ttl_seconds: int = 60) -> SignedDownload:
+        return SignedDownload(
+            f"https://storage.test/download/{path}?ttl={ttl_seconds}",
+            datetime.now(UTC) + timedelta(seconds=ttl_seconds),
+        )
+
+    async def put(self, path: str, data: bytes, content_type: str) -> None:
+        self.objects[path] = data
+
+
+class FakeSpawner:
+    def __init__(self) -> None:
+        self.spawned: list[tuple[str, UUID]] = []
+        self.fail = False
+
+    async def spawn(self, kind: str, job_id: UUID) -> None:
+        if self.fail:
+            raise RuntimeError("modal is down")
+        self.spawned.append((kind, job_id))
 
 
 @pytest.fixture(scope="session")
@@ -36,6 +78,8 @@ class World:
     client: TestClient
     key: TestKey
     dsn: str
+    storage: FakeStorage
+    spawner: FakeSpawner
 
     def headers(self, user: UUID | None = None, **claims: Any) -> dict[str, str]:
         token = self.key.token(
@@ -67,5 +111,12 @@ def app_client(api_url: str, key: TestKey, **overrides: Any) -> TestClient:
 @pytest.fixture
 def world(pg_dsn: str, api_url: str, signing_key: TestKey) -> Iterator[World]:
     side = new_side(pg_dsn)
-    with app_client(api_url, signing_key) as client:
-        yield World(side, client, signing_key, pg_dsn)
+    storage, spawner = FakeStorage(), FakeSpawner()
+    with app_client(api_url, signing_key, storage=storage, spawner=spawner) as client:
+        yield World(side, client, signing_key, pg_dsn, storage, spawner)
+
+
+def fetch_row(admin: psycopg.Connection, sql: str, params: list) -> tuple:
+    row = admin.execute(sql, params).fetchone()  # ty: ignore[invalid-argument-type]
+    assert row is not None
+    return row
