@@ -29,7 +29,7 @@ from api.schemas import (
     PlanConfirmation,
     PlanView,
 )
-from api.services import conversations, messages, plans
+from api.services import conversations, forecasts, messages, plans
 
 router = APIRouter(
     prefix="/v1/conversations",
@@ -95,10 +95,11 @@ async def confirm_plan(conversation_id: UUID, body: PlanConfirmation, tx: Curren
 async def start_forecast(
     conversation_id: UUID,
     body: ForecastRequest,
+    tx: CurrentTx,
     idempotency_key: IdempotencyKey = None,
 ) -> JobAccepted:
     """Answers or `skip: true`, then the forecast job starts."""
-    raise NotImplementedYetError
+    return await forecasts.start_forecast(tx, conversation_id, body, idempotency_key)
 
 
 @router.get("/{conversation_id}/messages", responses=errors(404, 422))
