@@ -58,8 +58,8 @@ describe('routes', () => {
   })
 
   it('renders the product detail route', async () => {
-    renderApp({ path: '/c/c5d30c23-398a-5d64-a690-c2086b0def35/productos/PRQ-010130' })
-    expect(await screen.findByRole('heading', { name: 'Detalle del producto' })).toBeInTheDocument()
+    renderApp({ path: '/c/c5d30c23-398a-5d64-a690-c2086b0def35/productos/QF-0001' })
+    expect(await screen.findByRole('heading', { name: /Ácido cítrico anhidro/ })).toBeInTheDocument()
   })
 
   it('marks the page as the main landmark', async () => {
