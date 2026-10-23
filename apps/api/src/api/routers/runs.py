@@ -8,7 +8,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Path, Query
 
 from api.auth import CurrentTx
-from api.domain.errors import NotImplementedYetError
 from api.routers._common import bearer_scheme, errors
 from api.schemas import (
     AbcClass,
@@ -25,7 +24,7 @@ from api.schemas import (
     SimulationResult,
     SortOrder,
 )
-from api.services import run_parameters, run_product_detail, run_products, runs
+from api.services import run_exports, run_parameters, run_product_detail, run_products, runs
 
 router = APIRouter(
     prefix="/v1/runs", tags=["runs"], dependencies=[Depends(bearer_scheme)], responses=errors()
@@ -87,6 +86,6 @@ async def recalculate_run(run_id: UUID, tx: CurrentTx) -> JobAccepted:
 
 
 @router.post("/{run_id}/exports", status_code=201, responses=errors(404, 422))
-async def create_export(run_id: UUID, body: ExportRequest) -> ExportFile:
+async def create_export(run_id: UUID, body: ExportRequest, tx: CurrentTx) -> ExportFile:
     """Excel export of everything, a selection or one product."""
-    raise NotImplementedYetError
+    return await run_exports.create_export(tx, run_id, body)

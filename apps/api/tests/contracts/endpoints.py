@@ -129,6 +129,7 @@ IMPLEMENTED = {
     "update_run_parameters",
     "recalculate_run",
     "update_product_overrides",
+    "create_export",
 }
 """Operations built in B4, tested on their own (`tests/db/endpoints`). B4 ends with only the chat
 operations left as stubs until B5."""
