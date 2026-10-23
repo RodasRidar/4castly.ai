@@ -41,8 +41,10 @@ B2B demand/stock forecasting SaaS. First client: a chemical/pharma importer expo
 
 ## Licensing
 
-TimesFM 3.0 weights are non-commercial: local experiments only. Production uses TimesFM 2.5
-(Apache-2.0) or BigQuery ML behind the `Forecaster` port.
+TimesFM 3.0 weights are non-commercial. They are allowed for local experiments and for the
+non-commercial pilot (primary model, with statsforecast AutoETS as baseline and fallback). Replacing
+them (TimesFM 2.5 Apache-2.0, BigQuery ML, or another model behind the `Forecaster` port) is a release
+gate before any commercial use. See `docs/plan-implementacion.md` section 6b.
 
 ## Skills
 

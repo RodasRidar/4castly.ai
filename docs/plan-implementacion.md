@@ -1118,6 +1118,9 @@ persisted, so they keep working when the assistant, the forecaster or a third pa
 
 ### Data
 
+- **R14 Keep-alive (pilot on Supabase Free).** A Modal scheduled function runs once a day: it calls
+  `/health/ready` and runs a lightweight query against the database, so the free project is never paused for
+  inactivity. A failure is logged to Axiom and raises a monitor alert. Removed when the project moves to Pro.
 - **R10 Backups.** Daily backups plus point-in-time recovery for production (Supabase add-on, cost decision
   S-open-5). A restore drill before the first client and then every quarter.
 - **R11 Migrations.** Expand/contract only (add, backfill, switch, then remove in a later release), so the
@@ -1139,12 +1142,12 @@ assistant first token under 3 s. Monitored in Axiom (section 7b).
 
 | # | Decision | Recommendation |
 |---|---|---|
-| S-open-1 | Resend countdown vs Supabase per-address email limit | Set the limit to 30 s to keep the brief's countdown |
-| S-open-2 | Retention of original uploaded files | 30 days, then delete; derived data kept |
-| S-open-3 | Daily assistant token budget per tenant | Start generous, alert at 80 %, tune after the first client |
-| S-open-4 | Hosting for API, worker and web | Decided 2026-10-23: Vercel (web + API), Modal (worker); section 13 |
-| S-open-5 | Point-in-time recovery for production | Yes before the first real client |
-| S-open-6 | Upload size and row limits | Set from the first client's real files |
+| S-open-1 | Resend countdown vs Supabase per-address email limit | Decided: limit set to 30 s to keep the brief's countdown |
+| S-open-2 | Retention of original uploaded files | Decided: 30 days, then delete; derived data kept |
+| S-open-3 | Assistant token budget per tenant | Decided: no per-tenant budget in the MVP; `max_tokens` per turn and a per-user message rate limit |
+| S-open-4 | Hosting for API, worker and web | Decided: Vercel (web + API), Modal (worker); section 13 |
+| S-open-5 | Point-in-time recovery | Decided: not during the non-commercial pilot; enabled before any commercial use |
+| S-open-6 | Upload size and row limits | Decided: set from the first client's real files in phase B3, enforced by the API (S11) |
 
 ---
 
@@ -1184,7 +1187,7 @@ tier: requires Workers Paid, and each container is started from a TypeScript Wor
 | Service | MVP (development) | First paying client |
 |---|---|---|
 | Vercel | Hobby (non-commercial; the pilot is non-commercial, Q1) | Pro is required for commercial use |
-| Supabase | Free (pauses projects after a week of inactivity; no PITR) | Pro + PITR (R10) |
+| Supabase | Free (pauses projects after a week of inactivity; no PITR). A Modal scheduled function runs a daily health check that queries the database, which keeps the project active (R14) | Pro + PITR (R10) |
 | Resend | Free (100 emails/day, 3,000/month) | Pro if auth volume approaches the cap |
 | Modal | Starter (free monthly credits; confirm the current amount on modal.com) | Stays on usage billing |
 | Langfuse, Axiom | Free tiers | Review volume after the first month |
