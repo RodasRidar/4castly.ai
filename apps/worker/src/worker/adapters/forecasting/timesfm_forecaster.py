@@ -31,7 +31,8 @@ class TimesFMForecaster:
 
     def _load(self) -> Any:
         if self._model is None:
-            from timesfm3.mlx import ModelConfig, TimesFM3Forecaster  # noqa: PLC0415  (lazy: mlx + weights)
+            # Lazy (mlx + weights) and optional: only installed through `uv sync --group local`.
+            from timesfm3.mlx import ModelConfig, TimesFM3Forecaster  # noqa: PLC0415  # ty: ignore[unresolved-import]
 
             self._model = TimesFM3Forecaster(
                 ModelConfig(

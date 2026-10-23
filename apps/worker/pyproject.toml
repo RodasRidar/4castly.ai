@@ -8,15 +8,26 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=2.2.0",
+    "castly-inventory",
+    "castly-telemetry",
+    "defusedxml>=0.7.1",
+    "httpx>=0.28.1",
     "openpyxl>=3.1.5",
     "pandera>=0.34.1",
     "polars>=2.0.0",
+    "psycopg[binary]>=3.3.6",
+    "sqlalchemy>=2",
     "statsforecast>=2.1.1",
-    "timesfm[mlx]>=3.0.2",
 ]
 
 [tool.uv.build-backend]
 module-name = "worker"
+
+[tool.uv.sources]
+castly-inventory = { path = "../../packages/inventory", editable = true }
+castly-telemetry = { path = "../../packages/telemetry", editable = true }
+castly-pgtest = { path = "../../packages/pgtest", editable = true }
 
 [build-system]
 requires = ["uv_build>=0.11.21,<0.12.0"]
@@ -24,10 +35,15 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "castly-pgtest",
     "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.1",
     "ty>=0.0.90",
+]
+local = [
+    "timesfm[mlx]>=3.0.2",
 ]
 
 [tool.pytest.ini_options]
