@@ -25,7 +25,7 @@ from api.schemas import (
     SimulationResult,
     SortOrder,
 )
-from api.services import run_products, runs
+from api.services import run_product_detail, run_products, runs
 
 router = APIRouter(
     prefix="/v1/runs", tags=["runs"], dependencies=[Depends(bearer_scheme)], responses=errors()
@@ -60,18 +60,18 @@ async def list_run_products(
 
 
 @router.get("/{run_id}/products/{code}", responses=errors(404, 422))
-async def get_run_product(run_id: UUID, code: ProductCode) -> ProductDetail:
+async def get_run_product(run_id: UUID, code: ProductCode, tx: CurrentTx) -> ProductDetail:
     """Cards, weekly table and series, without and with the suggested purchase."""
-    raise NotImplementedYetError
+    return await tx.run(run_product_detail.get_detail, run_id, code)
 
 
 @router.post("/{run_id}/products/{code}/simulate", responses=errors(404, 422))
 async def simulate_product(
-    run_id: UUID, code: ProductCode, body: SimulationRequest
+    run_id: UUID, code: ProductCode, body: SimulationRequest, tx: CurrentTx
 ) -> SimulationResult:
     """What-if on lead time, target coverage or purchase. Uses the formulas on the persisted
     forecast; nothing is re-forecast or saved."""
-    raise NotImplementedYetError
+    return await tx.run(run_product_detail.simulate, run_id, code, body)
 
 
 @router.put("/{run_id}/parameters", responses=errors(404, 409, 422))

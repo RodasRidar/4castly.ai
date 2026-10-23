@@ -124,6 +124,8 @@ IMPLEMENTED = {
     "start_forecast",
     "get_run_summary",
     "list_run_products",
+    "get_run_product",
+    "simulate_product",
 }
 """Operations built in B4, tested on their own (`tests/db/endpoints`). B4 ends with only the chat
 operations left as stubs until B5."""
