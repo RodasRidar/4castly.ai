@@ -25,7 +25,7 @@ from api.schemas import (
     SimulationResult,
     SortOrder,
 )
-from api.services import runs
+from api.services import run_products, runs
 
 router = APIRouter(
     prefix="/v1/runs", tags=["runs"], dependencies=[Depends(bearer_scheme)], responses=errors()
@@ -50,9 +50,13 @@ async def list_run_products(
     order: SortOrder = SortOrder.ASC,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 25,
+    *,
+    tx: CurrentTx,
 ) -> ProductPage:
     """Paginated, filtered table. `q` matches code and name ignoring accents and case."""
-    raise NotImplementedYetError
+    return await tx.run(
+        run_products.list_products, run_id, q, risk, abc, sort, order, page, page_size
+    )
 
 
 @router.get("/{run_id}/products/{code}", responses=errors(404, 422))
