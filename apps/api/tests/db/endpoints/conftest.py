@@ -194,3 +194,103 @@ def add_message(  # noqa: PLR0913
             ],
         )
     return message
+
+
+TABULAR_PROFILE: dict[str, Any] = {
+    "source_kind": "tabular",
+    "sheets": [
+        {
+            "name": "Ventas",
+            "row_count": 100,
+            "columns": [
+                {"name": "Fecha Doc", "inferred_type": "date", "samples": ["12/01/2026"]},
+                {"name": "Cod Art", "inferred_type": "text", "samples": ["QF-0001", "QF-0002"]},
+                {"name": "Artículo", "inferred_type": "text", "samples": ["Ácido cítrico"]},
+                {"name": "Cant", "inferred_type": "number", "samples": ["1.850,5", "320"]},
+                {"name": "Stock", "inferred_type": "number", "samples": ["10"]},
+            ],
+        },
+        {"name": "Resumen", "row_count": 3, "columns": []},
+    ],
+    "date_from": "2026-01-12",
+    "date_to": "2026-10-12",
+}
+TABULAR_PLAN = {
+    "version": 1,
+    "sheet": "Ventas",
+    "header_row": 1,
+    "date": {"column": "Fecha Doc", "format": "dd/mm/yyyy"},
+    "product_code": {"column": "Cod Art"},
+    "product_name": {"column": "Artículo"},
+    "quantity": {"column": "Cant", "decimal_separator": ","},
+    "stock": None,
+    "unit": {"column": None, "default": "u"},
+}
+SUMMARY = {
+    "products_found": 142,
+    "date_from": "2026-01-12",
+    "date_to": "2026-10-12",
+    "history_weeks": 39,
+    "rows_read": 5000,
+    "rows_dropped": 12,
+}
+
+
+def tabular_document(**overrides: object) -> dict:
+    document = {
+        "version": 1,
+        "source_kind": "tabular",
+        "plan": TABULAR_PLAN,
+        "summary": SUMMARY,
+        "movement_rules": [],
+        "warnings": [{"code": "dropped_rows", "severity": "info", "count": 12, "params": {}}],
+        "date_column_candidates": [],
+        "unmapped_required": [],
+        "needs_date_column": False,
+    }
+    return {**document, **overrides}
+
+
+def add_plan(  # noqa: PLR0913
+    world: World,
+    *,
+    stage: str = "awaiting_confirmation",
+    document: dict | None = None,
+    profile: dict | None = None,
+    sheets: list[str] | None = None,
+    selected_sheet: str | None = "Ventas",
+    proposed_by: str = "llm",
+    confirmed: bool = False,
+) -> UUID:
+    """A conversation with an uploaded, digested file and its proposed (or confirmed) plan."""
+    conversation = add_conversation(world, stage=stage)
+    upload = uuid4()
+    with psycopg.connect(world.dsn, autocommit=True) as admin:
+        admin.execute(
+            "insert into public.uploads (id, tenant_id, conversation_id, created_by, storage_path, "
+            "file_name, size_bytes, content_type, status, sheets, selected_sheet, profile) "
+            "values (%s, %s, %s, %s, %s, 'ventas.xlsx', 100, 'text/csv', 'readable', %s, %s, %s)",
+            [
+                upload,
+                world.side.tenant,
+                conversation,
+                world.side.user,
+                f"{world.side.tenant}/{upload}/ventas.xlsx",
+                sheets or ["Ventas", "Resumen"],
+                selected_sheet,
+                Jsonb(profile or TABULAR_PROFILE),
+            ],
+        )
+        admin.execute(
+            "insert into public.normalization_plans (tenant_id, upload_id, plan, proposed_by, "
+            "confirmed_at, confirmed_by) values (%s, %s, %s, %s, %s, %s)",
+            [
+                world.side.tenant,
+                upload,
+                Jsonb(document or tabular_document()),
+                proposed_by,
+                datetime.now(UTC) if confirmed else None,
+                world.side.user if confirmed else None,
+            ],
+        )
+    return conversation

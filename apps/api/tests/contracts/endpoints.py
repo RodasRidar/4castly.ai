@@ -119,6 +119,8 @@ IMPLEMENTED = {
     "delete_conversation",
     "restore_conversation",
     "list_messages",
+    "get_plan",
+    "confirm_plan",
 }
 """Operations built in B4, tested on their own (`tests/db/endpoints`). B4 ends with only the chat
 operations left as stubs until B5."""

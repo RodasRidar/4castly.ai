@@ -29,7 +29,7 @@ from api.schemas import (
     PlanConfirmation,
     PlanView,
 )
-from api.services import conversations, messages
+from api.services import conversations, messages, plans
 
 router = APIRouter(
     prefix="/v1/conversations",
@@ -80,15 +80,15 @@ async def restore_conversation(conversation_id: UUID, tx: CurrentTx) -> Conversa
 
 
 @router.get("/{conversation_id}/plan", responses=errors(404, 422))
-async def get_plan(conversation_id: UUID) -> PlanView:
+async def get_plan(conversation_id: UUID, tx: CurrentTx) -> PlanView:
     """Detected sheets, mapping, samples, warnings and plausible date columns."""
-    raise NotImplementedYetError
+    return await tx.run(plans.get_plan, conversation_id)
 
 
 @router.put("/{conversation_id}/plan", responses=errors(404, 409, 422))
-async def confirm_plan(conversation_id: UUID, body: PlanConfirmation) -> PlanView:
+async def confirm_plan(conversation_id: UUID, body: PlanConfirmation, tx: CurrentTx) -> PlanView:
     """Confirm the proposed mapping or replace it, in one call."""
-    raise NotImplementedYetError
+    return await tx.run(plans.confirm_plan, conversation_id, body)
 
 
 @router.post("/{conversation_id}/forecast", status_code=202, responses=errors(404, 409, 422))
