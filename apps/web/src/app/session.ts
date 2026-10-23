@@ -3,9 +3,14 @@ import { useServices } from '../services/servicesContext'
 
 export const sessionKey = ['session'] as const
 
+/** The signed-in user, or null. Guards read this one query. */
 export function useSession() {
-  const { auth } = useServices()
-  return useQuery({ queryKey: sessionKey, queryFn: () => auth.getSession(), staleTime: Infinity })
+  const { auth, profile } = useServices()
+  return useQuery({
+    queryKey: sessionKey,
+    queryFn: async () => ((await auth.hasSession()) ? profile.getMe() : null),
+    staleTime: Infinity,
+  })
 }
 
 export function useSignOut() {

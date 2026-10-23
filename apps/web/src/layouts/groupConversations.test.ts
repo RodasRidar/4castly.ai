@@ -1,45 +1,56 @@
 import { describe, expect, it } from 'vitest'
-import type { Conversation } from '../services/ports'
+import type { Conversation } from '../services/types'
 import { groupConversations } from './groupConversations'
 
-const labels = { pinned: 'Fijados', today: 'Hoy', thisWeek: 'Esta semana', earlier: 'Antes' }
-const now = new Date('2026-10-23T15:00:00').getTime()
-const at = (iso: string): Pick<Conversation, 'updatedAt'> => ({ updatedAt: new Date(iso).toISOString() })
-const conv = (id: string, iso: string, extra: Partial<Conversation> = {}): Conversation => ({
+const labels = { pinned: 'Fijados', today: 'Hoy', this_week: 'Esta semana', older: 'Antes' }
+const conv = (id: string, group: Conversation['group'], at: string, extra: Partial<Conversation> = {}): Conversation => ({
   id,
   title: id,
-  pinned: false,
-  ...at(iso),
+  stage: 'ready',
+  group,
+  pinned: group === 'pinned',
+  archived: false,
+  file_name: null,
+  current_job_id: null,
+  current_run_id: null,
+  created_at: at,
+  last_activity_at: at,
+  deleted_at: null,
   ...extra,
 })
 
 describe('groupConversations', () => {
-  it('buckets by recency, pinned first, and drops empty groups', () => {
+  it('follows the API buckets in fixed order and drops empty groups', () => {
     const groups = groupConversations(
-      [
-        conv('old', '2026-08-01T10:00:00'),
-        conv('today', '2026-10-23T08:00:00'),
-        conv('week', '2026-10-19T08:00:00'),
-        conv('pin', '2026-01-01T08:00:00', { pinned: true }),
-      ],
+      [conv('old', 'older', '2026-08-01T10:00:00Z'), conv('today', 'today', '2026-10-23T08:00:00Z'), conv('pin', 'pinned', '2026-01-01T08:00:00Z')],
       labels,
-      now,
     )
     expect(groups.map((g) => [g.title, g.items.map((i) => i.id)])).toEqual([
       ['Fijados', ['pin']],
       ['Hoy', ['today']],
-      ['Esta semana', ['week']],
       ['Antes', ['old']],
     ])
   })
 
   it('sorts newest first inside a group and links each item', () => {
-    const [group] = groupConversations([conv('a', '2026-10-23T07:00:00'), conv('b', '2026-10-23T09:00:00')], labels, now)
+    const [group] = groupConversations([conv('a', 'today', '2026-10-23T07:00:00Z'), conv('b', 'today', '2026-10-23T09:00:00Z')], labels)
     expect(group.items.map((i) => i.id)).toEqual(['b', 'a'])
     expect(group.items[0].href).toBe('/c/b')
   })
 
+  it.each([
+    ['digesting', 'processing'],
+    ['calculating', 'processing'],
+    ['failed', 'failed'],
+    ['unreadable', 'failed'],
+    ['ready', undefined],
+    ['awaiting_confirmation', undefined],
+  ] as const)('maps stage %s to status %s', (stage, status) => {
+    const [group] = groupConversations([conv('x', 'today', '2026-10-23T07:00:00Z', { stage })], labels)
+    expect(group.items[0].status).toBe(status)
+  })
+
   it('returns no groups for an empty list', () => {
-    expect(groupConversations([], labels, now)).toEqual([])
+    expect(groupConversations([], labels)).toEqual([])
   })
 })

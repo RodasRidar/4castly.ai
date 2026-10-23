@@ -25,9 +25,9 @@ export function AppSidebar({ collapsed, onToggleCollapsed, mobile }: AppSidebarP
 
   const list = useQuery({ queryKey: conversationsKey, queryFn: () => conversations.list() })
   const refresh = () => queryClient.invalidateQueries({ queryKey: conversationsKey })
-  const pin = useMutation({ mutationFn: (v: { id: string; pinned: boolean }) => conversations.setPinned(v.id, v.pinned), onSettled: refresh })
-  const rename = useMutation({ mutationFn: (v: { id: string; title: string }) => conversations.rename(v.id, v.title), onSettled: refresh })
-  const archive = useMutation({ mutationFn: (id: string) => conversations.archive(id), onSettled: refresh })
+  const pin = useMutation({ mutationFn: (v: { id: string; pinned: boolean }) => conversations.update(v.id, { pinned: v.pinned }), onSettled: refresh })
+  const rename = useMutation({ mutationFn: (v: { id: string; title: string }) => conversations.update(v.id, { title: v.title }), onSettled: refresh })
+  const archive = useMutation({ mutationFn: (id: string) => conversations.update(id, { archived: true }), onSettled: refresh })
   const remove = useMutation({ mutationFn: (id: string) => conversations.remove(id), onSettled: refresh })
   const leaveIfActive = (id: string) => {
     if (id === activeId) void navigate('/nuevo')
@@ -36,8 +36,8 @@ export function AppSidebar({ collapsed, onToggleCollapsed, mobile }: AppSidebarP
   const groups = groupConversations(list.data ?? [], {
     pinned: t('conversations.pinned'),
     today: t('conversations.today'),
-    thisWeek: t('conversations.thisWeek'),
-    earlier: t('conversations.earlier'),
+    this_week: t('conversations.thisWeek'),
+    older: t('conversations.earlier'),
   }).map((g) => ({ ...g, items: g.items.map((i) => ({ ...i, active: i.id === activeId })) }))
 
   return (

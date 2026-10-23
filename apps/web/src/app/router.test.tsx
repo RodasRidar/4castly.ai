@@ -1,12 +1,11 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { setViewport } from '../test/matchMedia'
-import { defaultSeed } from '../services/mock'
 import { renderApp } from './testing'
 
 describe('guards', () => {
   it('redirects an anonymous visitor to /login and remembers where they were going', async () => {
-    const { router } = renderApp({ path: '/historial', user: null })
+    const { router } = renderApp({ path: '/historial', signedIn: false })
     expect(await screen.findByRole('heading', { name: 'Inicia sesión' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/login')
     expect(router.state.location.search).toBe('?next=%2Fhistorial')
@@ -31,14 +30,14 @@ describe('guards', () => {
   )
 
   it('protects settings too', async () => {
-    const { router } = renderApp({ path: '/configuracion/preferencias', user: null })
+    const { router } = renderApp({ path: '/configuracion/preferencias', signedIn: false })
     await screen.findByRole('heading', { name: 'Inicia sesión' })
     expect(router.state.location.search).toBe('?next=%2Fconfiguracion%2Fpreferencias')
   })
 
   it('signs out from the user menu and lands on /login', async () => {
     const { router, user } = renderApp({ path: '/nuevo' })
-    await user.click(await screen.findByRole('button', { name: /Marta Quispe/ }))
+    await user.click(await screen.findByRole('button', { name: /Ana Torres/ }))
     await user.click(await screen.findByRole('button', { name: 'Cerrar sesión' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'))
   })
@@ -59,7 +58,7 @@ describe('routes', () => {
   })
 
   it('renders the product detail route', async () => {
-    renderApp({ path: '/c/c1/productos/PRQ-010130' })
+    renderApp({ path: '/c/c5d30c23-398a-5d64-a690-c2086b0def35/productos/PRQ-010130' })
     expect(await screen.findByRole('heading', { name: 'Detalle del producto' })).toBeInTheDocument()
   })
 
@@ -71,12 +70,12 @@ describe('routes', () => {
 
 describe('AppLayout', () => {
   it('keeps the sidebar mounted while moving between conversations', async () => {
-    const { router, user } = renderApp({ path: '/c/c1' })
+    const { router, user } = renderApp({ path: '/c/c5d30c23-398a-5d64-a690-c2086b0def35' })
     const nav = await screen.findByRole('navigation', { name: 'Navegación principal' })
-    await user.click(await within(nav).findByRole('link', { name: /Reactivos importados/ }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/c/c3'))
+    await user.click(await within(nav).findByRole('link', { name: /Ventas tercer trimestre/ }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/c/f9f0fc05-4411-53c2-8a70-6dfb1d902c1b'))
     expect(screen.getByRole('navigation', { name: 'Navegación principal' })).toBe(nav)
-    expect(within(nav).getByRole('link', { name: /Reactivos importados/ })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: /Ventas tercer trimestre/ })).toHaveAttribute('aria-current', 'page')
   })
 
   it('does not reload the document when following internal links', async () => {
@@ -104,14 +103,14 @@ describe('AppLayout', () => {
   })
 
   it('shows an empty list state when there are no conversations', async () => {
-    renderApp({ path: '/nuevo', seed: { ...defaultSeed(), conversations: [] } })
+    renderApp({ path: '/nuevo', emptyConversations: true })
     expect(await screen.findByText('Aún no hay conversaciones')).toBeInTheDocument()
   })
 
   it('shows pinned, processing and failed conversations', async () => {
     renderApp({ path: '/nuevo' })
     expect(await screen.findByText('Fijados')).toBeInTheDocument()
-    expect(screen.getByText('Pronóstico Kardex marzo')).toBeInTheDocument()
+    expect(screen.getByText('Kardex octubre 2026')).toBeInTheDocument()
   })
 
   it('shows the conversation error state with retry', async () => {
@@ -119,7 +118,7 @@ describe('AppLayout', () => {
     expect(await screen.findByText('No pudimos cargar tus conversaciones')).toBeInTheDocument()
     services.failConversations = false
     await user.click(screen.getByRole('button', { name: 'Reintentar' }))
-    expect(await screen.findByText('Solventes Q2')).toBeInTheDocument()
+    expect(await screen.findByText('Ventas por confirmar')).toBeInTheDocument()
   })
 })
 

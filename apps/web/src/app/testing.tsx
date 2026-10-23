@@ -2,27 +2,23 @@ import { render } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { createI18n } from '../i18n'
-import { createMockServices, defaultSeed, type MockSeed } from '../services/mock'
-import type { Language } from '../services/ports'
+import { createMockServices, type MockOptions } from '../services/mock'
+import type { Locale } from '../services/types'
 import { createThemeStore } from '../theme/themeStore'
 import type { AppEnv } from './env'
 import { AppProviders } from './providers'
 import { createRoutes } from './routes'
 
-interface RenderAppOptions {
+interface RenderAppOptions extends MockOptions {
   path?: string
-  /** `null` renders an anonymous visitor. */
-  user?: MockSeed['user']
-  seed?: MockSeed
-  language?: Language
+  language?: Locale
   failConversations?: boolean
   failPatch?: boolean
 }
 
-/** Mounts the whole app on a memory router with fake services, a private theme store and a detached <html>. */
-export function renderApp({ path = '/nuevo', user, seed, language = 'es', failConversations, failPatch }: RenderAppOptions = {}) {
-  const base = seed ?? defaultSeed()
-  const services = createMockServices(user === undefined ? base : { ...base, user })
+/** Mounts the whole app on a memory router with mock services, a private theme store and a detached <html>. */
+export function renderApp({ path = '/nuevo', language = 'es', failConversations, failPatch, ...options }: RenderAppOptions = {}) {
+  const services = createMockServices(options)
   services.failConversations = failConversations ?? false
   services.failPatch = failPatch ?? false
 

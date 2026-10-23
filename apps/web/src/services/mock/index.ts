@@ -1,86 +1,413 @@
-import type { Conversation, Preferences, Services, User } from '../ports'
+import chat from './fixtures/chat.json'
+import conversationsFx from './fixtures/conversations.json'
+import entryFlow from './fixtures/entry-flow.json'
+import session from './fixtures/session.json'
+import { failure } from './errors'
+import type { Services } from '../ports'
+import type {
+  Conversation,
+  ConversationDetail,
+  Job,
+  PlanView,
+  Preferences,
+  UploadCreate,
+  UploadErrorCode,
+  User,
+} from '../types'
+
+void chat
+
+/** Code accepted by the mock OTP verification. */
+export const MOCK_OTP_CODE = '123456'
 
 /** Test and story switches to exercise error states. */
-export interface MockServices extends Services {
+export interface MockControls {
   failConversations: boolean
   failPatch: boolean
+  failUpload: boolean
+  /** Job ids whose next `advance()` is held back (to look at a running state). */
+  advance(jobId?: string): void
+  /** Advances running jobs by one step every `ms`; returns the stop function. */
+  autoAdvance(ms: number): () => void
+  setSession(signedIn: boolean): void
+}
+export type MockServices = Services & MockControls
+
+interface Outcome {
+  stage: 'awaiting_confirmation' | 'unreadable' | 'needs_date_column' | 'failed'
+  errorCode?: UploadErrorCode
 }
 
-export interface MockSeed {
-  user: User | null
-  conversations: Conversation[]
-  preferences: Preferences
+/** Decides what digesting a file does from its name, so every entry-flow state is reproducible by hand. */
+export function digestOutcome(fileName: string): Outcome {
+  const name = fileName.toLowerCase()
+  if (/protegido|locked|password/.test(name)) return { stage: 'unreadable', errorCode: 'password_protected' }
+  if (/corrupt|danado|dañado/.test(name)) return { stage: 'unreadable', errorCode: 'corrupt' }
+  if (/sin-fechas|nodate|sin_fechas/.test(name)) return { stage: 'needs_date_column' }
+  if (/falla|fail/.test(name)) return { stage: 'failed' }
+  return { stage: 'awaiting_confirmation' }
 }
 
-const DAY = 86_400_000
+const clone = <T,>(value: T): T => structuredClone(value)
+const uuid = () => crypto.randomUUID()
 
-export function defaultSeed(now = Date.now()): MockSeed {
-  const ago = (days: number) => new Date(now - days * DAY).toISOString()
-  return {
-    user: { id: 'u1', name: 'Marta Quispe', email: 'marta@importadora.example', company: 'Importadora Andina' },
-    conversations: [
-      { id: 'c1', title: 'Pronóstico Kardex marzo', pinned: true, updatedAt: ago(0) },
-      { id: 'c2', title: 'Solventes Q2', pinned: false, status: 'processing', updatedAt: ago(0) },
-      { id: 'c3', title: 'Reactivos importados', pinned: false, updatedAt: ago(3) },
-      { id: 'c4', title: 'Envases 2025', pinned: false, status: 'failed', updatedAt: ago(40) },
-    ],
-    preferences: { theme: 'system', language: 'es', timezone: 'America/Lima' },
-  }
+export interface MockOptions {
+  signedIn?: boolean
+  latencyMs?: number
+  /** Start with no conversations (empty sidebar and history states). */
+  emptyConversations?: boolean
+  preferences?: Partial<Preferences>
 }
 
-/** In-memory services implementing the ports. `latencyMs` lets stories and tests exercise loading states. */
-export function createMockServices(seed: MockSeed = defaultSeed(), latencyMs = 0): MockServices {
-  let user = seed.user
-  let conversations = [...seed.conversations]
-  let preferences = { ...seed.preferences }
+export function createMockServices({ signedIn = true, latencyMs = 0, emptyConversations = false, preferences: initialPreferences }: MockOptions = {}): MockServices {
+  let hasSession = signedIn
+  let user = clone(session.user) as User
+  let preferences = { ...(clone(session.preferences) as Preferences), ...initialPreferences }
+  const conversations = new Map<string, ConversationDetail>(
+    emptyConversations ? [] : (conversationsFx.details as unknown as ConversationDetail[]).map((c) => [c.id, clone(c)]),
+  )
+  const plans = new Map<string, PlanView>()
+  const jobs = new Map<string, Job>()
+  const answers = new Map<string, unknown>()
+  const uploads = new Map<string, UploadCreate>()
+  const outcomes = new Map<string, Outcome>()
+
   const wait = () => (latencyMs > 0 ? new Promise<void>((r) => setTimeout(r, latencyMs)) : Promise.resolve())
+  const plansFx = entryFlow.plans as unknown as Record<string, PlanView>
+  const jobsFx = entryFlow.jobs as unknown as Record<string, Job>
+
+  const planFor = (c: ConversationDetail): PlanView | undefined => {
+    const name = (c.file_name ?? '').toLowerCase()
+    switch (c.stage) {
+      case 'needs_date_column':
+        return clone(plansFx.needs_date_column)
+      case 'awaiting_confirmation':
+        return clone(name.includes('kardex') ? plansFx.kardex_proposed : plansFx.tabular_proposed)
+      case 'confirmed':
+      case 'clarifying':
+      case 'calculating':
+      case 'ready':
+      case 'failed': {
+        const base = clone(name.includes('kardex') ? plansFx.kardex_proposed : plansFx.tabular_confirmed)
+        return { ...base, status: 'confirmed' }
+      }
+      default:
+        return undefined
+    }
+  }
+
+  const jobFor = (c: ConversationDetail): Job | undefined => {
+    if (!c.current_job_id) return undefined
+    const template =
+      c.stage === 'calculating' ? jobsFx.forecast_running : c.stage === 'queued' ? jobsFx.digest_running : jobsFx.digest_running
+    const job = clone(template)
+    job.id = c.current_job_id
+    job.conversation_id = c.id
+    if (c.stage === 'queued') {
+      job.status = 'queued'
+      job.stage = null
+      job.stages = job.stages.map((s) => ({ ...s, state: 'pending' as const }))
+    }
+    return job
+  }
+
+  for (const c of conversations.values()) {
+    const plan = planFor(c)
+    if (plan) plans.set(c.id, plan)
+    const job = jobFor(c)
+    if (job) jobs.set(job.id, job)
+  }
+
+  const touch = (c: ConversationDetail) => {
+    c.last_activity_at = new Date().toISOString()
+  }
+
+  const toSummary = (c: ConversationDetail): Conversation => {
+    const { upload: _upload, ...summary } = c
+    return summary
+  }
+
+  const finishDigest = (job: Job) => {
+    const c = conversations.get(job.conversation_id)
+    if (!c) return
+    const outcome = outcomes.get(c.id) ?? digestOutcome(c.file_name ?? '')
+    c.stage = outcome.stage
+    c.current_job_id = null
+    if (outcome.stage === 'unreadable' && c.upload) {
+      c.upload = { ...c.upload, status: 'failed', error_code: outcome.errorCode ?? 'corrupt' }
+    } else if (outcome.stage === 'failed') {
+      job.status = 'failed'
+      job.error_ref = 'K7Q2WX'
+    } else {
+      if (c.upload) c.upload = { ...c.upload, status: 'readable' }
+      const plan = planFor(c)
+      if (plan) plans.set(c.id, plan)
+    }
+    touch(c)
+  }
+
+  const finishForecast = (job: Job) => {
+    const c = conversations.get(job.conversation_id)
+    if (!c) return
+    c.stage = 'ready'
+    c.current_job_id = null
+    c.current_run_id = (conversationsFx.details as unknown as ConversationDetail[]).find((d) => d.current_run_id)?.current_run_id ?? null
+    touch(c)
+  }
+
+  const stepJob = (job: Job) => {
+    if (job.status === 'succeeded' || job.status === 'failed' || job.status === 'cancelled') return
+    job.status = 'running'
+    const active = job.stages.findIndex((s) => s.state === 'active')
+    if (active === -1) {
+      job.stages[0] = { ...job.stages[0], state: 'active' }
+      job.stage = job.stages[0].stage
+      return
+    }
+    job.stages[active] = { ...job.stages[active], state: 'done' }
+    const next = job.stages[active + 1]
+    if (next) {
+      job.stages[active + 1] = { ...next, state: 'active' }
+      job.stage = next.stage
+      if (job.kind === 'forecast' && next.stage === 'calculating_forecast') {
+        job.total = 26
+        job.processed = 0
+      }
+      return
+    }
+    job.status = 'succeeded'
+    job.stage = null
+    job.finished_at = new Date().toISOString()
+    if (job.kind === 'digest') finishDigest(job)
+    else finishForecast(job)
+  }
 
   const mock: MockServices = {
     failConversations: false,
     failPatch: false,
+    failUpload: false,
+    advance(jobId) {
+      for (const job of jobs.values()) if (!jobId || job.id === jobId) stepJob(job)
+    },
+    autoAdvance(ms) {
+      const timer = setInterval(() => mock.advance(), ms)
+      return () => clearInterval(timer)
+    },
+    setSession(next) {
+      hasSession = next
+    },
+
     auth: {
-      async getSession() {
+      async hasSession() {
         await wait()
-        return user
+        return hasSession
+      },
+      async requestCode(email) {
+        await wait()
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw failure('validation')
+        // Same outcome for every well-formed email: the UI must never reveal whether it is enabled.
+      },
+      async verifyCode(_email, code) {
+        await wait()
+        if (code !== MOCK_OTP_CODE) throw failure('validation', { code: 'invalid_code', message_key: 'errors.invalidCode', fields: [] })
+        hasSession = true
       },
       async signOut() {
         await wait()
-        user = null
+        hasSession = false
       },
     },
-    conversations: {
-      async list() {
-        await wait()
-        if (mock.failConversations) throw new Error('conversations unavailable')
-        return conversations
-      },
-      async setPinned(id, pinned) {
-        await wait()
-        conversations = conversations.map((c) => (c.id === id ? { ...c, pinned } : c))
-      },
-      async rename(id, title) {
-        await wait()
-        conversations = conversations.map((c) => (c.id === id ? { ...c, title } : c))
-      },
-      async archive(id) {
-        await wait()
-        conversations = conversations.filter((c) => c.id !== id)
-      },
-      async remove(id) {
-        await wait()
-        conversations = conversations.filter((c) => c.id !== id)
-      },
-    },
+
     profile: {
+      async getMe() {
+        await wait()
+        return user
+      },
+      async updateMe(patch) {
+        await wait()
+        user = { ...user, ...Object.fromEntries(Object.entries(patch).filter(([, v]) => v != null)) }
+        return user
+      },
       async getPreferences() {
         await wait()
         return preferences
       },
-      async patchPreferences(patch) {
+      async updatePreferences(patch) {
         await wait()
-        if (mock.failPatch) throw new Error('preferences unavailable')
+        if (mock.failPatch) throw failure('failure')
         preferences = { ...preferences, ...patch }
         return preferences
+      },
+    },
+
+    conversations: {
+      async list() {
+        await wait()
+        if (mock.failConversations) throw failure('failure')
+        return [...conversations.values()]
+          .filter((c) => !c.deleted_at && !c.archived)
+          .sort((a, b) => b.last_activity_at.localeCompare(a.last_activity_at))
+          .map(toSummary)
+      },
+      async get(id) {
+        await wait()
+        const c = conversations.get(id)
+        if (!c || c.deleted_at) throw failure('not_found')
+        return clone(c)
+      },
+      async update(id, patch) {
+        await wait()
+        const c = conversations.get(id)
+        if (!c) throw failure('not_found')
+        if (patch.title != null) c.title = patch.title
+        if (patch.pinned != null) {
+          c.pinned = patch.pinned
+          c.group = patch.pinned ? 'pinned' : 'today'
+        }
+        if (patch.archived != null) c.archived = patch.archived
+        return toSummary(c)
+      },
+      async remove(id) {
+        await wait()
+        const c = conversations.get(id)
+        if (!c) throw failure('not_found')
+        c.deleted_at = new Date().toISOString()
+      },
+      async restore(id) {
+        await wait()
+        const c = conversations.get(id)
+        if (!c) throw failure('not_found')
+        c.deleted_at = null
+        return toSummary(c)
+      },
+      async getPlan(id) {
+        await wait()
+        const plan = plans.get(id)
+        if (!plan) throw failure('not_found')
+        return clone(plan)
+      },
+      async confirmPlan(id, confirmation) {
+        await wait()
+        const c = conversations.get(id)
+        const plan = plans.get(id)
+        if (!c || !plan) throw failure('not_found')
+        const next: PlanView = { ...plan, status: 'confirmed', proposed_by: confirmation.plan ? 'user' : plan.proposed_by }
+        if (confirmation.plan) {
+          next.plan = confirmation.plan
+          next.selected_sheet = confirmation.plan.sheet
+          next.date_column_candidates = []
+          next.mappings = plan.mappings.map((m) => (m.field === 'date' ? { ...m, column: confirmation.plan?.date?.column ?? m.column } : m))
+        }
+        plans.set(id, next)
+        c.stage = 'clarifying'
+        touch(c)
+        return clone(next)
+      },
+      async startForecast(id, request) {
+        await wait()
+        const c = conversations.get(id)
+        if (!c) throw failure('not_found')
+        const job: Job = {
+          ...clone(jobsFx.forecast_running),
+          id: uuid(),
+          conversation_id: id,
+          status: 'queued',
+          stage: null,
+          stages: jobsFx.forecast_running.stages.map((s) => ({ ...s, state: 'pending' as const })),
+          processed: null,
+          total: null,
+          created_at: new Date().toISOString(),
+        }
+        jobs.set(job.id, job)
+        answers.set(id, request)
+        c.stage = 'calculating'
+        c.current_job_id = job.id
+        touch(c)
+        return { job_id: job.id, conversation_id: id }
+      },
+    },
+
+    uploads: {
+      async create(file) {
+        await wait()
+        if (mock.failUpload) throw failure('failure')
+        const ticket = clone(entryFlow.upload_ticket) as unknown as ReturnType<Services['uploads']['create']> extends Promise<infer T> ? T : never
+        ticket.upload_id = uuid()
+        uploads.set(ticket.upload_id, file)
+        return ticket
+      },
+      async put(_ticket, _file, onProgress) {
+        await wait()
+        if (mock.failUpload) throw failure('failure')
+        onProgress?.(1)
+      },
+      async complete(uploadId) {
+        await wait()
+        const file = uploads.get(uploadId)
+        if (!file) throw failure('not_found')
+        const now = new Date().toISOString()
+        const conversationId = uuid()
+        const job: Job = {
+          ...clone(jobsFx.digest_running),
+          id: uuid(),
+          conversation_id: conversationId,
+          status: 'queued',
+          stage: null,
+          stages: jobsFx.digest_running.stages.map((s) => ({ ...s, state: 'pending' as const })),
+          created_at: now,
+          finished_at: null,
+        }
+        jobs.set(job.id, job)
+        conversations.set(conversationId, {
+          id: conversationId,
+          title: file.file_name.replace(/\.[^.]+$/, ''),
+          stage: 'digesting',
+          group: 'today',
+          pinned: false,
+          archived: false,
+          file_name: file.file_name,
+          current_job_id: job.id,
+          current_run_id: null,
+          created_at: now,
+          last_activity_at: now,
+          deleted_at: null,
+          upload: {
+            id: uploadId,
+            file_name: file.file_name,
+            size_bytes: file.size_bytes,
+            content_type: file.content_type,
+            status: 'uploaded',
+            error_code: null,
+            sheets: [],
+            selected_sheet: null,
+            profile: null,
+            uploaded_at: now,
+          },
+        })
+        return { conversation_id: conversationId, job_id: job.id }
+      },
+      templateUrl: () => '/v1/templates/sales.xlsx',
+    },
+
+    jobs: {
+      async get(id) {
+        await wait()
+        const job = jobs.get(id)
+        if (!job) throw failure('not_found')
+        return clone(job)
+      },
+      async cancel(id) {
+        await wait()
+        const job = jobs.get(id)
+        if (!job) throw failure('not_found')
+        job.status = 'cancelled'
+        job.finished_at = new Date().toISOString()
+        const c = conversations.get(job.conversation_id)
+        if (c) {
+          c.stage = 'cancelled'
+          c.current_job_id = null
+        }
+        return clone(job)
       },
     },
   }

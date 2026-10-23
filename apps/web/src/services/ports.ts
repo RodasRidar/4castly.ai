@@ -1,55 +1,70 @@
+import type {
+  ConversationDetail,
+  Conversation,
+  ConversationUpdate,
+  ForecastRequest,
+  Job,
+  JobAccepted,
+  PlanConfirmation,
+  PlanView,
+  Preferences,
+  ProfileUpdate,
+  UploadCompleted,
+  UploadCreate,
+  UploadTicket,
+  User,
+} from './types'
+
 /**
- * Service ports used by containers. F3 only needs the shell slice (session, conversation list, preferences);
- * the rest of section 8 arrives with F4-F5. Hand-written until schema.gen.ts is merged into dev, with the
- * names the generated models will use.
+ * Service ports used by containers (plan section 8). Swapping mock for http is one provider change per service.
+ * Every method rejects with `ApiFailure`.
  */
 
-export type ThemePreference = 'light' | 'dark' | 'system'
-export type Language = 'es' | 'en'
-
-export interface User {
-  id: string
-  name: string
-  email: string
-  company: string
-}
-
-export interface Preferences {
-  theme: ThemePreference
-  language: Language
-  timezone: string
-}
-
-export interface Conversation {
-  id: string
-  title: string
-  pinned: boolean
-  /** Contract request: `status` and a timestamp for grouping are not in the contract yet. */
-  status?: 'processing' | 'failed'
-  updatedAt: string
-}
-
 export interface AuthService {
-  /** Resolves the signed-in user or null. Never rejects for "not signed in". */
-  getSession(): Promise<User | null>
+  /** True when there is a signed-in session. Never rejects for "not signed in". */
+  hasSession(): Promise<boolean>
+  /** Supabase `signInWithOtp({ shouldCreateUser: false })`. Resolves for every well-formed email (no enumeration). */
+  requestCode(email: string): Promise<void>
+  /** Supabase `verifyOtp`. Rejects with `invalid_code` for a wrong or expired code. */
+  verifyCode(email: string, code: string): Promise<void>
   signOut(): Promise<void>
+}
+
+export interface ProfileService {
+  getMe(): Promise<User>
+  updateMe(patch: ProfileUpdate): Promise<User>
+  getPreferences(): Promise<Preferences>
+  updatePreferences(patch: Partial<Preferences>): Promise<Preferences>
 }
 
 export interface ConversationService {
   list(): Promise<Conversation[]>
-  setPinned(id: string, pinned: boolean): Promise<void>
-  rename(id: string, title: string): Promise<void>
-  archive(id: string): Promise<void>
+  get(id: string): Promise<ConversationDetail>
+  update(id: string, patch: ConversationUpdate): Promise<Conversation>
   remove(id: string): Promise<void>
+  restore(id: string): Promise<Conversation>
+  getPlan(id: string): Promise<PlanView>
+  confirmPlan(id: string, confirmation: PlanConfirmation): Promise<PlanView>
+  startForecast(id: string, request: ForecastRequest): Promise<JobAccepted>
 }
 
-export interface ProfileService {
-  getPreferences(): Promise<Preferences>
-  patchPreferences(patch: Partial<Preferences>): Promise<Preferences>
+export interface UploadService {
+  create(file: UploadCreate): Promise<UploadTicket>
+  /** Direct browser upload to the signed URL (the API never receives the file). */
+  put(ticket: UploadTicket, file: File, onProgress?: (fraction: number) => void): Promise<void>
+  complete(uploadId: string): Promise<UploadCompleted>
+  templateUrl(): string
+}
+
+export interface JobService {
+  get(id: string): Promise<Job>
+  cancel(id: string): Promise<Job>
 }
 
 export interface Services {
   auth: AuthService
-  conversations: ConversationService
   profile: ProfileService
+  conversations: ConversationService
+  uploads: UploadService
+  jobs: JobService
 }

@@ -3,7 +3,7 @@ import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { applyLanguage } from '../i18n'
 import { useServices } from '../services/servicesContext'
-import type { Preferences } from '../services/ports'
+import type { Preferences } from '../services/types'
 import { useThemeStore } from '../theme/useTheme'
 import { useAppEnv } from './envContext'
 import { useNotify } from './notifyContext'
@@ -19,9 +19,9 @@ function useApplyPreferences() {
   const { i18n, root } = useAppEnv()
   const themeStore = useThemeStore()
   return useCallback(
-    (prefs: Pick<Preferences, 'theme' | 'language'>) => {
+    (prefs: Pick<Preferences, 'theme' | 'locale'>) => {
       themeStore.setPreference(prefs.theme)
-      applyLanguage(i18n, prefs.language, root)
+      applyLanguage(i18n, prefs.locale, root)
     },
     [themeStore, i18n, root],
   )
@@ -45,7 +45,7 @@ export function useUpdatePreferences() {
   const { t } = useTranslation()
 
   return useMutation({
-    mutationFn: (patch: Partial<Preferences>) => profile.patchPreferences(patch),
+    mutationFn: (patch: Partial<Preferences>) => profile.updatePreferences(patch),
     onMutate: async (patch) => {
       await queryClient.cancelQueries({ queryKey: preferencesKey })
       const previous = queryClient.getQueryData<Preferences>(preferencesKey)

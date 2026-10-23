@@ -1,6 +1,6 @@
 import i18next, { type i18n } from 'i18next'
 import { initReactI18next } from 'react-i18next'
-import type { Language } from '../services/ports'
+import type { Locale as Language } from '../services/types'
 import { en } from './locales/en'
 import { es } from './locales/es'
 
