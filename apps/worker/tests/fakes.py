@@ -103,3 +103,42 @@ def make_claim(kind: str = "digest", **params: Any) -> JobClaim:
 
 def make_upload(file_name: str) -> UploadInfo:
     return UploadInfo(uuid4(), f"t/u/{file_name}", file_name)
+
+
+@dataclass
+class FakeRunRepo:
+    """Implements `RunRepository` in memory."""
+
+    confirmed: tuple[UploadInfo, PlanDocument] | None = None
+    overrides: dict[str, Any] = field(default_factory=dict)
+    exists: bool = False
+    stored_demand: list[Any] = field(default_factory=list)
+    previous_params: dict[str, Any] | None = None
+    saved_demand: list[Any] = field(default_factory=list)
+    published: Any = None
+    stages: list[str] = field(default_factory=list)
+
+    def load_confirmed(self, claim: JobClaim) -> tuple[UploadInfo, PlanDocument] | None:
+        return self.confirmed
+
+    def load_overrides(self, claim: JobClaim) -> dict[str, Any]:
+        return self.overrides
+
+    def run_exists_for_job(self, claim: JobClaim) -> bool:
+        return self.exists
+
+    def save_demand(self, claim: JobClaim, upload: UploadInfo, products: Any) -> None:
+        self.saved_demand = list(products)
+
+    def load_demand(self, claim: JobClaim) -> list[Any]:
+        return self.stored_demand
+
+    def run_params(self, claim: JobClaim) -> dict[str, Any] | None:
+        return self.previous_params
+
+    def publish_run(self, claim: JobClaim, result: Any) -> UUID:
+        self.published = result
+        return uuid4()
+
+    def set_conversation_stage(self, claim: JobClaim, stage: str) -> None:
+        self.stages.append(stage)
