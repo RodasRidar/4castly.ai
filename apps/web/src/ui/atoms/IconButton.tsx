@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import type { ButtonHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, Ref } from 'react'
 import { Tooltip } from 'radix-ui'
 import { cn } from '../../lib/cn'
 import { Icon } from './Icon'
@@ -10,6 +10,7 @@ interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 
   icon: LucideIcon
   variant?: 'ghost' | 'outline'
   size?: 'sm' | 'md'
+  ref?: Ref<HTMLButtonElement>
 }
 
 export function IconButton({ label, icon, variant = 'ghost', size = 'md', type = 'button', className, ...rest }: IconButtonProps) {

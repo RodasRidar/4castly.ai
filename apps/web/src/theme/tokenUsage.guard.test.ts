@@ -34,6 +34,17 @@ describe('token-only styling', () => {
     expect(offenders.map((f) => relative(SRC, f))).toEqual([])
   })
 
+  it('uses text-faint only on decorative or disabled elements (it fails 4.5:1 as body text)', () => {
+    const offenders = files(SRC).flatMap((f) =>
+      readFileSync(f, 'utf8')
+        .split('\n')
+        .map((line, i) => ({ f, line, n: i + 1 }))
+        .filter(({ line }) => /\btext-faint\b/.test(line) && !/aria-hidden|<Icon|disabled/.test(line))
+        .map(({ f, n }) => `${relative(SRC, f)}:${n}`),
+    )
+    expect(offenders).toEqual([])
+  })
+
   it('detects offenders (guard self-check)', () => {
     expect(PATTERNS.some(([, p]) => p.test('className="bg-blue-600 text-[#fff]"'))).toBe(true)
   })

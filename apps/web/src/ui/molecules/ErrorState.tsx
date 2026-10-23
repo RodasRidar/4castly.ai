@@ -21,7 +21,7 @@ export function ErrorState({ title, body, supportReference, primaryAction, secon
       </span>
       <h2 className="text-body-lg font-medium text-ink">{title}</h2>
       <p className="max-w-sm text-body-md text-mute">{body}</p>
-      {supportReference && <p className="font-mono text-body-sm text-faint">{supportReference}</p>}
+      {supportReference && <p className="font-mono text-body-sm text-mute">{supportReference}</p>}
       {(primaryAction || secondaryAction) && (
         <div className="mt-1 flex flex-wrap justify-center gap-2">
           {primaryAction}
