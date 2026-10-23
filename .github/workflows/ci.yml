@@ -51,8 +51,11 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run ty check
-      # Real TimesFM inference is gated by RUN_TIMESFM and stays skipped in CI.
+      # Real TimesFM inference is gated by RUN_TIMESFM and stays skipped in CI. The api job also runs
+      # the RLS tests against the runner's PostgreSQL binaries and must not skip them.
       - run: uv run pytest -q
+        env:
+          REQUIRE_DB_TESTS: ${{ matrix.app == 'apps/api' && '1' || '' }}
 
   contracts:
     name: contract drift
