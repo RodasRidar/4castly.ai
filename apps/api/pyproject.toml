@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "asyncpg>=0.32.0",
     "castly-inventory",
+    "castly-telemetry",
     "fastapi>=0.160.0",
     "opentelemetry-exporter-otlp-proto-http>=1.45.1",
     "opentelemetry-instrumentation-fastapi>=0.66b1",
@@ -29,9 +30,12 @@ module-name = "api"
 
 [tool.uv.sources]
 castly-inventory = { path = "../../packages/inventory", editable = true }
+castly-pgtest = { path = "../../packages/pgtest", editable = true }
+castly-telemetry = { path = "../../packages/telemetry", editable = true }
 
 [dependency-groups]
 dev = [
+    "castly-pgtest",
     "httpx>=0.28.1",
     "psycopg[binary]>=3.3.6",
     "pytest>=9.1.1",

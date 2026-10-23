@@ -1,4 +1,4 @@
-APPS_PY := apps/api apps/worker packages/inventory
+APPS_PY := apps/api apps/worker packages/inventory packages/telemetry packages/pgtest
 
 .PHONY: install lint format typecheck test check contracts fixtures dev-web dev-api
 

@@ -7,19 +7,16 @@ they are missing.
 
 from __future__ import annotations
 
-import glob
 import json
 import os
 import re
-import shutil
-import socket
-import subprocess
 from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, LiteralString, cast
 from uuid import UUID
 
+import pgtest
 import psycopg
 import pytest
 from psycopg.rows import dict_row
@@ -28,8 +25,6 @@ from .seed import Seed, seed_two_tenants
 
 REPO = Path(__file__).resolve().parents[4]
 MIGRATIONS = REPO / "supabase" / "migrations"
-SHIM = Path(__file__).with_name("supabase_shim.sql")
-DB_NAME = "castly"
 
 DictConnection = psycopg.Connection[dict[str, Any]]
 
@@ -44,69 +39,28 @@ def q(template: str, **names: str) -> LiteralString:
         if not _NAME.match(value):
             message = f"not a plain identifier: {value!r}"
             raise ValueError(message)
-    sql = template.format(
-        **{k: v.replace("_", " ") if k == "overriding" else v for k, v in names.items()}
-    )
-    return cast("LiteralString", sql)
-
-
-def _bin_dir() -> Path | None:
-    found = shutil.which("pg_ctl")
-    if found:
-        return Path(found).parent
-    candidates = sorted(glob.glob("/usr/lib/postgresql/*/bin"))
-    return Path(candidates[-1]) if candidates else None
-
-
-def _run(command: list[str]) -> None:
-    """Run a PostgreSQL tool with a fixed locale (the host's LANG/LC_* may be invalid)."""
-    env = {**os.environ, "LC_ALL": "C", "LANG": "C"}
-    result = subprocess.run(command, capture_output=True, text=True, env=env, check=False)  # noqa: S603
-    if result.returncode:
-        pytest.fail(f"{command[0]} failed: {result.stderr or result.stdout}")
-
-
-def _free_port() -> int:
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        return int(sock.getsockname()[1])
+    return cast("LiteralString", template.format(**names))
 
 
 @pytest.fixture(scope="session")
 def pg_dsn(tmp_path_factory: pytest.TempPathFactory) -> Iterator[str]:
-    bin_dir = _bin_dir()
-    if bin_dir is None:
-        message = "PostgreSQL binaries (initdb, pg_ctl) not found"
-        if os.environ.get("REQUIRE_DB_TESTS"):
-            pytest.fail(message)
-        pytest.skip(message)
-    data = tmp_path_factory.mktemp("pgdata")
-    port = _free_port()
-    _run(
-        [
-            str(bin_dir / "initdb"), "-D", str(data), "-U", "postgres", "-A", "trust",
-            "--no-sync", "--locale=C", "-E", "UTF8",
-        ]
-    )  # fmt: skip
-    options = f"-p {port} -c listen_addresses=127.0.0.1 -c unix_socket_directories='' -c fsync=off"
-    log = data / "server.log"  # without -l the server inherits our pipes and run() never returns
-    _run([str(bin_dir / "pg_ctl"), "-D", str(data), "-l", str(log), "-o", options, "-w", "start"])
-    base = f"host=127.0.0.1 port={port} user=postgres"
     try:
-        with psycopg.connect(f"{base} dbname=postgres", autocommit=True) as admin:
-            admin.execute(q("create database {name}", name=DB_NAME))
-        yield f"{base} dbname={DB_NAME}"
+        dsn, stop = pgtest.start_cluster(tmp_path_factory.mktemp("pgdata"))
+    except pgtest.PostgresUnavailableError as error:
+        if os.environ.get("REQUIRE_DB_TESTS"):
+            pytest.fail(str(error))
+        pytest.skip(str(error))
+    try:
+        yield dsn
     finally:
-        _run([str(bin_dir / "pg_ctl"), "-D", str(data), "-m", "immediate", "stop"])
+        stop()
 
 
 @pytest.fixture(scope="session")
 def seed(pg_dsn: str) -> Seed:
     """Shim + all migrations + two tenants of data, committed once for the whole session."""
+    pgtest.install_schema(pg_dsn, MIGRATIONS)
     with psycopg.connect(pg_dsn, autocommit=True) as conn:
-        conn.execute(cast("LiteralString", SHIM.read_text()))
-        for migration in sorted(MIGRATIONS.glob("*.sql")):
-            conn.execute(cast("LiteralString", migration.read_text()))
         return seed_two_tenants(conn)
 
 
@@ -145,5 +99,4 @@ def api_url(pg_dsn: str, seed: Seed) -> str:
     assert seed
     with psycopg.connect(pg_dsn, autocommit=True) as admin:
         admin.execute("alter role app_api login password 'test'")
-    parts = dict(item.split("=", 1) for item in pg_dsn.split())
-    return f"postgresql+asyncpg://app_api:test@{parts['host']}:{parts['port']}/{parts['dbname']}"
+    return pgtest.sqlalchemy_url(pg_dsn, driver="asyncpg", user="app_api", password="test")

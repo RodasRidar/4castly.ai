@@ -111,6 +111,7 @@ source = { editable = "." }
 dependencies = [
     { name = "asyncpg" },
     { name = "castly-inventory" },
+    { name = "castly-telemetry" },
     { name = "fastapi" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-instrumentation-fastapi" },
@@ -126,6 +127,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "castly-pgtest" },
     { name = "httpx" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pytest" },
@@ -139,6 +141,7 @@ dev = [
 requires-dist = [
     { name = "asyncpg", specifier = ">=0.32.0" },
     { name = "castly-inventory", editable = "../../packages/inventory" },
+    { name = "castly-telemetry", editable = "../../packages/telemetry" },
     { name = "fastapi", specifier = ">=0.160.0" },
     { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.45.1" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.66b1" },
@@ -154,6 +157,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "castly-pgtest", editable = "../../packages/pgtest" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
     { name = "pytest", specifier = ">=9.1.1" },
@@ -169,6 +173,50 @@ version = "0.1.0"
 source = { editable = "../../packages/inventory" }
 
 [package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "ruff", specifier = ">=0.17.2" },
+    { name = "ty", specifier = ">=0.0.91" },
+]
+
+[[package]]
+name = "castly-pgtest"
+version = "0.1.0"
+source = { editable = "../../packages/pgtest" }
+dependencies = [
+    { name = "psycopg", extra = ["binary"] },
+]
+
+[package.metadata]
+requires-dist = [{ name = "psycopg", extras = ["binary"], specifier = ">=3.2" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "ruff", specifier = ">=0.17.2" },
+    { name = "ty", specifier = ">=0.0.91" },
+]
+
+[[package]]
+name = "castly-telemetry"
+version = "0.1.0"
+source = { editable = "../../packages/telemetry" }
+dependencies = [
+    { name = "opentelemetry-exporter-otlp-proto-http" },
+    { name = "opentelemetry-sdk" },
+    { name = "structlog" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.45.1" },
+    { name = "opentelemetry-sdk", specifier = ">=1.45.1" },
+    { name = "structlog", specifier = ">=26.1.0" },
+]
 
 [package.metadata.requires-dev]
 dev = [

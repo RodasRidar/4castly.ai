@@ -42,6 +42,22 @@ repos:
         name: ruff format (inventory)
         files: ^packages/inventory/
         args: [--config=packages/inventory/pyproject.toml]
+      - id: ruff-check
+        name: ruff check (telemetry)
+        files: ^packages/telemetry/
+        args: [--fix, --config=packages/telemetry/pyproject.toml]
+      - id: ruff-format
+        name: ruff format (telemetry)
+        files: ^packages/telemetry/
+        args: [--config=packages/telemetry/pyproject.toml]
+      - id: ruff-check
+        name: ruff check (pgtest)
+        files: ^packages/pgtest/
+        args: [--fix, --config=packages/pgtest/pyproject.toml]
+      - id: ruff-format
+        name: ruff format (pgtest)
+        files: ^packages/pgtest/
+        args: [--config=packages/pgtest/pyproject.toml]
 
   - repo: local
     hooks:

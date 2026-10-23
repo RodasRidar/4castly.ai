@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [apps/api, apps/worker, packages/inventory]
+        app: [apps/api, apps/worker, packages/inventory, packages/telemetry, packages/pgtest]
     defaults:
       run:
         working-directory: ${{ matrix.app }}

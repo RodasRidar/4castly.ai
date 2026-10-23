@@ -2,7 +2,7 @@
 
 import pytest
 
-from api.observability.redaction import REDACTED, redact
+from telemetry.redaction import REDACTED, redact
 
 JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NSJ9.c2lnbmF0dXJlLXZhbHVl"
 
