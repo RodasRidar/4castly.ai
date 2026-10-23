@@ -4168,6 +4168,11 @@
             "title": "Stale",
             "description": "`data_until` is more than 7 days old."
           },
+          "parameters_pending": {
+            "type": "boolean",
+            "title": "Parameters Pending",
+            "description": "`parameters` were saved from the drawer but the results still use the previous values\nuntil \"Recalcular\"."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -4183,6 +4188,7 @@
           "parameters",
           "defaults_used",
           "stale",
+          "parameters_pending",
           "created_at"
         ],
         "title": "ForecastRun"
@@ -5531,6 +5537,11 @@
             "minimum": 0.0,
             "title": "Total Products"
           },
+          "stock_known": {
+            "type": "boolean",
+            "title": "Stock Known",
+            "description": "The file had a stock column. Without it stock is assumed 0 and results are indicative."
+          },
           "series_by_uom": {
             "items": {
               "$ref": "#/components/schemas/UomSeries"
@@ -5550,6 +5561,7 @@
           "kpis",
           "risk_distribution",
           "total_products",
+          "stock_known",
           "series_by_uom",
           "today"
         ],

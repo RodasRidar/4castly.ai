@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,9 +22,9 @@ from api.schemas import (
 )
 from api.schemas.enums import ConversationStage, UploadErrorCode, UploadStatus
 from api.services import audit, cursors
+from api.services.clock import UserClock, user_clock
 
 RESTORE_WINDOW_DAYS = 30
-DEFAULT_TIME_ZONE = "America/Lima"
 
 _COLUMNS = (
     "c.id, c.title, c.stage, c.pinned_at, c.archived_at, c.deleted_at, c.current_run_id, "
@@ -43,7 +42,6 @@ _GROUP_SQL = {
     ),
     ConversationGroup.OLDER: "c.pinned_at is null and c.last_activity_at < :week",
 }
-_TIME_ZONE = text("select time_zone from public.profiles where user_id = :user_id")
 _UPLOAD = text(
     "select id, file_name, size_bytes, content_type, status, error_code, sheets, selected_sheet, "
     "profile, created_at from public.uploads where conversation_id = :id "
@@ -52,35 +50,17 @@ _UPLOAD = text(
 _LIKE_ESCAPES = str.maketrans({"\\": "\\\\", "%": "\\%", "_": "\\_"})
 
 
-class _Clock:
-    """Group boundaries in the user's own time zone."""
-
-    def __init__(self, zone: str) -> None:
-        try:
-            tz = ZoneInfo(zone)
-        except (KeyError, ValueError):
-            tz = ZoneInfo(DEFAULT_TIME_ZONE)
-        start = datetime.now(tz).replace(hour=0, minute=0, second=0, microsecond=0)
-        self.today = start
-        self.week = start - timedelta(days=6)
-
-
-async def _clock(session: AsyncSession, who: Principal) -> _Clock:
-    zone = (await session.execute(_TIME_ZONE, {"user_id": who.user_id})).scalar_one_or_none()
-    return _Clock(zone or DEFAULT_TIME_ZONE)
-
-
-def _group(row: Any, clock: _Clock) -> ConversationGroup:
+def _group(row: Any, clock: UserClock) -> ConversationGroup:
     if row.pinned_at is not None:
         return ConversationGroup.PINNED
-    if row.last_activity_at >= clock.today:
+    if row.last_activity_at >= clock.today_start:
         return ConversationGroup.TODAY
-    if row.last_activity_at >= clock.week:
+    if row.last_activity_at >= clock.week_start:
         return ConversationGroup.THIS_WEEK
     return ConversationGroup.OLDER
 
 
-def _conversation(row: Any, clock: _Clock) -> Conversation:
+def _conversation(row: Any, clock: UserClock) -> Conversation:
     return Conversation(
         id=row.id,
         title=row.title,
@@ -106,7 +86,7 @@ async def list_conversations(  # noqa: PLR0913, PLR0917
     cursor: str | None,
     limit: int,
 ) -> ConversationPage:
-    clock = await _clock(session, who)
+    clock = await user_clock(session, who)
     where = ["c.deleted_at is null"]
     params: dict[str, Any] = {"limit": limit + 1}
     if not include_archived:
@@ -117,7 +97,7 @@ async def list_conversations(  # noqa: PLR0913, PLR0917
     if group is not None:
         where.append(_GROUP_SQL[group])
     if group in {ConversationGroup.TODAY, ConversationGroup.THIS_WEEK, ConversationGroup.OLDER}:
-        params |= {"today": clock.today, "week": clock.week}
+        params |= {"today": clock.today_start, "week": clock.week_start}
     if cursor:
         position = cursors.decode(cursor)
         try:
@@ -145,7 +125,7 @@ async def list_conversations(  # noqa: PLR0913, PLR0917
 
 
 async def _fetch(session: AsyncSession, who: Principal, conversation_id: UUID) -> Conversation:
-    clock = await _clock(session, who)
+    clock = await user_clock(session, who)
     row = (
         await session.execute(
             text(

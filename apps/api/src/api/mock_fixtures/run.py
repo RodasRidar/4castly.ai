@@ -292,6 +292,7 @@ def forecast_run() -> ForecastRun:
         parameters=run_parameters(),
         defaults_used=[],
         stale=inv.is_stale(DATA_UNTIL, TODAY),
+        parameters_pending=False,
         created_at=ago(minutes=45),
     )
 
@@ -368,6 +369,7 @@ def to_summary(items: list[Built]) -> RunSummary:
             optimal=risks[RiskLevel.OPTIMAL],
         ),
         total_products=len(rows),
+        stock_known=True,
         series_by_uom=[_uom_series([i for i in items if i.raw["uom"] == u], u) for u in uoms],
         today=TODAY,
     )

@@ -216,6 +216,7 @@ class ForecastRun(Base):
     horizon_weeks: Mapped[int] = mapped_column(Integer)
     granularity: Mapped[str]
     params: Mapped[dict]
+    pending_params: Mapped[dict | None]
     created_at: Mapped[datetime]
 
 

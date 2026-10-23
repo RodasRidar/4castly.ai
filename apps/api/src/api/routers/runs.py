@@ -7,6 +7,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path, Query
 
+from api.auth import CurrentTx
 from api.domain.errors import NotImplementedYetError
 from api.routers._common import bearer_scheme, errors
 from api.schemas import (
@@ -24,6 +25,7 @@ from api.schemas import (
     SimulationResult,
     SortOrder,
 )
+from api.services import runs
 
 router = APIRouter(
     prefix="/v1/runs", tags=["runs"], dependencies=[Depends(bearer_scheme)], responses=errors()
@@ -33,9 +35,9 @@ ProductCode = Annotated[str, Path(min_length=1, max_length=64)]
 
 
 @router.get("/{run_id}/summary", responses=errors(404, 422))
-async def get_run_summary(run_id: UUID) -> RunSummary:
+async def get_run_summary(run_id: UUID, tx: CurrentTx) -> RunSummary:
     """KPIs, risk distribution, aggregate series, defaults used and staleness."""
-    raise NotImplementedYetError
+    return await tx.run(runs.get_summary, run_id)
 
 
 @router.get("/{run_id}/products", responses=errors(404, 422))

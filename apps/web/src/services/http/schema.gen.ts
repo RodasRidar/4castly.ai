@@ -1147,6 +1147,12 @@ export interface components {
              */
             stale: boolean;
             /**
+             * Parameters Pending
+             * @description `parameters` were saved from the drawer but the results still use the previous values
+             *     until "Recalcular".
+             */
+            parameters_pending: boolean;
+            /**
              * Created At
              * Format: date-time
              */
@@ -1717,6 +1723,11 @@ export interface components {
             risk_distribution: components["schemas"]["RiskDistribution"];
             /** Total Products */
             total_products: number;
+            /**
+             * Stock Known
+             * @description The file had a stock column. Without it stock is assumed 0 and results are indicative.
+             */
+            stock_known: boolean;
             /** Series By Uom */
             series_by_uom: components["schemas"]["UomSeries"][];
             /**

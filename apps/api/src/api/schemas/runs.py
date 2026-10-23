@@ -98,6 +98,9 @@ class ForecastRun(ApiModel):
     """Parameters the user skipped, so the results must say a default was used."""
     stale: bool
     """`data_until` is more than 7 days old."""
+    parameters_pending: bool
+    """`parameters` were saved from the drawer but the results still use the previous values
+    until "Recalcular"."""
     created_at: AwareDatetime
 
 
@@ -151,6 +154,8 @@ class RunSummary(ApiModel):
     kpis: RunKpis
     risk_distribution: RiskDistribution
     total_products: int = Field(ge=0)
+    stock_known: bool
+    """The file had a stock column. Without it stock is assumed 0 and results are indicative."""
     series_by_uom: list[UomSeries]
     today: date
 
