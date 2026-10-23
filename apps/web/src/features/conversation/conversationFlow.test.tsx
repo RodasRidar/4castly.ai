@@ -246,7 +246,7 @@ describe('clarification (05)', () => {
   })
 })
 
-describe('calculation (05-calculando) and results seam', () => {
+describe('calculation (05-calculando) and results hand-off', () => {
   it('counts processed products without any percentage', async () => {
     open('calculating')
     expect(await screen.findByText('14 de 26 productos')).toBeInTheDocument()
@@ -256,18 +256,18 @@ describe('calculation (05-calculando) and results seam', () => {
     expect(within(steps).getByText('Calculando pronóstico')).toBeInTheDocument()
   })
 
-  it('walks the whole flow from the questions to the results placeholder', async () => {
+  it('walks the whole flow from the questions to the results screen', async () => {
     const app = open('clarifying')
     await app.user.click(await screen.findByRole('button', { name: 'Omitir y pronosticar ahora' }))
     await screen.findByRole('progressbar', { name: 'Avance del cálculo' })
     await advance(app, 4)
-    expect(await screen.findByText(/Tu pronóstico está listo/)).toBeInTheDocument()
+    expect(await screen.findByRole('navigation', { name: 'Ruta de navegación' })).toBeInTheDocument()
     expect((await app.services.conversations.get(ID.clarifying)).stage).toBe('ready')
   })
 
-  it('shows the results placeholder for a ready conversation', async () => {
+  it('shows the results screen for a ready conversation', async () => {
     open('ready')
-    expect(await screen.findByText(/Tu pronóstico está listo/)).toBeInTheDocument()
+    expect(await screen.findByRole('navigation', { name: 'Ruta de navegación' })).toBeInTheDocument()
   })
 })
 

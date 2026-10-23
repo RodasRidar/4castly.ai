@@ -160,7 +160,4 @@ export const conversationEn: typeof conversationEs = {
   errors: {
     supportHref: 'mailto:soporte@4castly.ai',
   },
-  ready: {
-    placeholder: 'Your forecast is ready. The results will appear here in the next phase.',
-  },
 }

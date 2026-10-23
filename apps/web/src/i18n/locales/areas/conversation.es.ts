@@ -162,7 +162,4 @@ export const conversationEs = {
   errors: {
     supportHref: 'mailto:soporte@4castly.ai',
   },
-  ready: {
-    placeholder: 'Tu pronóstico está listo. Los resultados aparecerán aquí en la siguiente fase.',
-  },
 }
