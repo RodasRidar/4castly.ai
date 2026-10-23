@@ -89,6 +89,7 @@ ignore = [
     "S101",     # pytest relies on bare asserts
     "PLR2004",  # magic values are fine in expected-value assertions
     "ANN",      # fixtures and tests need no annotations
+    "S106",     # fake passwords in test database URLs
     "ARG",      # fixtures are injected by name
     "DTZ",      # fixtures use naive local timestamps, matching the Kardex source
     "E741",     # column-letter constants (I, O) mirror the spreadsheet layout
