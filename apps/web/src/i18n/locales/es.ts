@@ -1,4 +1,11 @@
+import { conversationEs } from './areas/conversation.es'
+import { loginEs } from './areas/login.es'
+import { uploadEs } from './areas/upload.es'
+
 export const es = {
+  login: loginEs,
+  upload: uploadEs,
+  conversation: conversationEs,
   common: {
     appName: '4Castly',
     loading: 'Cargando…',

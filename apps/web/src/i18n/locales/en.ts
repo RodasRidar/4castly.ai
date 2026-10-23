@@ -1,6 +1,12 @@
 import type { Messages } from './es'
+import { conversationEn } from './areas/conversation.en'
+import { loginEn } from './areas/login.en'
+import { uploadEn } from './areas/upload.en'
 
 export const en: Messages = {
+  login: loginEn,
+  upload: uploadEn,
+  conversation: conversationEn,
   common: {
     appName: '4Castly',
     loading: 'Loading…',
