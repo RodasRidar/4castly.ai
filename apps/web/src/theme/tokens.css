@@ -1,0 +1,78 @@
+/*
+ * Design tokens: the only place raw color values may live (enforced by tokenUsage.guard.test.ts).
+ * Source precedence: brief override rules > Stitch > DESIGN.md (docs/plan-implementacion.md section 3).
+ * Dark values are derived (D3) and verified for 4.5:1 in tokens.test.ts.
+ */
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --canvas: #fafafa;
+  --elevated: #ffffff;
+  --selected: #f4f4f5;
+  --hairline: #ebebeb;
+
+  /* Text. `mute` is darker than Stitch's #8f8f8f (3.3:1 on white) so captions pass 4.5:1. */
+  --ink: #171717;
+  --body: #4d4d4d;
+  --mute: #6b6b6b;
+  /* Decorative / disabled only (icons, placeholders' borders). Never body copy. */
+  --faint: #a1a1a1;
+
+  /* The single primary action */
+  --primary: #171717;
+  --primary-fg: #ffffff;
+  --focus-ring: #171717;
+
+  /* Status colors: risk only (Crítico / Medio / Óptimo) */
+  --critical: #c50000;
+  --critical-accent: #ee0000;
+  --critical-bg: #fef2f2;
+  --critical-border: #fca5a5;
+  --medium: #ab570a;
+  --medium-accent: #f5a623;
+  --medium-bg: #fffbeb;
+  --medium-border: #fed7aa;
+  --optimal: #065f46;
+  --optimal-accent: #10b981;
+  --optimal-bg: #ecfdf5;
+  --optimal-border: #a7f3d0;
+
+  /* Elevation: cards are flat (hairline only); shadow only on popovers, drawers and menus */
+  --shadow-popover: 0 0 0 1px rgb(0 0 0 / 0.06), 0 8px 24px -4px rgb(0 0 0 / 0.12);
+  --scrim: rgb(23 23 23 / 0.4);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: #0a0a0a;
+  --elevated: #111111;
+  --selected: #1a1a1a;
+  --hairline: #262626;
+
+  --ink: #ededed;
+  --body: #a1a1a1;
+  --mute: #8f8f8f;
+  --faint: #5c5c5c;
+
+  --primary: #ededed;
+  --primary-fg: #0a0a0a;
+  --focus-ring: #ededed;
+
+  --critical: #ff6b6b;
+  --critical-accent: #ff4d4d;
+  --critical-bg: #2a1215;
+  --critical-border: #5c1f24;
+  --medium: #f5a623;
+  --medium-accent: #f5a623;
+  --medium-bg: #271c08;
+  --medium-border: #5a3f12;
+  --optimal: #34d399;
+  --optimal-accent: #10b981;
+  --optimal-bg: #0a2a1f;
+  --optimal-border: #14573f;
+
+  --shadow-popover: 0 0 0 1px rgb(255 255 255 / 0.08), 0 8px 24px -4px rgb(0 0 0 / 0.6);
+  --scrim: rgb(0 0 0 / 0.6);
+}

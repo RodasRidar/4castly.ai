@@ -1,0 +1,115 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* Tokens as utilities: bg-canvas text-ink border-hairline ... theme switches via CSS variables */
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-canvas: var(--canvas);
+  --color-elevated: var(--elevated);
+  --color-selected: var(--selected);
+  --color-hairline: var(--hairline);
+  --color-ink: var(--ink);
+  --color-body: var(--body);
+  --color-mute: var(--mute);
+  --color-faint: var(--faint);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-focus: var(--focus-ring);
+  --color-critical: var(--critical);
+  --color-critical-accent: var(--critical-accent);
+  --color-critical-bg: var(--critical-bg);
+  --color-critical-border: var(--critical-border);
+  --color-medium: var(--medium);
+  --color-medium-accent: var(--medium-accent);
+  --color-medium-bg: var(--medium-bg);
+  --color-medium-border: var(--medium-border);
+  --color-optimal: var(--optimal);
+  --color-optimal-accent: var(--optimal-accent);
+  --color-optimal-bg: var(--optimal-bg);
+  --color-optimal-border: var(--optimal-border);
+  --color-scrim: var(--scrim);
+
+  --shadow-*: initial;
+  --shadow-popover: var(--shadow-popover);
+
+  /* Stitch ROUND_FOUR scale */
+  --radius-sm: 2px;
+  --radius-DEFAULT: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Type scale (Stitch / DESIGN.md): display-xl, heading-lg, heading-md, body-lg, body-md, body-sm */
+  --text-display: 48px;
+  --text-display--line-height: 1.1;
+  --text-heading-lg: 32px;
+  --text-heading-lg--line-height: 1.2;
+  --text-heading-md: 20px;
+  --text-heading-md--line-height: 1.4;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 1.5;
+  --text-body-md: 14px;
+  --text-body-md--line-height: 1.5;
+  --text-body-sm: 12px;
+  --text-body-sm--line-height: 1.5;
+}
+
+/* `dark:` follows the attribute, for the few places that need a different shape, not just a different color */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@layer base {
+  html {
+    background: var(--canvas);
+    color: var(--body);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100svh;
+  }
+
+  /* One focus style everywhere: 2 px ink ring, 2 px offset (no blue) */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  a:where(:not([class])) {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

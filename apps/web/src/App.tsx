@@ -5,9 +5,11 @@ const data = buildMockForecast()
 
 function App() {
   return (
-    <main style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
-      <h1>4castly.ai</h1>
-      <p>Demand forecast preview (mock data): history, median forecast and p10-p90 band.</p>
+    <main className="mx-auto max-w-[960px] p-6">
+      <h1 className="text-heading-lg text-ink font-semibold">4castly.ai</h1>
+      <p className="text-body-md text-body">
+        Demand forecast preview (mock data): history, median forecast and p10-p90 band.
+      </p>
       <ForecastChart data={data} />
     </main>
   )

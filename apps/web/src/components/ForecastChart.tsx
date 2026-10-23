@@ -30,7 +30,7 @@ export function ForecastChart({ data, unit = 'kg' }: ForecastChartProps) {
             dataKey="band"
             name="p10-p90"
             stroke="none"
-            fill="#4f46e5"
+            fill="var(--ink)"
             fillOpacity={0.18}
             isAnimationActive={false}
             connectNulls
@@ -38,7 +38,7 @@ export function ForecastChart({ data, unit = 'kg' }: ForecastChartProps) {
           <Line
             dataKey="history"
             name="History"
-            stroke="#0f172a"
+            stroke="var(--ink)"
             dot={false}
             isAnimationActive={false}
             connectNulls
@@ -46,7 +46,7 @@ export function ForecastChart({ data, unit = 'kg' }: ForecastChartProps) {
           <Line
             dataKey="p50"
             name="Forecast (p50)"
-            stroke="#4f46e5"
+            stroke="var(--mute)"
             strokeDasharray="5 3"
             dot={false}
             isAnimationActive={false}
