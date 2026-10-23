@@ -227,7 +227,7 @@ class TestFailures:
         claim = make_claim()
         job = DigestJob(
             FakeDigestRepo(upload=None),
-            SimpleNamespace(),
+            LocalFileStore(tmp_path),
             SheetsInspector(),
             DeterministicPlanProposer(),
             TabularSalesReader(),
