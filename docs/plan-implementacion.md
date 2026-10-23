@@ -213,9 +213,39 @@ deep #ab570a, link blue #0070f3, decorative violet/cyan/pink/magenta and gradien
 | C9 | Mono usage | Code + uppercase eyebrows | Mono only for numbers and file metadata | Eyebrows in 05 | No mono eyebrows; section labels in Geist |
 | C10 | Corrupted line | `DESIGN.md:60` contains stray non-English text inside `label-sm.fontWeight` (`500 burada komikledin mi…`), which breaks the YAML front matter | n/a | n/a | Treat value as 500; fix the file (needs your OK) |
 
-Per the brief's priority order `DESIGN.md` beats frames, but the brief's override rules contradict `DESIGN.md`
-on C1-C3, C5, C7, C9. Proposal: the override rules win, and `DESIGN.md` gets an "App overrides" section so there
-is one source of truth (D2).
+**Resolution (D2, decided 2026-10-23): Stitch wins over `DESIGN.md`.** Precedence is now:
+
+1. The brief's override rules (no blue, one primary, status colors only for risk, no jargon, no invented data).
+   They were written to override any frame, so the violations in 2.3 are still fixed.
+2. The Stitch project (theme + what the frames render).
+3. `DESIGN.md`, only for what Stitch does not define (type scale, spacing scale, elevation levels).
+4. `CLAUDE.md` and the repo conventions for code.
+
+`DESIGN.md` stays untouched (including the corrupted line 60); it is no longer the token source.
+
+Tokens taken from Stitch (theme + the values the frames hard-code):
+
+| Token | Light | Source |
+|---|---|---|
+| `ink` / `primary` | #171717 | Stitch primary override, frames |
+| `body` | #4d4d4d | frames |
+| `mute` | #8f8f8f | frames |
+| `faint` | #a1a1a1 | frames |
+| `hairline` | #ebebeb | frames |
+| `canvas` | #fafafa | frames (sidebar, page) |
+| `elevated` | #ffffff | frames (cards) |
+| `selected` | #f4f4f5 | frames (active conversation) |
+| `critical` fg / bg / border | #ee0000 / #fef2f2 / #fca5a5 | frames 06 |
+| `medium` fg / accent / bg / border | #ab570a / #f5a623 / #fffbeb / #fed7aa | frames 06 |
+| `optimal` fg / accent / bg / border | #065f46 / #10b981 / #ecfdf5 / #a7f3d0 | frames 06 |
+| Radius | 2 / 4 / 6 / 8 / 12 px, full for chips and avatars | Stitch `ROUND_FOUR` scale (sm / default / md / lg / xl) |
+| Fonts | Geist, Geist Mono | Stitch theme |
+| Type scale | display-xl 48, heading-lg 32, heading-md 20, label-sm 14/500, body-lg 16, body-md 14, body-sm 12, code 14 mono | Stitch theme (same as `DESIGN.md`) |
+| Spacing | 4 px grid: 4, 8, 12, 16, 24, 32, 40, 64, 96 | Stitch theme |
+
+Brief rules that still adjust the frames: links are ink with a thin underline, focus ring is ink (2 px, offset
+2 px), no `link` blue token at all, cards are flat (hairline only), shadows only on popovers, drawers and menus,
+no mono eyebrows. Dark values are derived (D3) and checked for 4.5:1 contrast.
 
 ---
 
@@ -763,12 +793,13 @@ Worker: `structlog` and the same OpenTelemetry packages; `sqlalchemy` for the sh
 | D26 | Observability: OpenTelemetry + structured logs to Axiom (dev and prod datasets) |
 | D27 | LangChain not adopted for v1; Langfuse adopted for LLM traces, feedback, prompt versions |
 | D28 | Frontend: layout layer (layout routes) and atomic inventory built before pages |
+| D2 | Design precedence: brief override rules > Stitch > `DESIGN.md` (section 3) |
+| D3-D22 | Accepted as recommended in the table below |
 
-### Open (recommendation in the second column)
+### Accepted recommendations (2026-10-23)
 
 | # | Decision | Recommendation |
 |---|---|---|
-| D2 | Brief override rules vs `DESIGN.md` (C1-C10) | Override rules win; add an "App overrides" section to `DESIGN.md`; fix line 60 |
 | D3 | Dark theme palette (none designed) | Derive from Geist dark: canvas #0a0a0a, elevated #111, hairline #262626, ink #ededed, primary inverted; status colors tuned for 4.5:1 |
 | D4 | Rename `skus` → `products` in the DB | Yes, now, before data exists |
 | D5 | Replace `forecast_jobs` with generic `jobs` (`digest|forecast`) | Yes |
@@ -805,3 +836,166 @@ The atomic inventory comes before any page.
 
 Phase 7 (backend foundation) and the formulas module touch no web files, so they can run in parallel with
 phases 1-3.
+
+---
+
+## 11. Security, end to end (proposal for review)
+
+### Threat model
+
+| Asset | Who could hurt it | Main controls |
+|---|---|---|
+| Client sales and stock data, uploaded files | Another tenant's user; outside attacker; leaked key | RLS for API and browser, private storage, JWT verification, least-privilege DB roles |
+| Accounts | Email enumeration, OTP brute force, session theft | Allowlist, neutral copy, OTP limits, short tokens, CSP |
+| Assistant | Prompt injection through file contents (column or product names); invented numbers | Untrusted data never in the system prompt, read-only tenant-scoped tools, number guard |
+| Exports | Formula injection when the Excel is opened | Escape cells that start with `= + - @` |
+| Platform | Dependency compromise, secret leaks | Lockfiles, audits in CI, secret scanning, pinned Actions |
+
+Trust boundaries: browser ↔ API, API/worker ↔ Postgres, API/worker ↔ Storage, API ↔ Anthropic / Langfuse / Axiom.
+
+### Identity and sessions
+
+- **S1 Passwordless, invite-only.** Users are provisioned by invite (row in `allowed_emails` + Supabase user).
+  Login calls `signInWithOtp` with `shouldCreateUser: false`. A `before user created` auth hook (Postgres
+  function, documented by Supabase) rejects any email not in `allowed_emails` as a second line of defense.
+  The UI shows the same neutral message whatever happens, so it never reveals whether an email exists.
+- **S2 OTP settings.** 6-digit code. Expiry lowered to 10 minutes (Supabase default `GOTRUE_MAILER_OTP_EXP` is
+  24 h). Minimum interval between emails per address: Supabase defaults to 1 minute, the brief asks for a 30 s
+  resend countdown, so we either set the limit to 30 s or show a 60 s countdown (S-open-1). Custom SMTP
+  provider in production.
+- **S3 Tokens.** Access token TTL 1 h, refresh token rotation with reuse detection (Supabase defaults). The
+  SPA keeps the session in browser storage, so XSS is the main session risk; the strict CSP (S12) is the
+  mitigation. "Cerrar sesión" revokes the refresh token.
+- **S4 API authentication.** The API verifies every JWT locally with the project's asymmetric signing keys
+  (JWKS endpoint `/auth/v1/.well-known/jwks.json`, cached at most 10 minutes so key rotation works), and checks
+  `iss`, `aud` and `exp`. The tenant comes from `tenant_members` in the database, never from a header or body.
+- **S5 Authorization.** Roles `owner | admin | member`. Members: everything about forecasts in their tenant.
+  Admins: invite/remove users, tenant defaults. Owners: plan and tenant deletion (later). Checked in services
+  and enforced again by RLS. Access to another tenant's id returns 404, not 403.
+
+### Data protection
+
+- **S6 Storage.** Private bucket, object path `tenant_id/upload_id/<file>`, storage policies by tenant folder.
+  Downloads only through signed URLs valid for 60 s. Originals deleted after a retention period (proposal:
+  30 days, S-open-2); derived data stays.
+- **S7 Secrets.** No secrets in the repo (already enforced by hooks). Service-role key and DB passwords only on
+  the server side; the web app gets only the Supabase URL and anon key. Each environment has its own Supabase
+  project, keys and Axiom/Langfuse datasets. Keys rotated on staff change.
+- **S8 Database roles.** `app_api` (no `BYPASSRLS`, `statement_timeout` 5 s), `app_worker` (bypasses RLS, always
+  filters by the job's tenant, longer timeout), migrations applied only by CI with a separate role.
+- **S9 Third parties.** Anthropic receives the file profile (column names, types, a small sample of rows) and
+  aggregated run metrics, never the full file. Langfuse receives prompts and answers (EU region). Axiom receives
+  no client content. This list goes into the privacy policy; data-retention terms with Anthropic and Langfuse are
+  reviewed before the first client (zero data retention can be requested if a client requires it).
+- **S10 Offboarding.** Tenant deletion removes rows by cascade and the storage folder; audit rows are kept for
+  the legal retention period.
+
+### Input, files and output
+
+- **S11 Uploads.** Size and row limits enforced by the API before storing (values to decide, not shown as promises
+  in the UI). File type checked by content, not extension: `.xlsx` (zip), `.xls` (OLE), `.csv` (text). Macro
+  formats (`.xlsm`) rejected. Parsing happens only in the worker: openpyxl in read-only mode, `defusedxml`
+  installed (openpyxl's own recommendation against XML attacks), a limit on uncompressed size against zip bombs,
+  and a per-job time limit.
+- **S12 Web headers.** Strict CSP (scripts from self plus the hashed theme script; `connect-src` limited to the
+  API and Supabase), HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
+  `frame-ancestors 'none'`. CORS allowlist with exact origins.
+- **S13 Request validation.** Pydantic with `extra="forbid"`, length limits on every string, page-size caps,
+  sort and filter fields from allowlists.
+- **S14 Excel exports.** Cells from user data that start with `=`, `+`, `-`, `@`, tab or carriage return are
+  written as text, so a malicious product name cannot run a formula.
+- **S15 Share links.** Tenant-internal only, login required, 128-bit random token, expiry, revocable, audited.
+
+### Assistant (LLM)
+
+- **S16 Prompt injection.** File contents, column names and product names are untrusted. They only reach the
+  model inside tool results or delimited data blocks, never in the system prompt. Tools are read-only (except
+  the pure `simulate_purchase`), receive the tenant and run from the request context, and cannot be pointed at
+  another tenant or run by the model.
+- **S17 Output safety.** Number guard (section 7c). Markdown rendered without raw HTML; links only to internal
+  routes the app builds from annotations. `refusal` stop reasons handled with a neutral message.
+- **S18 Abuse and cost.** Per-user message rate limit, `max_tokens` per turn, daily token budget per tenant
+  (S-open-3), alerts in Axiom when a tenant approaches it.
+
+### Platform and supply chain
+
+- **S19 Dependencies.** `uv.lock` and `pnpm-lock.yaml` committed, Dependabot or Renovate, `pip-audit` and
+  `pnpm audit` in CI, GitHub Actions pinned by commit SHA, secret scanning (gitleaks) in the pre-commit hooks.
+- **S20 Rate limiting.** Supabase limits the auth endpoints. API limits per user and tenant (uploads, chat,
+  exports) are enforced at the edge or in middleware depending on hosting (S-open-4).
+- **S21 Security monitoring.** Axiom monitors for spikes in failed logins, 401/403/404 on tenant resources,
+  RLS denials (`42501`), upload rejections and guard hits.
+
+---
+
+## 12. Resilience (proposal for review)
+
+### Principles
+
+The app degrades by feature, never as a whole. Results, portfolio and product detail are computed and
+persisted, so they keep working when the assistant, the forecaster or a third party is down.
+
+| Dependency down | What the user still has | What they see |
+|---|---|---|
+| Anthropic | Results, portfolio, detail, exports, uploads | Chat: "El asistente no está disponible en este momento" + retry. Column detection falls back to a deterministic name/type matcher; the user confirms the mapping anyway, so the fallback is safe |
+| Worker / queue | Existing results, chat over them | New uploads wait in `queued` with a "en cola" status, never a fake progress bar |
+| Langfuse / Axiom | Everything | Nothing; exporters drop data after a bounded buffer, never block requests |
+| Postgres | Nothing (hard dependency) | Maintenance page; health check fails so the platform restarts or routes away |
+
+### Jobs (digest and forecast)
+
+- **R1 Queue semantics.** pgmq with a visibility timeout. Handlers are idempotent by `job_id`: results are built
+  first and published in one transaction (`forecast_runs` switches to ready only at the end), so a retried job
+  never leaves half a run visible.
+- **R2 Retries.** Up to 3 attempts with exponential backoff for transient errors (DB, network, LLM 429/5xx).
+  Deterministic errors (unreadable file, no date column) fail fast with their own stage and message, no retry.
+  After the last attempt the job is `failed` with a support `ref`, and the message is archived (dead letter).
+- **R3 Stuck jobs.** Workers write `heartbeat_at`; a reaper re-queues jobs whose heartbeat is older than the
+  timeout. Cancellation ("Cancelar" in digestion) sets a flag checked between stages.
+- **R4 Per-product isolation.** If one product's forecast fails, it falls back to the baseline model, then to the
+  simple method; the run never fails because of one product. The reliability label shows it.
+- **R5 Concurrency limits.** One active forecast job per conversation; a cap per tenant so one large file does
+  not starve other companies.
+
+### Requests
+
+- **R6 Timeouts everywhere.** DB statement timeouts per role, Anthropic client timeout with the SDK's built-in
+  retries (429, 5xx, connection errors), outbound HTTP timeouts, upload size and time limits.
+- **R7 Idempotency keys.** `Idempotency-Key` header on upload, forecast, export and chat-message POSTs, stored per
+  tenant for 24 h, so a double click or a network retry never creates two jobs or two answers.
+- **R8 Streaming.** SSE keep-alive comments every 15 s. If the client disconnects mid-answer, generation stops,
+  the partial answer is saved as `interrupted`, and the UI offers "Reintentar". Job progress uses SSE with a
+  polling fallback (`GET /jobs/{id}` every few seconds).
+- **R9 Health.** `/health/live` (process up) and `/health/ready` (DB and queue reachable). Graceful shutdown:
+  the API drains in-flight requests; the worker finishes its current stage or lets the message become visible
+  again.
+
+### Data
+
+- **R10 Backups.** Daily backups plus point-in-time recovery for production (Supabase add-on, cost decision
+  S-open-5). A restore drill before the first client and then every quarter.
+- **R11 Migrations.** Expand/contract only (add, backfill, switch, then remove in a later release), so the
+  previous API version keeps working during a deploy and a rollback never needs a down migration.
+
+### Frontend
+
+- **R12 Fetching.** React Query retries GETs with backoff, never non-idempotent POSTs (those rely on
+  idempotency keys). Optimistic pin/rename/delete with rollback and the undo toast.
+- **R13 Error containment.** Error boundaries per layout and per panel: a chart failure shows the panel's error
+  state, not a blank page. Offline banner when the browser loses connectivity.
+
+### Targets (proposed, to calibrate with real data)
+
+API availability 99.5 % monthly; p95 under 500 ms for reads; digest of a typical client file under 2 minutes;
+assistant first token under 3 s. Monitored in Axiom (section 7b).
+
+### Open security and resilience decisions
+
+| # | Decision | Recommendation |
+|---|---|---|
+| S-open-1 | Resend countdown vs Supabase per-address email limit | Set the limit to 30 s to keep the brief's countdown |
+| S-open-2 | Retention of original uploaded files | 30 days, then delete; derived data kept |
+| S-open-3 | Daily assistant token budget per tenant | Start generous, alert at 80 %, tune after the first client |
+| S-open-4 | Hosting for API, worker and web (decides WAF, edge rate limits, secret store) | Needs your call |
+| S-open-5 | Point-in-time recovery for production | Yes before the first real client |
+| S-open-6 | Upload size and row limits | Set from the first client's real files |
