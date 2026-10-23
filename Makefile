@@ -1,6 +1,6 @@
 APPS_PY := apps/api apps/worker packages/inventory
 
-.PHONY: install lint format typecheck test check dev-web dev-api
+.PHONY: install lint format typecheck test check fixtures dev-web dev-api
 
 install:
 	cd apps/web && pnpm install
@@ -21,6 +21,10 @@ test:
 	@for app in $(APPS_PY); do (cd $$app && uv run pytest -q) || exit 1; done
 
 check: lint typecheck test
+
+# Regenerate the frontend mock fixtures from the formulas package (generated output).
+fixtures:
+	cd packages/inventory && uv run python -m inventory.fixtures --out ../../apps/web/src/services/mock/fixtures
 
 dev-web:
 	cd apps/web && pnpm dev

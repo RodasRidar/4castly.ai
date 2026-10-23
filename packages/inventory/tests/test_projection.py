@@ -1,5 +1,7 @@
 """Projection, shortfall, stockout and coverage (plan section 6, spec table)."""
 
+import random
+
 import pytest
 
 from inventory import (
@@ -128,3 +130,36 @@ class TestDemand:
     def test_rejects_empty_series(self) -> None:
         with pytest.raises(InvalidInputError):
             Demand(low=(), expected=(), high=())
+
+
+def test_invariants_hold_on_random_inputs() -> None:
+    rng = random.Random(7)  # noqa: S311 - seeded for reproducibility, not security
+    for _ in range(300):
+        weeks = rng.randint(1, 16)
+        expected = tuple(rng.uniform(0, 500) for _ in range(weeks))
+        demand = Demand(
+            low=tuple(d * 0.8 for d in expected),
+            expected=expected,
+            high=tuple(d * 1.3 for d in expected),
+        )
+        stock = rng.uniform(0, 2000)
+        arrivals = {rng.randint(1, weeks): rng.uniform(0, 800) for _ in range(rng.randint(0, 3))}
+
+        runs = {s: project_scenario(stock, demand.series(s), arrivals) for s in Scenario}
+
+        for run in runs.values():
+            assert min(run.stock) >= 0
+            assert min(run.shortfall) >= 0
+            assert (run.stockout_week is None) == (run.coverage_weeks is None)
+            if run.stockout_week is not None and run.coverage_weeks is not None:
+                assert run.stockout_week - 1 <= run.coverage_weeks < run.stockout_week
+        # More demand never leaves more stock than less demand.
+        assert all(
+            h <= e <= lo
+            for h, e, lo in zip(
+                runs[Scenario.HIGH].stock,
+                runs[Scenario.EXPECTED].stock,
+                runs[Scenario.LOW].stock,
+                strict=True,
+            )
+        )

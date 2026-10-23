@@ -27,6 +27,7 @@ B2B demand/stock forecasting SaaS. First client: a chemical/pharma importer expo
 - `make typecheck` - `tsc -b` + `ty check`
 - `make test` - pytest (api, worker)
 - `make check` - everything above; must pass before pushing
+- `make fixtures` - regenerate `apps/web/src/services/mock/fixtures/` from `packages/inventory` (generated, never hand-edit)
 - `make dev-web` / `make dev-api` - run dev servers
 - Hooks: `prek install` (or `pre-commit install`), config in `.pre-commit-config.yaml`
 - Real TimesFM test: `cd apps/worker && RUN_TIMESFM=1 uv run pytest -q -k timesfm`
