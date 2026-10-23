@@ -76,4 +76,12 @@ describe('ProductSummaryCards', () => {
     expect(screen.getByText('Cargando resumen')).toBeInTheDocument()
     expect(screen.queryByText('Media')).toBeNull()
   })
+
+  it('renders card titles as level 3 headings by default and at the requested level', () => {
+    const { rerender } = render(<ProductSummaryCards {...props()} />)
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(3)
+    rerender(<ProductSummaryCards {...props()} headingLevel={2} />)
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(3)
+    expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument()
+  })
 })

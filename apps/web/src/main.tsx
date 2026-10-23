@@ -17,7 +17,10 @@ const language = readStoredLanguage()
 document.documentElement.lang = language
 
 // Mock services until the http implementation lands (F4 swaps this one line).
-const env = { services: createMockServices(), i18n: createI18n(language), themeStore, root: document.documentElement }
+const services = createMockServices()
+// Dev only: lets QA flip mock states (sign out, failures, advance jobs) from the console.
+if (import.meta.env.DEV) Object.assign(window, { __mock: services })
+const env = { services, i18n: createI18n(language), themeStore, root: document.documentElement }
 const router = createBrowserRouter(createRoutes(devRoutes))
 
 createRoot(document.getElementById('root')!).render(

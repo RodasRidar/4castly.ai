@@ -68,6 +68,37 @@ describe('routes', () => {
   })
 })
 
+describe('document structure', () => {
+  it('gives the not-found page its own main landmark and a level 1 heading', async () => {
+    renderApp({ path: '/no-existe' })
+    expect(await screen.findByRole('heading', { level: 1, name: 'Página no encontrada' })).toBeInTheDocument()
+    expect(screen.getByRole('main')).toBeInTheDocument()
+  })
+
+  it('keeps a single main when a conversation is not found inside the app layout', async () => {
+    renderApp({ path: '/c/00000000-0000-0000-0000-000000000000' })
+    expect(await screen.findByRole('heading', { level: 1, name: 'Página no encontrada' })).toBeInTheDocument()
+    expect(screen.getAllByRole('main')).toHaveLength(1)
+  })
+
+  it.each([
+    ['5f33ca8b-1e88-5451-9488-5586835e88aa', 'Ventas por confirmar'],
+    ['c5d30c23-398a-5d64-a690-c2086b0def35', 'Kardex octubre 2026'],
+  ])('every conversation stage has one level 1 heading with the title (%s)', async (id, title) => {
+    renderApp({ path: `/c/${id}` })
+    expect(await screen.findByRole('heading', { level: 1, name: title })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+  })
+
+  it('does not skip heading levels inside the product detail page', async () => {
+    renderApp({ path: '/c/c5d30c23-398a-5d64-a690-c2086b0def35/productos/QF-0001' })
+    await screen.findByRole('heading', { level: 1, name: /Ácido cítrico anhidro/ })
+    const main = screen.getByRole('main')
+    expect(within(main).queryAllByRole('heading', { level: 3 })).toHaveLength(0)
+    expect(within(main).getAllByRole('heading', { level: 2 }).length).toBeGreaterThan(0)
+  })
+})
+
 describe('AppLayout', () => {
   it('keeps the sidebar mounted while moving between conversations', async () => {
     const { router, user } = renderApp({ path: '/c/c5d30c23-398a-5d64-a690-c2086b0def35' })

@@ -23,6 +23,8 @@ interface StepperConfig {
 }
 
 export interface ProductSummaryCardsProps {
+  /** Heading level of the card titles: 3 under a section heading, 2 directly under the page h1. */
+  headingLevel?: 2 | 3
   state: 'loading' | 'populated' | 'no-risk'
   /** Screen-reader text while loading. */
   loadingLabel: string
@@ -60,13 +62,14 @@ export interface ProductSummaryCardsProps {
   className?: string
 }
 
-function Card({ title, children, busy }: { title: string; children: ReactNode; busy?: boolean }) {
+function Card({ title, children, busy, level }: { title: string; children: ReactNode; busy?: boolean; level: 2 | 3 }) {
   const id = useId()
+  const Heading = level === 2 ? 'h2' : 'h3'
   return (
     <section aria-labelledby={id} aria-busy={busy || undefined} className="flex min-w-0 flex-col gap-3 rounded-lg border border-hairline bg-elevated p-4">
-      <h3 id={id} className="text-body-md text-mute">
+      <Heading id={id} className="text-body-md text-mute">
         {title}
-      </h3>
+      </Heading>
       {children}
     </section>
   )
@@ -91,7 +94,7 @@ function Stepper({ config }: { config: StepperConfig }) {
   )
 }
 
-export function ProductSummaryCards({ state, loadingLabel, stockout, purchase, reliability, className }: ProductSummaryCardsProps) {
+export function ProductSummaryCards({ headingLevel = 3, state, loadingLabel, stockout, purchase, reliability, className }: ProductSummaryCardsProps) {
   const [open, setOpen] = useState(false)
   const detailId = useId()
   const grid = cn('grid grid-cols-1 gap-3 lg:grid-cols-3', className)
@@ -100,7 +103,7 @@ export function ProductSummaryCards({ state, loadingLabel, stockout, purchase, r
     return (
       <div className={grid} aria-busy="true">
         {[stockout.title, purchase.title, reliability.title].map((t) => (
-          <Card key={t} title={t} busy>
+          <Card key={t} title={t} busy level={headingLevel}>
             <Skeleton className="h-7 w-1/2" />
             <Skeleton className="w-3/4" />
             <Skeleton className="w-2/3" />
@@ -114,7 +117,7 @@ export function ProductSummaryCards({ state, loadingLabel, stockout, purchase, r
   const noRisk = state === 'no-risk'
   return (
     <div className={grid}>
-      <Card title={stockout.title}>
+      <Card title={stockout.title} level={headingLevel}>
         {noRisk || !stockout.date ? (
           <>
             <p className="text-heading-md text-ink">{stockout.noRiskTitle}</p>
@@ -130,7 +133,7 @@ export function ProductSummaryCards({ state, loadingLabel, stockout, purchase, r
         )}
       </Card>
 
-      <Card title={purchase.title}>
+      <Card title={purchase.title} level={headingLevel}>
         {noRisk ? (
           <p className="text-body-md text-mute">{purchase.noPurchaseText}</p>
         ) : (
@@ -143,7 +146,7 @@ export function ProductSummaryCards({ state, loadingLabel, stockout, purchase, r
         <Stepper config={purchase.coverage} />
       </Card>
 
-      <Card title={reliability.title}>
+      <Card title={reliability.title} level={headingLevel}>
         <div>
           <ReliabilityBadge level={reliability.level} label={reliability.badgeLabel} />
         </div>

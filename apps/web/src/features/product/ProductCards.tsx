@@ -48,6 +48,7 @@ export function ProductCards({
   return (
     <div className="flex flex-col gap-3">
       <ProductSummaryCards
+        headingLevel={2}
         state={noRisk ? 'no-risk' : 'populated'}
         loadingLabel={t('product.loading')}
         stockout={{

@@ -67,7 +67,7 @@ export function createRoutes(devRoutes: RouteObject[] = []): RouteObject[] {
           ],
         },
         ...devRoutes,
-        { path: '*', element: <NotFoundPage /> },
+        { path: '*', element: <NotFoundPage standalone /> },
       ],
     },
   ]
