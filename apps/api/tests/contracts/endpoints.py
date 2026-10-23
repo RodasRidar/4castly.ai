@@ -102,39 +102,12 @@ ENDPOINTS: list[tuple[str, str, str, int, Any]] = [
     ("post", "/v1/messages/{message_id}/retry", "retry_message", 200, None),
 ]
 
-IMPLEMENTED = {
-    "get_me",
-    "update_me",
-    "get_preferences",
-    "update_preferences",
-    "create_upload",
-    "complete_upload",
-    "download_sales_template",
-    "get_job",
-    "stream_job_events",
-    "cancel_job",
-    "list_conversations",
-    "get_conversation",
-    "update_conversation",
-    "delete_conversation",
-    "restore_conversation",
-    "list_messages",
-    "get_plan",
-    "confirm_plan",
-    "start_forecast",
-    "get_run_summary",
-    "list_run_products",
-    "get_run_product",
-    "simulate_product",
-    "update_run_parameters",
-    "recalculate_run",
-    "update_product_overrides",
-    "create_export",
-}
-"""Operations built in B4, tested on their own (`tests/db/endpoints`). B4 ends with only the chat
-operations left as stubs until B5."""
+STUB_OPERATIONS = {"send_message", "retry_message", "submit_feedback"}
+"""The assistant endpoints stay 501 until B5; every other operation is implemented and tested on
+its own (`tests/db/endpoints`)."""
 
-STUBS = [e for e in ENDPOINTS if e[2] not in IMPLEMENTED]
+STUBS = [e for e in ENDPOINTS if e[2] in STUB_OPERATIONS]
+IMPLEMENTED = [e for e in ENDPOINTS if e[2] not in STUB_OPERATIONS]
 
 SSE_OPERATIONS = {"stream_job_events", "send_message", "retry_message"}
 

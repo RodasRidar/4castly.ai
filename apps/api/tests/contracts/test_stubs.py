@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from api.main import create_app
 
-from .endpoints import ID, STUBS, concrete
+from .endpoints import ID, IMPLEMENTED, STUBS, concrete
 
 
 @pytest.fixture(scope="module")
@@ -31,6 +31,20 @@ def test_stub_answers_501_problem_details(
     assert problem["message_key"] == "errors.notImplemented"
     assert problem["request_id"] == "req-7"
     assert problem["ref"]
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "operation_id", "body"),
+    [(m, p, o, b) for m, p, o, _, b in IMPLEMENTED],
+    ids=[e[2] for e in IMPLEMENTED],
+)
+def test_every_other_operation_is_implemented_and_requires_a_token(
+    client: TestClient, method: str, path: str, operation_id: str, body: object
+) -> None:
+    response = client.request(method, concrete(path), json=body)
+
+    assert response.status_code == 401, operation_id
+    assert response.json()["code"] == "unauthenticated"
 
 
 def test_invalid_body_is_422_problem_details_with_field_issues(client: TestClient) -> None:

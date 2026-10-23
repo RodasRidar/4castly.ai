@@ -27,6 +27,9 @@ The shim is not Supabase itself: before the first client, also run the suite aga
 | `app_worker` | Modal worker | `BYPASSRLS`; every query filters by the job's tenant |
 | `supabase_auth_admin` | GoTrue | May only execute `public.hook_restrict_signup` |
 
+Migration 0003 adds `forecast_runs.pending_params`, the only column of that table users may update
+(drawer values waiting for a recalculation).
+
 Migration 0002 creates `app_api` and `app_worker` as `NOLOGIN`. For each environment, give them a login
 and a password out of band, then use the Supabase pooler URL (transaction mode) in `DATABASE_URL`:
 
