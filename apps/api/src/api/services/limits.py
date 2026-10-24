@@ -22,6 +22,8 @@ _HIT = text(
 UPLOAD_LIMIT = (30, 3600)
 FORECAST_LIMIT = (30, 3600)
 EXPORT_LIMIT = (60, 3600)
+CHAT_LIMIT = (60, 3600)
+"""Messages per user per hour (S18); also bounded by `max_tokens` on every turn."""
 
 
 async def enforce(

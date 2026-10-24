@@ -155,3 +155,24 @@ class AnthropicAgent:
                 "gen_ai.completion", json.dumps(_dump(final.content), ensure_ascii=False)
             )
         span.end()
+
+
+class UnconfiguredAgent:
+    """Used when no API key is set: the chat answers 503 instead of crashing at startup."""
+
+    async def run_turn(
+        self, history: list[Message], tools: ToolRunner
+    ) -> AsyncIterator[AgentEvent]:
+        del history, tools
+        raise AssistantUnavailableError
+        yield  # pragma: no cover - makes this an async generator
+
+
+def build_agent(api_key: str, *, system: str, tools: Sequence[dict[str, Any]]) -> Any:
+    if not api_key:
+        return UnconfiguredAgent()
+    import anthropic  # noqa: PLC0415 - heavy import, only when the assistant is configured
+
+    return AnthropicAgent(
+        anthropic.AsyncAnthropic(api_key=api_key, max_retries=1), system=system, tools=tools
+    )

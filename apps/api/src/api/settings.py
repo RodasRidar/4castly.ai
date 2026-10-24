@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     jwks_url: str = ""
     """Defaults to `<issuer>/.well-known/jwks.json`."""
 
+    anthropic_api_key: str = ""
+    """Empty: the assistant answers 503 instead of calling the model."""
     storage_bucket: str = "uploads"
     modal_app_name: str = "castly-worker"
     modal_environment: str = ""

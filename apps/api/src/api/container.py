@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from api.ports.assistant import AssistantAgent
 from api.ports.auth import TokenVerifier
 from api.ports.jobs import JobSpawner
 from api.ports.storage import ObjectStorage
@@ -17,3 +18,4 @@ class Container:
     verifier: TokenVerifier
     storage: ObjectStorage
     spawner: JobSpawner
+    agent: AssistantAgent

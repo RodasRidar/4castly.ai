@@ -6,6 +6,7 @@ Each test gets its own tenant, so writes made through the API never collide.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -18,6 +19,7 @@ from psycopg.types.json import Jsonb
 
 from api.adapters.jwks import JwksTokenVerifier
 from api.main import create_app
+from api.ports.assistant import TextDelta, TurnFinished, Usage
 from api.ports.storage import SignedDownload, SignedUpload, StoredObject
 from api.settings import Settings
 from authn.keys import AUDIENCE, ISSUER, TestKey, jwks
@@ -55,6 +57,29 @@ class FakeStorage:
         self.objects[path] = data
 
 
+class FakeAgent:
+    """A scripted assistant: `script(history, tools)` is an async generator of agent events."""
+
+    def __init__(self) -> None:
+        self.histories: list[list[dict]] = []
+        self.script = self.say("Listo.")
+
+    @staticmethod
+    def say(text: str, *, stop: str = "end_turn", chunk: int = 3):
+        async def script(history, tools):
+            for start in range(0, len(text), chunk):
+                yield TextDelta(text[start : start + chunk])
+            message = {"role": "assistant", "content": [{"type": "text", "text": text}]}
+            yield TurnFinished(stop, Usage(10, 5, 4), [] if stop == "refusal" else [message])
+
+        return script
+
+    async def run_turn(self, history, tools):
+        self.histories.append(deepcopy(history))
+        async for event in self.script(history, tools):
+            yield event
+
+
 class FakeSpawner:
     def __init__(self) -> None:
         self.spawned: list[tuple[str, UUID]] = []
@@ -81,6 +106,7 @@ class World:
     dsn: str
     storage: FakeStorage
     spawner: FakeSpawner
+    agent: FakeAgent
 
     def headers(self, user: UUID | None = None, **claims: Any) -> dict[str, str]:
         token = self.key.token(
@@ -112,9 +138,9 @@ def app_client(api_url: str, key: TestKey, **overrides: Any) -> TestClient:
 @pytest.fixture
 def world(pg_dsn: str, api_url: str, signing_key: TestKey) -> Iterator[World]:
     side = new_side(pg_dsn)
-    storage, spawner = FakeStorage(), FakeSpawner()
-    with app_client(api_url, signing_key, storage=storage, spawner=spawner) as client:
-        yield World(side, client, signing_key, pg_dsn, storage, spawner)
+    storage, spawner, agent = FakeStorage(), FakeSpawner(), FakeAgent()
+    with app_client(api_url, signing_key, storage=storage, spawner=spawner, agent=agent) as client:
+        yield World(side, client, signing_key, pg_dsn, storage, spawner, agent)
 
 
 def fetch_row(admin: psycopg.Connection, sql: str, params: list) -> tuple:

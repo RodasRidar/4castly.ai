@@ -48,7 +48,7 @@ def test_every_other_operation_is_implemented_and_requires_a_token(
 
 
 def test_invalid_body_is_422_problem_details_with_field_issues(client: TestClient) -> None:
-    response = client.post(f"/v1/conversations/{ID}/messages", json={"unknown": 1})
+    response = client.post(f"/v1/messages/{ID}/feedback", json={"unknown": 1})
 
     assert response.status_code == 422
     assert response.headers["content-type"].startswith("application/problem+json")

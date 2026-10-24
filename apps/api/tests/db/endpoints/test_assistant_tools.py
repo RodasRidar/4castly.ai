@@ -31,7 +31,7 @@ def toolbox(engine: AsyncEngine, world: World, run, turn: int = 7) -> tuple[Tool
     ctx = RequestContext(world.side.user, {"role": "authenticated"}, request_id="r1")
     who = Principal(ctx, world.side.tenant, "owner", world.side.email)
     refs = Refs(turn)
-    container = Container(engine=engine, verifier=None, storage=None, spawner=None)  # ty: ignore[invalid-argument-type]
+    container = Container(engine=engine, verifier=None, storage=None, spawner=None, agent=None)  # ty: ignore[invalid-argument-type]
     return Toolbox(Tx(who, container), run.run, refs), refs
 
 

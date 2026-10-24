@@ -25,7 +25,8 @@ _PAGE = text(
     "from public.messages m "
     "left join public.products p on p.tenant_id = m.tenant_id and p.id = m.context_product_id "
     "left join public.message_feedback f on f.message_id = m.id and f.user_id = :user_id "
-    "where m.conversation_id = :id and (cast(:before as bigint) is null or m.seq < :before) "
+    "where m.conversation_id = :id and m.role <> 'system' "
+    "and (cast(:before as bigint) is null or m.seq < :before) "
     "order by m.seq desc limit :limit"
 )
 

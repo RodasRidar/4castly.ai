@@ -5,10 +5,13 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 
+from api.auth import CurrentTx
 from api.domain.errors import NotImplementedYetError
 from api.routers._common import EventStreamResponse, bearer_scheme, errors
 from api.schemas import ChatStreamEvent, Feedback, FeedbackCreate
+from api.services import chat
 
 router = APIRouter(
     prefix="/v1/messages",
@@ -32,6 +35,11 @@ async def submit_feedback(message_id: UUID, body: FeedbackCreate) -> Feedback:
         **errors(404, 409, 422),
     },
 )
-async def retry_message(message_id: UUID) -> None:
+async def retry_message(message_id: UUID, tx: CurrentTx) -> StreamingResponse:
     """Regenerate the answer to the previous question (appends; earlier turns never change)."""
-    raise NotImplementedYetError
+    prepared = await chat.prepare_retry(tx, message_id)
+    return StreamingResponse(
+        chat.stream(tx, prepared),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

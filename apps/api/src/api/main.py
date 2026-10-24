@@ -5,9 +5,11 @@ from dataclasses import replace
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.adapters.anthropic_agent import build_agent
 from api.adapters.jwks import JwksTokenVerifier
 from api.adapters.modal_spawner import ModalJobSpawner
 from api.adapters.supabase_storage import SupabaseStorage
+from api.assistant.prompt import SYSTEM_PROMPT
 from api.container import Container
 from api.db.engine import create_engine
 from api.errors import register_exception_handlers
@@ -19,6 +21,7 @@ from api.observability.middleware import (
 )
 from api.observability.tracing import configure_tracing
 from api.openapi import install_openapi
+from api.ports.assistant import AssistantAgent
 from api.ports.auth import TokenVerifier
 from api.ports.jobs import JobSpawner
 from api.ports.storage import ObjectStorage
@@ -33,6 +36,7 @@ from api.routers import (
     templates,
     uploads,
 )
+from api.services.assistant_tools import TOOL_SPECS
 from api.settings import Settings, get_settings
 
 V1_ROUTERS = (me, conversations, uploads, templates, jobs, runs, products, messages)
@@ -44,6 +48,7 @@ def create_app(
     verifier: TokenVerifier | None = None,
     storage: ObjectStorage | None = None,
     spawner: JobSpawner | None = None,
+    agent: AssistantAgent | None = None,
 ) -> FastAPI:
     """Build the app. The keyword arguments replace adapters (tests inject fakes)."""
     settings = settings or get_settings()
@@ -67,6 +72,8 @@ def create_app(
         or ModalJobSpawner(
             app_name=settings.modal_app_name, environment=settings.modal_environment
         ),
+        agent=agent
+        or build_agent(settings.anthropic_api_key, system=SYSTEM_PROMPT, tools=TOOL_SPECS),
     )
 
     @asynccontextmanager

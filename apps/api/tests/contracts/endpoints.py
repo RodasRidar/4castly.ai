@@ -102,7 +102,7 @@ ENDPOINTS: list[tuple[str, str, str, int, Any]] = [
     ("post", "/v1/messages/{message_id}/retry", "retry_message", 200, None),
 ]
 
-STUB_OPERATIONS = {"send_message", "retry_message", "submit_feedback"}
+STUB_OPERATIONS = {"submit_feedback"}
 """The assistant endpoints stay 501 until B5; every other operation is implemented and tested on
 its own (`tests/db/endpoints`)."""
 

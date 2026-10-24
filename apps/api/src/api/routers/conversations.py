@@ -6,9 +6,9 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response
+from fastapi.responses import StreamingResponse
 
 from api.auth import CurrentTx
-from api.domain.errors import NotImplementedYetError
 from api.routers._common import (
     EventStreamResponse,
     IdempotencyKey,
@@ -29,7 +29,7 @@ from api.schemas import (
     PlanConfirmation,
     PlanView,
 )
-from api.services import conversations, forecasts, messages, plans
+from api.services import chat, conversations, forecasts, messages, plans
 
 router = APIRouter(
     prefix="/v1/conversations",
@@ -122,6 +122,13 @@ async def list_messages(
         **errors(404, 422),
     },
 )
-async def send_message(conversation_id: UUID, body: MessageCreate) -> None:
+async def send_message(
+    conversation_id: UUID, body: MessageCreate, tx: CurrentTx
+) -> StreamingResponse:
     """Send a question; the reply streams as server-sent events."""
-    raise NotImplementedYetError
+    prepared = await chat.prepare_send(tx, conversation_id, body)
+    return StreamingResponse(
+        chat.stream(tx, prepared),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
