@@ -160,3 +160,15 @@ def test_changing_my_profile_never_touches_another_tenants_user(world: World, pg
     theirs = world.client.get("/v1/me", headers=world.headers(user=other.user, email=other.email))
 
     assert theirs.json()["full_name"].startswith("User Other-")
+
+
+def test_validation_errors_are_problem_details_with_field_issues(world: World) -> None:
+    response = world.client.patch("/v1/me", json={"unknown": 1}, headers=world.headers())
+
+    assert response.status_code == 422
+    assert response.headers["content-type"].startswith(PROBLEM)
+    problem = response.json()
+    assert problem["code"] == "validation_error"
+    assert problem["message_key"] == "errors.validation"
+    assert problem["fields"]
+    assert {"field", "code"} <= set(problem["fields"][0])

@@ -58,14 +58,6 @@ class GatewayTimeoutError(AppError):
     message_key = "errors.timeout"
 
 
-class NotImplementedYetError(AppError):
-    """Endpoint is in the contract but not built yet (until phase B4)."""
-
-    status = 501
-    code = "not_implemented"
-    message_key = "errors.notImplemented"
-
-
 class UnauthenticatedError(AppError):
     """Missing, malformed, expired or untrusted token."""
 

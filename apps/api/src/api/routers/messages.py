@@ -8,10 +8,9 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from api.auth import CurrentTx
-from api.domain.errors import NotImplementedYetError
 from api.routers._common import EventStreamResponse, bearer_scheme, errors
 from api.schemas import ChatStreamEvent, Feedback, FeedbackCreate
-from api.services import chat
+from api.services import chat, feedback
 
 router = APIRouter(
     prefix="/v1/messages",
@@ -22,9 +21,9 @@ router = APIRouter(
 
 
 @router.post("/{message_id}/feedback", responses=errors(404, 422))
-async def submit_feedback(message_id: UUID, body: FeedbackCreate) -> Feedback:
+async def submit_feedback(message_id: UUID, body: FeedbackCreate, tx: CurrentTx) -> Feedback:
     """Like or dislike an assistant answer; `null` clears it."""
-    raise NotImplementedYetError
+    return await feedback.submit_feedback(tx, message_id, body)
 
 
 @router.post(

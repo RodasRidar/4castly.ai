@@ -7,12 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.adapters.anthropic_agent import build_agent
 from api.adapters.jwks import JwksTokenVerifier
+from api.adapters.langfuse_scores import LangfuseScores
 from api.adapters.modal_spawner import ModalJobSpawner
 from api.adapters.supabase_storage import SupabaseStorage
 from api.assistant.prompt import SYSTEM_PROMPT
 from api.container import Container
 from api.db.engine import create_engine
 from api.errors import register_exception_handlers
+from api.observability.llm_tracing import build_llm_tracer_provider
 from api.observability.logging import configure_logging
 from api.observability.middleware import (
     AccessLogMiddleware,
@@ -23,6 +25,7 @@ from api.observability.tracing import configure_tracing
 from api.openapi import install_openapi
 from api.ports.assistant import AssistantAgent
 from api.ports.auth import TokenVerifier
+from api.ports.feedback import FeedbackScores, NullScores
 from api.ports.jobs import JobSpawner
 from api.ports.storage import ObjectStorage
 from api.routers import (
@@ -42,18 +45,22 @@ from api.settings import Settings, get_settings
 V1_ROUTERS = (me, conversations, uploads, templates, jobs, runs, products, messages)
 
 
-def create_app(
+def create_app(  # noqa: PLR0913
     settings: Settings | None = None,
     *,
     verifier: TokenVerifier | None = None,
     storage: ObjectStorage | None = None,
     spawner: JobSpawner | None = None,
     agent: AssistantAgent | None = None,
+    scores: FeedbackScores | None = None,
 ) -> FastAPI:
     """Build the app. The keyword arguments replace adapters (tests inject fakes)."""
     settings = settings or get_settings()
     configure_logging(settings)
 
+    llm_provider = build_llm_tracer_provider(settings)
+    llm_tracer = llm_provider.get_tracer("api.assistant") if llm_provider else None
+    langfuse_on = bool(settings.langfuse_public_key and settings.langfuse_secret_key)
     container = Container(
         engine=None,
         verifier=verifier
@@ -73,7 +80,20 @@ def create_app(
             app_name=settings.modal_app_name, environment=settings.modal_environment
         ),
         agent=agent
-        or build_agent(settings.anthropic_api_key, system=SYSTEM_PROMPT, tools=TOOL_SPECS),
+        or build_agent(
+            settings.anthropic_api_key, system=SYSTEM_PROMPT, tools=TOOL_SPECS, tracer=llm_tracer
+        ),
+        scores=scores
+        or (
+            LangfuseScores(
+                host=settings.langfuse_host,
+                public_key=settings.langfuse_public_key,
+                secret_key=settings.langfuse_secret_key,
+            )
+            if langfuse_on
+            else NullScores()
+        ),
+        **({"tracer": llm_tracer} if llm_tracer else {}),
     )
 
     @asynccontextmanager
@@ -92,6 +112,8 @@ def create_app(
                 await engine.dispose()
             if app.state.tracer_provider is not None:
                 app.state.tracer_provider.shutdown()
+            if llm_provider is not None:
+                llm_provider.shutdown()
 
     app = FastAPI(
         lifespan=lifespan,

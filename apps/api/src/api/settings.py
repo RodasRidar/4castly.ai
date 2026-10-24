@@ -21,6 +21,10 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str = ""
     """Empty: the assistant answers 503 instead of calling the model."""
+    langfuse_host: str = "https://cloud.langfuse.com"
+    """EU cloud by default; `https://us.cloud.langfuse.com` or a self-hosted URL otherwise."""
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
     storage_bucket: str = "uploads"
     modal_app_name: str = "castly-worker"
     modal_environment: str = ""

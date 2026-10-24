@@ -168,11 +168,16 @@ class UnconfiguredAgent:
         yield  # pragma: no cover - makes this an async generator
 
 
-def build_agent(api_key: str, *, system: str, tools: Sequence[dict[str, Any]]) -> Any:
+def build_agent(
+    api_key: str, *, system: str, tools: Sequence[dict[str, Any]], tracer: Tracer | None = None
+) -> Any:
     if not api_key:
         return UnconfiguredAgent()
     import anthropic  # noqa: PLC0415 - heavy import, only when the assistant is configured
 
     return AnthropicAgent(
-        anthropic.AsyncAnthropic(api_key=api_key, max_retries=1), system=system, tools=tools
+        anthropic.AsyncAnthropic(api_key=api_key, max_retries=1),
+        system=system,
+        tools=tools,
+        tracer=tracer,
     )

@@ -80,6 +80,21 @@ class FakeAgent:
             yield event
 
 
+class FakeScores:
+    """Records the scores the app would send to Langfuse."""
+
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, UUID, UUID, str | None]] = []
+        self.fail = False
+
+    async def score(
+        self, trace_id: str, message_id: UUID, user_id: UUID, value: str | None
+    ) -> None:
+        if self.fail:
+            raise RuntimeError("langfuse is down")
+        self.sent.append((trace_id, message_id, user_id, value))
+
+
 class FakeSpawner:
     def __init__(self) -> None:
         self.spawned: list[tuple[str, UUID]] = []
@@ -107,6 +122,7 @@ class World:
     storage: FakeStorage
     spawner: FakeSpawner
     agent: FakeAgent
+    scores: FakeScores
 
     def headers(self, user: UUID | None = None, **claims: Any) -> dict[str, str]:
         token = self.key.token(
@@ -138,9 +154,11 @@ def app_client(api_url: str, key: TestKey, **overrides: Any) -> TestClient:
 @pytest.fixture
 def world(pg_dsn: str, api_url: str, signing_key: TestKey) -> Iterator[World]:
     side = new_side(pg_dsn)
-    storage, spawner, agent = FakeStorage(), FakeSpawner(), FakeAgent()
-    with app_client(api_url, signing_key, storage=storage, spawner=spawner, agent=agent) as client:
-        yield World(side, client, signing_key, pg_dsn, storage, spawner, agent)
+    storage, spawner, agent, scores = FakeStorage(), FakeSpawner(), FakeAgent(), FakeScores()
+    with app_client(
+        api_url, signing_key, storage=storage, spawner=spawner, agent=agent, scores=scores
+    ) as client:
+        yield World(side, client, signing_key, pg_dsn, storage, spawner, agent, scores)
 
 
 def fetch_row(admin: psycopg.Connection, sql: str, params: list) -> tuple:
