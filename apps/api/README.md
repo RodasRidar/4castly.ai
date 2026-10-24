@@ -17,8 +17,18 @@ Routers are thin: they call a function in `api/services`, which runs its SQL in 
 (`tx.run`), so RLS applies. Outside systems sit behind ports (`api/ports`): the token verifier, object
 storage (Supabase Storage) and the job spawner (Modal). Tests inject fakes through `create_app(...)`.
 
-Everything under `/v1` is implemented except the assistant endpoints (`send_message`, `retry_message`,
-`submit_feedback`), which answer 501 until phase B5.
+Every operation under `/v1` is implemented.
 
 Tests under `tests/db/endpoints` run the real app over HTTP against an ephemeral PostgreSQL (see
 `supabase/README.md`), with real JWT verification and a new tenant per test.
+
+## The assistant
+
+`POST /v1/conversations/{id}/messages` streams the answer as server-sent events. An `AssistantAgent`
+(port; `api/adapters/anthropic_agent.py` on `claude-sonnet-5-5`) runs a tool loop over six read-only
+tools (`api/services/assistant_tools.py`). The model never writes a number: tools return figures with
+ids and the model writes `[[f7_3]]`; `api/assistant/guard.py` swaps in the exact value for the user's
+locale and masks any digit the model writes on its own. History is append-only (`messages.blocks`
+replayed unchanged; context changes and retries are hidden `system` rows). Without `ANTHROPIC_API_KEY`
+the chat answers 503. With Langfuse keys, LLM spans (with prompts) go to Langfuse and the same spans
+reach Axiom without them; votes become Langfuse scores.
