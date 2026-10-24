@@ -137,3 +137,5 @@ exclude_lines = [
     "@overload",
     '^\\s*\\.\\.\\.$',   # Protocol method bodies
 ]
+[tool.vercel]
+entrypoint = "src.api.main:app"
