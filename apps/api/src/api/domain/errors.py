@@ -78,3 +78,12 @@ class TooManyRequestsError(AppError):
     status = 429
     code = "rate_limited"
     message_key = "errors.rateLimited"
+
+
+class AssistantUnavailableError(AppError):
+    """The language model could not answer (outage, overload, too many tool rounds)."""
+
+    status = 503
+    code = "assistant_unavailable"
+    message_key = "errors.assistantUnavailable"
+    retryable = True
