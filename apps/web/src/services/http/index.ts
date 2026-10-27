@@ -42,7 +42,7 @@ export function createHttpServices(config: HttpServicesConfig): Services {
     auth: createHttpAuthService(config.supabase),
     profile: createHttpProfileService(client),
     conversations: createHttpConversationService(client),
-    uploads: createHttpUploadService(client, config.apiUrl, { createXhr: config.createXhr }),
+    uploads: createHttpUploadService(client, { createXhr: config.createXhr }),
     jobs: createHttpJobService(client),
     get runs() {
       return (runs ??= (config.overrides?.runs ?? createHttpRunService)(client))

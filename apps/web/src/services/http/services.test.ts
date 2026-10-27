@@ -212,7 +212,7 @@ describe('uploads', () => {
   it('asks for a signed upload ticket', async () => {
     const body = { file_name: 'ventas.xlsx', size_bytes: 4, content_type: file.type }
     const { client, calls } = fakeApi(json(ticket, { status: 201 }))
-    const result = await createHttpUploadService(client, 'https://api.example.test', { createXhr }).create(body)
+    const result = await createHttpUploadService(client, { createXhr }).create(body)
     expect(result).toEqual(ticket)
     expect([calls[0].method, calls[0].url.pathname, calls[0].body]).toEqual(['POST', '/v1/uploads', body])
   })
@@ -226,7 +226,7 @@ describe('uploads', () => {
     }
     const { client } = fakeApi()
     const progress = vi.fn()
-    await createHttpUploadService(client, 'https://api.example.test', { createXhr }).put(ticket, file, progress)
+    await createHttpUploadService(client, { createXhr }).put(ticket, file, progress)
     const xhr = FakeXhr.instances[0]
     expect([xhr.method, xhr.url]).toEqual(['PUT', ticket.upload_url])
     expect(xhr.headers['content-type']).toBe(ticket.headers?.['content-type'])
@@ -238,13 +238,13 @@ describe('uploads', () => {
   it('works without a progress callback', async () => {
     FakeXhr.script = (xhr) => xhr.finish(200)
     const { client } = fakeApi()
-    await expect(createHttpUploadService(client, 'https://api.example.test', { createXhr }).put(ticket, file)).resolves.toBeUndefined()
+    await expect(createHttpUploadService(client, { createXhr }).put(ticket, file)).resolves.toBeUndefined()
   })
 
   it('rejects with upload_failed and the HTTP status when storage refuses the file', async () => {
     FakeXhr.script = (xhr) => xhr.finish(403)
     const { client } = fakeApi()
-    const failure = await fails(createHttpUploadService(client, 'https://api.example.test', { createXhr }).put(ticket, file))
+    const failure = await fails(createHttpUploadService(client, { createXhr }).put(ticket, file))
     expect(failure).toBeInstanceOf(ApiFailure)
     expect(failure.problem).toMatchObject({ status: 403, code: 'upload_failed', message_key: 'errors.uploadFailed' })
   })
@@ -252,24 +252,19 @@ describe('uploads', () => {
   it.each(['onerror', 'ontimeout', 'onabort'] as const)('rejects with status 0 on %s', async (event) => {
     FakeXhr.script = (xhr) => xhr[event]?.()
     const { client } = fakeApi()
-    const failure = await fails(createHttpUploadService(client, 'https://api.example.test', { createXhr }).put(ticket, file))
+    const failure = await fails(createHttpUploadService(client, { createXhr }).put(ticket, file))
     expect(failure.problem).toMatchObject({ status: 0, code: 'upload_failed', message_key: 'errors.uploadFailed' })
   })
 
   it('completes with a deterministic idempotency key per upload', async () => {
     const { client, calls } = fakeApi(json(entryFlow.upload_completed, { status: 202 }))
-    const result = await createHttpUploadService(client, 'https://api.example.test', { createXhr }).complete('up-1')
+    const result = await createHttpUploadService(client, { createXhr }).complete('up-1')
     expect(result).toEqual(entryFlow.upload_completed)
     expect([calls[0].method, calls[0].url.pathname]).toEqual(['POST', '/v1/uploads/up-1/complete'])
     expect(calls[0].headers.get('idempotency-key')).toBe('complete-up-1')
   })
 
-  it('points the template at the API', () => {
-    const { client } = fakeApi()
-    expect(createHttpUploadService(client, 'https://api.example.test/', { createXhr }).templateUrl()).toBe(
-      'https://api.example.test/v1/templates/sales.xlsx',
-    )
-  })
+  // The template download is covered in template.test.ts (it needs the assembled services and a token).
 })
 
 describe('jobs', () => {

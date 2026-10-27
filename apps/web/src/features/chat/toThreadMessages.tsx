@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next'
 import type { ChatMessage, FeedbackValue } from '../../services/types'
 import type { ChatThreadMessage } from '../../ui/organisms/ChatThread'
 import { annotateMarkdown } from './annotate'
-import { backendKey } from './backendKey'
+import { backendKey, toolKey } from './backendKey'
 import { formatBytes } from '../conversation/format'
 import type { Draft } from './streamDraft'
 
@@ -37,7 +37,7 @@ function fromDraft(draft: Draft, ctx: ThreadContext): ChatThreadMessage {
     authorLabel: t('chat.author.assistant'),
     text: annotateMarkdown(draft.text, draft.annotations, ctx.conversationId),
     streaming: draft.phase === 'streaming',
-    toolLines: draft.tools.map((tool) => t(backendKey(tool.statusKey))),
+    toolLines: draft.tools.map((tool) => t(toolKey(tool.statusKey))),
   }
   if (draft.phase === 'error' && draft.error) {
     return {

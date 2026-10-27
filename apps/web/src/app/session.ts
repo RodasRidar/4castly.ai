@@ -17,7 +17,8 @@ export function useSignOut() {
   const { auth } = useServices()
   const queryClient = useQueryClient()
   return async () => {
-    await auth.signOut()
+    // If the identity provider cannot be reached the local session is dropped anyway: the user asked to leave.
+    await auth.signOut().catch(() => undefined)
     // Drop everything tied to the previous user, then record "no session" so guards redirect.
     queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== sessionKey[0] })
     queryClient.setQueryData(sessionKey, null)

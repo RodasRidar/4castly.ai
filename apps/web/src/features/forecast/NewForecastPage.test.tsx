@@ -16,13 +16,13 @@ const dropOn = (target: Element | Window, files: File[]) =>
 
 describe('NewForecastPage', () => {
   it('empty: shows the upload card, two coming-soon sources and the template link', async () => {
-    const { services } = renderApp({ path: '/nuevo' })
+    renderApp({ path: '/nuevo' })
     expect(await screen.findByRole('heading', { level: 1, name: 'Nuevo pronóstico' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Subir un archivo' })).toBeInTheDocument()
     expect(screen.getByText('Google Sheets')).toBeInTheDocument()
     expect(screen.getByText('Base de datos')).toBeInTheDocument()
     expect(screen.getAllByText('Próximamente')).toHaveLength(2)
-    expect(screen.getByRole('link', { name: 'Descargar plantilla' })).toHaveAttribute('href', services.uploads.templateUrl())
+    expect(screen.getByRole('button', { name: 'Descargar plantilla' })).toBeEnabled()
     expect(screen.getByText(/Solo tu empresa puede ver tus archivos/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled()
   })
@@ -124,6 +124,27 @@ describe('NewForecastPage', () => {
   it('speaks English when the language is en', async () => {
     renderApp({ path: '/nuevo', language: 'en', preferences: { locale: 'en' } })
     expect(await screen.findByRole('heading', { level: 1, name: 'New forecast' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Download template' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Download template' })).toBeInTheDocument()
+  })
+
+  it('downloads the template through the service, so the request carries the session token', async () => {
+    const created = vi.fn(() => 'blob:template')
+    URL.createObjectURL = created
+    URL.revokeObjectURL = vi.fn()
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const { services, user } = renderApp({ path: '/nuevo' })
+    const spy = vi.spyOn(services.uploads, 'downloadTemplate')
+    await user.click(await screen.findByRole('button', { name: 'Descargar plantilla' }))
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(created).toHaveBeenCalledTimes(1)
+    click.mockRestore()
+  })
+
+  it('says so when the template cannot be downloaded', async () => {
+    const { services, user } = renderApp({ path: '/nuevo' })
+    vi.spyOn(services.uploads, 'downloadTemplate').mockRejectedValue(new Error('boom'))
+    await user.click(await screen.findByRole('button', { name: 'Descargar plantilla' }))
+    expect(await screen.findByText('No pudimos descargar la plantilla')).toBeInTheDocument()
   })
 })

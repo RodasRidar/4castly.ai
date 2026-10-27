@@ -5,7 +5,8 @@ import './theme/theme.css'
 import { AppProviders } from './app/providers'
 import { createRoutes } from './app/routes'
 import { createI18n, readStoredLanguage } from './i18n'
-import { createMockServices } from './services/mock'
+import { supabase } from './lib/supabase'
+import { selectServices } from './services/selectServices'
 import { themeStore } from './theme/instance'
 
 // Dev-only routes (plan 8.2). The dynamic import keeps them out of the production bundle.
@@ -16,13 +17,17 @@ const devRoutes: RouteObject[] = import.meta.env.DEV
 const language = readStoredLanguage()
 document.documentElement.lang = language
 
-// Mock services until the http implementation lands (F4 swaps this one line).
-// Dev only: `?signedout` starts without a session so the login screens can be reviewed.
+// Real API when VITE_API_URL and Supabase are configured; in-memory mocks otherwise (or with VITE_USE_MOCK=1).
+// Dev only, mocks only: `?signedout` starts without a session so the login screens can be reviewed.
 const signedIn = !(import.meta.env.DEV && new URLSearchParams(location.search).has('signedout'))
-const services = createMockServices({ signedIn })
+const { kind, services } = selectServices(
+  { VITE_API_URL: import.meta.env.VITE_API_URL, VITE_USE_MOCK: import.meta.env.VITE_USE_MOCK },
+  supabase,
+  { signedIn },
+)
 // Dev only: lets QA flip mock states (sign out, failures, advance jobs) from the console.
-if (import.meta.env.DEV) Object.assign(window, { __mock: services })
-const env = { services, i18n: createI18n(language), themeStore, root: document.documentElement }
+if (import.meta.env.DEV && kind === 'mock') Object.assign(window, { __mock: services })
+const env = { services, i18n: createI18n(language), themeStore, root: document.documentElement, retryQueries: kind === 'http' }
 const router = createBrowserRouter(createRoutes(devRoutes))
 
 createRoot(document.getElementById('root')!).render(

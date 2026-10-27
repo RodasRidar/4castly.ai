@@ -10,7 +10,7 @@ export interface UploadOptions {
 const uploadFailed = (status: number) =>
   new ApiFailure({ type: 'about:blank', title: 'upload_failed', status, code: 'upload_failed', message_key: 'errors.uploadFailed', ref: '' })
 
-export function createHttpUploadService(client: HttpClient, apiUrl: string, { createXhr = () => new XMLHttpRequest() }: UploadOptions = {}): UploadService {
+export function createHttpUploadService(client: HttpClient, { createXhr = () => new XMLHttpRequest() }: UploadOptions = {}): UploadService {
   return {
     create: (file) => client.json<UploadTicket>('POST', '/v1/uploads', { body: file }),
 
@@ -44,6 +44,9 @@ export function createHttpUploadService(client: HttpClient, apiUrl: string, { cr
         headers: { 'Idempotency-Key': `complete-${uploadId}` },
       }),
 
-    templateUrl: () => `${apiUrl.replace(/\/+$/, '')}/v1/templates/sales.xlsx`,
+    async downloadTemplate() {
+      const file = await client.blob('GET', '/v1/templates/sales.xlsx')
+      return { blob: file.blob, fileName: file.fileName ?? 'plantilla-ventas.xlsx' }
+    },
   }
 }

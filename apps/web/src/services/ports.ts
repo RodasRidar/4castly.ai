@@ -86,7 +86,8 @@ export interface UploadService {
   /** Direct browser upload to the signed URL (the API never receives the file). */
   put(ticket: UploadTicket, file: File, onProgress?: (fraction: number) => void): Promise<void>
   complete(uploadId: string): Promise<UploadCompleted>
-  templateUrl(): string
+  /** The sales template, fetched with the session token (the endpoint is not public). */
+  downloadTemplate(): Promise<{ blob: Blob; fileName: string }>
 }
 
 export interface JobService {

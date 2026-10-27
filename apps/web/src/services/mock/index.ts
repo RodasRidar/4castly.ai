@@ -420,7 +420,10 @@ export function createMockServices({ signedIn = true, latencyMs = 0, emptyConver
         })
         return { conversation_id: conversationId, job_id: job.id }
       },
-      templateUrl: () => '/v1/templates/sales.xlsx',
+      async downloadTemplate() {
+        await wait()
+        return { blob: new Blob(['mock template'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), fileName: 'plantilla-ventas.xlsx' }
+      },
     },
 
     runs: createRunService({

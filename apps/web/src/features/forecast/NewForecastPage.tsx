@@ -3,12 +3,13 @@ import { Database, FileSpreadsheet, Sheet } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { useNotify } from '../../app/notifyContext'
 import { conversationsKey } from '../../layouts/keys'
+import { triggerDownload } from '../product/download'
 import { useServices } from '../../services/servicesContext'
 import { ApiFailure } from '../../services/types'
 import { Button } from '../../ui/atoms/Button'
 import { NumberValue } from '../../ui/atoms/NumberValue'
-import { TextLink } from '../../ui/atoms/TextLink'
 import { SourceCard } from '../../ui/organisms/SourceCard'
 import { UploadDropzone, type UploadDropzoneState } from '../../ui/organisms/UploadDropzone'
 import { ACCEPT_ATTRIBUTE, contentTypeOf, isSupportedFile, sizeParts } from './uploadFile'
@@ -21,9 +22,21 @@ export function NewForecastPage() {
   const { uploads } = useServices()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const notify = useNotify()
   const [file, setFile] = useState<File | null>(null)
   const [problem, setProblem] = useState<Problem | null>(null)
   const [progress, setProgress] = useState(0)
+
+  // The template endpoint needs the session token, so a plain link would 401: fetch it, then save the blob.
+  const template = useMutation({
+    mutationFn: () => uploads.downloadTemplate(),
+    onSuccess: ({ blob, fileName }) => {
+      const url = URL.createObjectURL(blob)
+      triggerDownload(url, fileName)
+      URL.revokeObjectURL(url)
+    },
+    onError: () => notify('error', t('upload.templateError')),
+  })
 
   const upload = useMutation({
     mutationFn: async (selected: File) => {
@@ -101,9 +114,9 @@ export function NewForecastPage() {
             statusLine={uploading ? t('upload.uploadingStatus') : state === 'attached' ? t('upload.ready') : undefined}
           />
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <TextLink href={uploads.templateUrl()} download className="text-body-md">
+            <Button variant="ghost" size="sm" onClick={() => template.mutate()} loading={template.isPending}>
               {t('upload.template')}
-            </TextLink>
+            </Button>
             <Button disabled={!file || uploading} loading={uploading} onClick={() => file && upload.mutate(file)}>
               {t('upload.continue')}
             </Button>

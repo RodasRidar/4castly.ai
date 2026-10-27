@@ -15,6 +15,7 @@ export const uploadEs = {
   continue: 'Continuar',
   privacy: 'Solo tu empresa puede ver tus archivos.',
   template: 'Descargar plantilla',
+  templateError: 'No pudimos descargar la plantilla',
   unsupported: 'Ese formato no es compatible. Sube un archivo .xlsx, .xls o .csv.',
   failed: 'No pudimos subir tu archivo. Inténtalo de nuevo.',
   failedWithRef: 'No pudimos subir tu archivo. Inténtalo de nuevo. Referencia: {{ref}}',

@@ -23,6 +23,8 @@ export interface RequestOptions {
 export interface HttpClient {
   /** JSON request. 204 resolves to `undefined`. Rejects with `ApiFailure` (never a raw TypeError). */
   json<T>(method: string, path: string, options?: RequestOptions): Promise<T>
+  /** Authenticated file download (the template, exports behind the token). */
+  blob(method: string, path: string, options?: RequestOptions): Promise<{ blob: Blob; fileName: string | null }>
   /** For server-sent events: returns the live response once it is known to be a success. */
   stream(method: string, path: string, options?: RequestOptions): Promise<Response>
 }
@@ -89,6 +91,12 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
       const response = await send(method, path, 'application/json', options)
       if (response.status === 204) return undefined as T
       return (await response.json()) as T
+    },
+    async blob(method: string, path: string, options: RequestOptions = {}) {
+      const response = await send(method, path, '*/*', options)
+      const disposition = response.headers.get('content-disposition') ?? ''
+      const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition)
+      return { blob: await response.blob(), fileName: match ? decodeURIComponent(match[1]) : null }
     },
     stream: (method, path, options = {}) => send(method, path, 'text/event-stream', options),
   }

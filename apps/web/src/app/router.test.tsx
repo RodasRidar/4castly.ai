@@ -43,6 +43,26 @@ describe('guards', () => {
   })
 })
 
+describe('session end', () => {
+  it('still signs the user out of the app when the identity provider call fails', async () => {
+    const { router, user, services } = renderApp({ path: '/nuevo' })
+    services.auth.signOut = async () => {
+      throw new Error('no session on the server')
+    }
+    await user.click(await screen.findByRole('button', { name: /Ana Torres/ }))
+    await user.click(await screen.findByRole('button', { name: 'Cerrar sesión' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/login'))
+  })
+
+  it('sends the user to /login, remembering the page, when the API answers 401', async () => {
+    const { router } = renderApp({ path: '/historial' })
+    await screen.findByRole('heading', { level: 1, name: 'Historial' })
+    window.dispatchEvent(new Event('app:unauthorized'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/login'))
+    expect(router.state.location.search).toBe('?next=%2Fhistorial')
+  })
+})
+
 describe('routes', () => {
   it('redirects / to /nuevo and /configuracion to the profile', async () => {
     const a = renderApp({ path: '/' })

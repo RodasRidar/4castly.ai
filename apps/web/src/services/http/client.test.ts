@@ -129,4 +129,19 @@ describe('http client', () => {
     const bad = setup(() => problem(503, { code: 'assistant_unavailable' }))
     await expect(bad.client.stream('POST', '/v1/conversations/c/messages', { body: {} })).rejects.toBeInstanceOf(ApiFailure)
   })
+
+  it('blob() downloads a file with the bearer token and reads the file name', async () => {
+    const { client, calls } = setup(
+      () => new Response('xlsx-bytes', { headers: { 'content-disposition': 'attachment; filename="plantilla-ventas.xlsx"' } }),
+    )
+    const file = await client.blob('GET', '/v1/templates/sales.xlsx')
+    expect(await file.blob.text()).toBe('xlsx-bytes')
+    expect(file.fileName).toBe('plantilla-ventas.xlsx')
+    expect(new Headers(calls[0].init.headers).get('authorization')).toBe('Bearer tok-123')
+  })
+
+  it('blob() has no file name when the server sends none, and throws problems like json()', async () => {
+    expect((await setup(() => new Response('x')).client.blob('GET', '/x')).fileName).toBeNull()
+    await expect(setup(() => problem(404)).client.blob('GET', '/x')).rejects.toBeInstanceOf(ApiFailure)
+  })
 })

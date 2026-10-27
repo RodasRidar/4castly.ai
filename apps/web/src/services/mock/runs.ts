@@ -101,12 +101,12 @@ export function createRunService({ startRecalculation, controls }: RunMockHooks)
     async updateParameters(_runId, next) {
       guard()
       parameters = clone(next)
-      summary = { ...summary, run: { ...summary.run, stale: true } }
+      summary = { ...summary, run: { ...summary.run, parameters_pending: true } }
       return clone(parameters)
     },
     async recalculate(runId) {
       guard()
-      summary = { ...summary, run: { ...summary.run, stale: false, defaults_used: [] } }
+      summary = { ...summary, run: { ...summary.run, parameters_pending: false, stale: false, defaults_used: [] } }
       return startRecalculation(runId)
     },
     async setOverrides(code, overrides) {

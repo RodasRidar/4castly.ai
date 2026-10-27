@@ -57,15 +57,16 @@ describe('mock run service', () => {
     expect(detail.product.lead_time_overridden).toBe(true)
   })
 
-  it('marks the run stale after new parameters and puts the conversation back to calculating on recalculate', async () => {
+  it('marks new parameters as pending (like the API) and puts the conversation back to calculating on recalculate', async () => {
     const services = createMockServices()
     const summary = await services.runs.summary(RUN)
     await services.runs.updateParameters(RUN, { ...summary.run.parameters, horizon_weeks: 24 })
-    expect((await services.runs.summary(RUN)).run.stale).toBe(true)
+    expect((await services.runs.summary(RUN)).run.parameters_pending).toBe(true)
     const { conversation_id } = await services.runs.recalculate(RUN)
     expect((await services.conversations.get(conversation_id)).stage).toBe('calculating')
     for (let i = 0; i < 5; i++) services.advance()
     const done = await services.conversations.get(conversation_id)
+    expect((await services.runs.summary(RUN)).run.parameters_pending).toBe(false)
     expect(done.stage).toBe('ready')
     expect(done.current_run_id).toBe(RUN)
   })

@@ -17,6 +17,7 @@ export const uploadEn: typeof uploadEs = {
   continue: 'Continue',
   privacy: 'Only your company can see your files.',
   template: 'Download template',
+  templateError: "We couldn't download the template",
   unsupported: 'That format is not supported. Upload an .xlsx, .xls or .csv file.',
   failed: "We couldn't upload your file. Try again.",
   failedWithRef: "We couldn't upload your file. Try again. Reference: {{ref}}",
