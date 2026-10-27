@@ -177,7 +177,7 @@ class TestConfirmPlan:
             "llm",
             True,
             world.side.user,
-            "confirmed",
+            "clarifying",
         )
 
     def test_a_corrected_plan_replaces_the_proposal_and_is_attributed_to_the_user(
@@ -197,7 +197,7 @@ class TestConfirmPlan:
         assert plan["plan"] == corrected
         assert plan["summary"] is None  # the old counts described the old mapping
         assert plan["needs_date_column"] is False
-        assert (proposed_by, confirmed, stage) == ("user", True, "confirmed")
+        assert (proposed_by, confirmed, stage) == ("user", True, "clarifying")
 
     def test_the_stored_document_keeps_the_shape_the_worker_reads(self, world: World) -> None:
         conversation = add_plan(world)
@@ -224,7 +224,7 @@ class TestConfirmPlan:
         response = confirm(world, conversation, {"plan": TABULAR_PLAN})
 
         assert response.status_code == 200
-        assert stored(world, conversation)[4] == "confirmed"
+        assert stored(world, conversation)[4] == "clarifying"
 
     def test_confirming_as_is_without_a_usable_plan_is_a_422(self, world: World) -> None:
         document = tabular_document(plan=None, needs_date_column=True)

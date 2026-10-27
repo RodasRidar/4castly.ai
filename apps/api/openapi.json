@@ -4199,7 +4199,8 @@
           "weekly",
           "monthly"
         ],
-        "title": "Granularity"
+        "title": "Granularity",
+        "description": "Only `weekly` is available. `monthly` is part of the contract but still in development\n(planned after the MVP): saving it answers 422 with `errors.granularityUnsupported`, so a\nclient should show it as unavailable (\"coming soon\") instead of offering it."
       },
       "HadStockouts": {
         "type": "string",

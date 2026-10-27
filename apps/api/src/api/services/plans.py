@@ -57,7 +57,7 @@ _SAVE_PLAN = text(
 )
 _SAVE_SHEET = text("update public.uploads set selected_sheet = :sheet where id = :id")
 _SAVE_STAGE = text(
-    "update public.conversations set stage = 'confirmed', last_activity_at = now() where id = :id"
+    "update public.conversations set stage = 'clarifying', last_activity_at = now() where id = :id"
 )
 
 

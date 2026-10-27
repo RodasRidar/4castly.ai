@@ -128,6 +128,10 @@ class AssistantStyle(StrEnum):
 
 
 class Granularity(StrEnum):
+    """Only `weekly` is available. `monthly` is part of the contract but still in development
+    (planned after the MVP): saving it answers 422 with `errors.granularityUnsupported`, so a
+    client should show it as unavailable ("coming soon") instead of offering it."""
+
     WEEKLY = "weekly"
     MONTHLY = "monthly"
 
