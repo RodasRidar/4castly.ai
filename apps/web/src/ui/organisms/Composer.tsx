@@ -68,7 +68,14 @@ export function Composer({
           {lockedReason}
         </p>
       )}
-      <div className="flex items-end gap-2">
+      {/* One card like Claude Code Desktop: the textarea grows inside it and send sits in its corner. */}
+      <div
+        className={cn(
+          'flex items-end gap-2 rounded-xl border border-hairline bg-elevated p-2 transition-colors',
+          'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus',
+          locked && 'opacity-60',
+        )}
+      >
         <Textarea
           aria-label={label}
           aria-describedby={describedBy}
@@ -78,6 +85,7 @@ export function Composer({
           disabled={locked}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={onKeyDown}
+          className="rounded-none border-0 bg-transparent px-1 py-1.5 outline-none focus-visible:outline-none"
         />
         {generating ? (
           <IconButton variant="outline" label={stopLabel} icon={Square} onClick={onStop} />
@@ -85,7 +93,7 @@ export function Composer({
           <IconButton variant="outline" label={sendLabel} icon={SendHorizontal} disabled={!canSend} onClick={send} />
         )}
       </div>
-      <p id={hintId} className="flex flex-wrap items-center gap-x-1.5 text-body-sm text-mute">
+      <p id={hintId} className="flex flex-wrap items-center gap-x-1.5 px-1 text-body-sm text-mute">
         <Kbd>Enter</Kbd> <span>{hint.send}</span> <span aria-hidden="true">·</span> <Kbd>Shift</Kbd>
         <span aria-hidden="true">+</span>
         <Kbd>Enter</Kbd> <span>{hint.newline}</span>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
 import { useNotify } from '../../app/notifyContext'
+import { cn } from '../../lib/cn'
 import type { ConversationDetail } from '../../services/types'
 import { ErrorState } from '../../ui/molecules/ErrorState'
 import { Drawer } from '../../ui/organisms/Drawer'
@@ -45,7 +46,7 @@ export function ResultsScreen({ conversation }: { conversation: ConversationDeta
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4 md:p-6">
+    <div className={cn('flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4 md:p-6', !portfolio && 'lg:overflow-hidden')}>
       <ResultsHeader
         navLabel={t('results.header.nav')}
         breadcrumb={[
@@ -97,11 +98,17 @@ export function ResultsScreen({ conversation }: { conversation: ConversationDeta
           </Drawer>
         </>
       ) : (
-        <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-[2fr_3fr]">
-          <section aria-label={t('results.chatColumn')} className="order-2 flex min-h-[28rem] min-w-0 flex-col lg:order-1 lg:min-h-0">
+        // From `lg` the two columns are viewport-high panes: the thread scrolls inside the chat column with the composer
+        // pinned at its bottom, and the results scroll on their own. Below `lg` the page scrolls and the chat gets a
+        // bounded height, so the composer never ends up thousands of pixels down.
+        <div className="grid flex-1 gap-6 lg:min-h-0 lg:grid-cols-[2fr_3fr] lg:grid-rows-[minmax(0,1fr)]">
+          <section
+            aria-label={t('results.chatColumn')}
+            className="order-2 flex h-[min(40rem,75dvh)] min-w-0 flex-col overflow-hidden rounded-lg border border-hairline lg:order-1 lg:h-auto lg:min-h-0"
+          >
             <ChatPanel conversationId={conversation.id} className="min-h-0 flex-1" />
           </section>
-          <div className="order-1 min-w-0 lg:order-2">
+          <div className="order-1 min-w-0 lg:order-2 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
             <ResultsPanel
               runId={runId}
               conversationId={conversation.id}
