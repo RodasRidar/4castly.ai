@@ -59,18 +59,29 @@ class SupabaseStorage:
         )
 
     async def stat(self, path: str) -> StoredObject | None:
+        """Size from the info endpoint, then only the first bytes that exist.
+
+        Supabase Storage hangs on a `Range` that ends past the end of the object, so the range is
+        clamped to the size (found against a real local Storage, not visible with fakes).
+        """
+        info = await self._send("GET", f"{self._root}/object/info/{self._object(path)}")
+        if info.status_code in (400, 404):
+            return None
+        if info.status_code >= 400:  # noqa: PLR2004
+            raise UnavailableError
+        size = int(info.json().get("size") or 0)
+        if size == 0:
+            return StoredObject(size_bytes=0, head=b"")
+        end = min(size, HEAD_BYTES) - 1
         response = await self._send(
             "GET",
             f"{self._root}/object/{self._object(path)}",
-            headers={"Range": f"bytes=0-{HEAD_BYTES - 1}"},
+            headers={"Range": f"bytes=0-{end}"},
         )
         if response.status_code in (400, 404):
             return None
         if response.status_code >= 400:  # noqa: PLR2004
             raise UnavailableError
-        content_range = response.headers.get("content-range", "")
-        total = content_range.rpartition("/")[2]
-        size = int(total) if total.isdigit() else len(response.content)
         return StoredObject(size_bytes=size, head=response.content[:HEAD_BYTES])
 
     async def create_download_url(self, path: str, *, ttl_seconds: int = 60) -> SignedDownload:

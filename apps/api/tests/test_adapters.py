@@ -51,18 +51,50 @@ class TestSupabaseStorage:
         assert signed.headers == {"Content-Type": "text/csv"}
         assert signed.expires_at > NOW
 
-    async def test_stat_reads_the_first_bytes_and_the_total_size(self) -> None:
+    async def test_stat_asks_for_the_size_then_only_the_bytes_that_exist(self) -> None:
+        # Supabase Storage hangs on a Range that ends past the end of the object, so the range is
+        # clamped to the size reported by the info endpoint.
+        seen: list[httpx.Request] = []
+
         def handler(request: httpx.Request) -> httpx.Response:
-            assert request.headers["range"].startswith("bytes=0-")
-            return httpx.Response(
-                206, content=b"PK\x03\x04rest", headers={"content-range": "bytes 0-7/5000"}
-            )
+            seen.append(request)
+            if request.url.path.endswith("/object/info/uploads/t/u/f.xlsx"):
+                return httpx.Response(200, json={"size": 105, "content_type": "text/csv"})
+            return httpx.Response(206, content=b"PK\x03\x04rest")
 
         stored = await storage(handler).stat("t/u/f.xlsx")
 
         assert stored is not None
-        assert stored.size_bytes == 5000
+        assert stored.size_bytes == 105
         assert stored.head.startswith(b"PK")
+        assert seen[1].url.path == "/storage/v1/object/uploads/t/u/f.xlsx"
+        assert seen[1].headers["range"] == "bytes=0-104"
+
+    async def test_a_large_object_is_read_only_up_to_the_head_size(self) -> None:
+        ranges: list[str] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if "/object/info/" in request.url.path:
+                return httpx.Response(200, json={"size": 5_000_000})
+            ranges.append(request.headers["range"])
+            return httpx.Response(206, content=b"x")
+
+        await storage(handler).stat("t/u/f.xlsx")
+
+        assert ranges == ["bytes=0-8191"]
+
+    async def test_an_empty_object_has_no_head_to_read(self) -> None:
+        calls: list[str] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(request.url.path)
+            return httpx.Response(200, json={"size": 0})
+
+        stored = await storage(handler).stat("t/u/f.xlsx")
+
+        assert stored is not None
+        assert (stored.size_bytes, stored.head) == (0, b"")
+        assert len(calls) == 1
 
     @pytest.mark.parametrize("status", [400, 404])
     async def test_stat_of_a_missing_object_is_none(self, status: int) -> None:
