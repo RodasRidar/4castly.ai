@@ -62,6 +62,30 @@ class TestSpecs:
             assert spec["input_schema"]["additionalProperties"] is False
             assert spec["description"]
 
+    def test_strict_schemas_use_no_keywords_the_provider_rejects(self) -> None:
+        # The API answered 400 to `minimum`/`maximum` on integers in strict tools (found live).
+        unsupported = {
+            "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf",
+            "minLength", "maxLength", "pattern", "minItems", "maxItems", "format",
+        }  # fmt: skip
+
+        def keys(node: Any) -> set[str]:
+            if isinstance(node, dict):
+                return set(node) | {k for v in node.values() for k in keys(v)}
+            if isinstance(node, list):
+                return {k for v in node for k in keys(v)}
+            return set()
+
+        for spec in TOOL_SPECS:
+            assert not keys(spec["input_schema"]) & unsupported, spec["name"]
+
+    def test_limits_are_still_enforced_by_the_server(self) -> None:
+        # Dropped from the schema sent to the model, but the Pydantic input models keep them.
+        from api.services.assistant_tools import FindProductsInput  # noqa: PLC0415
+
+        with pytest.raises(ValueError):  # noqa: PT011
+            FindProductsInput(limit=11)
+
     def test_the_list_is_frozen_for_caching(self) -> None:
         assert json.dumps(TOOL_SPECS, sort_keys=True) == json.dumps(TOOL_SPECS, sort_keys=True)
         assert isinstance(TOOL_SPECS, tuple)

@@ -48,7 +48,7 @@ class FindProductsInput(_Input):
         "risk", "coverage", "suggested_quantity", "current_stock", "typical_demand", "name"
     ] = "risk"
     order: Literal["asc", "desc"] = "asc"
-    limit: Annotated[int, Field(ge=1, le=10)] = 5
+    limit: Annotated[int, Field(ge=1, le=10, description="How many products (1 to 10).")] = 5
 
 
 class ProductInput(_Input):
@@ -63,11 +63,29 @@ class SimulateInput(_Input):
     purchase_quantity: Annotated[float, Field(ge=0)] | None = None
 
 
+# Strict tool schemas reject these (the API answers 400); the Pydantic models still enforce them.
+_UNSUPPORTED = frozenset(
+    {
+        "title", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf",
+        "minLength", "maxLength", "pattern", "minItems", "maxItems", "format",
+    }
+)  # fmt: skip
+
+
+def _clean(node: Any) -> Any:
+    if isinstance(node, dict):
+        return {
+            k: ({name: _clean(sub) for name, sub in v.items()} if k == "properties" else _clean(v))
+            for k, v in node.items()
+            if k not in _UNSUPPORTED
+        }
+    if isinstance(node, list):
+        return [_clean(v) for v in node]
+    return node
+
+
 def _schema(model: type[BaseModel]) -> dict[str, Any]:
-    schema = model.model_json_schema()
-    schema.pop("title", None)
-    for prop in schema.get("properties", {}).values():
-        prop.pop("title", None)
+    schema = _clean(model.model_json_schema())
     schema.setdefault("properties", {})
     return schema
 
