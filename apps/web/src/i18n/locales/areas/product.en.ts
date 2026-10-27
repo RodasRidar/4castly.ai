@@ -73,6 +73,11 @@ export const productEn: typeof productEs = {
     without: 'No new purchase',
     with: 'With suggested purchase',
   },
+  noStock: {
+    chartLabel: 'Demand history and forecast of {{name}}',
+    tableCaption: 'Expected weekly demand of {{name}}',
+    tableTitle: 'Demand by week',
+  },
   chart: {
     label: 'History, forecast and projected stock of {{name}}',
     history: 'History',

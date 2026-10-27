@@ -125,7 +125,7 @@ describe('purchase card', () => {
     const real = services.runs.product.bind(services.runs)
     vi.spyOn(services.runs, 'product').mockImplementation(async (runId, code) => {
       const detail = await real(runId, code)
-      return { ...detail, purchase: { ...detail.purchase, truncated: true } }
+      return { ...detail, purchase: { ...detail.purchase!, truncated: true } }
     })
     await title('Ácido cítrico anhidro')
     expect(await screen.findByText(/La cantidad se limitó al periodo calculado/)).toBeInTheDocument()
@@ -268,7 +268,7 @@ describe('scenario, chart and weekly table', () => {
     await title('Ácido cítrico anhidro')
     const table = await screen.findByRole('table', { name: 'Proyección semanal de Ácido cítrico anhidro' })
     const rows = within(table).getAllByRole('row')
-    expect(rows).toHaveLength(1 + fixtures['QF-0001'].without_new_purchase.weekly.length)
+    expect(rows).toHaveLength(1 + fixtures['QF-0001'].without_new_purchase!.weekly.length)
     expect(within(rows[1]).getByText('19 oct 2026')).toBeInTheDocument()
     for (const header of ['Semana', 'Escenario bajo', 'Escenario esperado', 'Escenario alto', 'Stock proyectado', 'Faltante', 'Estado']) {
       expect(within(table).getByRole('columnheader', { name: header })).toBeInTheDocument()

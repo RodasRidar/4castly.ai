@@ -94,9 +94,38 @@ function Stepper({ config }: { config: StepperConfig }) {
   )
 }
 
-export function ProductSummaryCards({ headingLevel = 3, state, loadingLabel, stockout, purchase, reliability, className }: ProductSummaryCardsProps) {
+type ReliabilityConfig = ProductSummaryCardsProps['reliability']
+
+/** The reliability card on its own: it is all there is to show when the file had no stock. */
+export function ReliabilityCard({ reliability, headingLevel = 3 }: { reliability: ReliabilityConfig; headingLevel?: 2 | 3 }) {
   const [open, setOpen] = useState(false)
   const detailId = useId()
+  return (
+    <Card title={reliability.title} level={headingLevel}>
+      <div>
+        <ReliabilityBadge level={reliability.level} label={reliability.badgeLabel} />
+      </div>
+      <p className="text-body-md text-mute">{reliability.explanation}</p>
+      <div>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={detailId}
+          onClick={() => setOpen((o) => !o)}
+          className="inline-flex items-center gap-1 rounded-md text-body-sm text-ink underline underline-offset-[3px]"
+        >
+          {reliability.detailToggleLabel}
+          <Icon icon={ChevronDown} size="sm" className={cn(open && 'rotate-180')} />
+        </button>
+      </div>
+      <div id={detailId} className="text-body-sm text-body">
+        {open && reliability.detail}
+      </div>
+    </Card>
+  )
+}
+
+export function ProductSummaryCards({ headingLevel = 3, state, loadingLabel, stockout, purchase, reliability, className }: ProductSummaryCardsProps) {
   const grid = cn('grid grid-cols-1 gap-3 lg:grid-cols-3', className)
 
   if (state === 'loading') {
@@ -146,27 +175,7 @@ export function ProductSummaryCards({ headingLevel = 3, state, loadingLabel, sto
         <Stepper config={purchase.coverage} />
       </Card>
 
-      <Card title={reliability.title} level={headingLevel}>
-        <div>
-          <ReliabilityBadge level={reliability.level} label={reliability.badgeLabel} />
-        </div>
-        <p className="text-body-md text-mute">{reliability.explanation}</p>
-        <div>
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={detailId}
-            onClick={() => setOpen((o) => !o)}
-            className="inline-flex items-center gap-1 rounded-md text-body-sm text-ink underline underline-offset-[3px]"
-          >
-            {reliability.detailToggleLabel}
-            <Icon icon={ChevronDown} size="sm" className={cn(open && 'rotate-180')} />
-          </button>
-        </div>
-        <div id={detailId} className="text-body-sm text-body">
-          {open && reliability.detail}
-        </div>
-      </Card>
+      <ReliabilityCard reliability={reliability} headingLevel={headingLevel} />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ProductDetail } from '../../services/types'
+import type { ProductDetail, ProductProjection as Projection, PurchaseRecommendation } from '../../services/types'
 import { Button } from '../../ui/atoms/Button'
 import { InlineNotice } from '../../ui/molecules/InlineNotice'
 import { usePendingLeadTimes } from '../results/pendingOverrides'
@@ -8,6 +8,7 @@ import { useRecalculate } from '../results/useRecalculate'
 import { ProductAsk } from './ProductAsk'
 import { ProductCards } from './ProductCards'
 import { ProductHeader } from './ProductHeader'
+import { ProductDemandOnly } from './ProductDemandOnly'
 import { ProductProjection } from './ProductProjection'
 import { errorRef } from './errorRef'
 import { useDebouncedValue, useExportProduct, useSaveLeadTime, useSimulation } from './useProductData'
@@ -20,11 +21,24 @@ interface ProductDetailViewProps {
 }
 
 /**
- * The loaded page. It owns the what-if inputs: they start from the product's saved lead time and coverage, and as
+ * The loaded page. A file without stock has no purchase and no projections (D17-C): only demand and reliability.
+ */
+export function ProductDetailView({ detail, conversationId, runId }: ProductDetailViewProps) {
+  const { purchase, without_new_purchase: without, with_suggested_purchase: withSuggested } = detail
+  if (!purchase || !without || !withSuggested) return <ProductDemandOnly detail={detail} conversationId={conversationId} runId={runId} />
+  return <ProductStockView detail={detail} stock={{ purchase, without, withSuggested }} conversationId={conversationId} runId={runId} />
+}
+
+interface StockViewProps extends ProductDetailViewProps {
+  stock: { purchase: PurchaseRecommendation; without: Projection; withSuggested: Projection }
+}
+
+/**
+ * The page with stock. It owns the what-if inputs: they start from the product's saved lead time and coverage, and as
  * soon as they differ from what the recommendation was calculated with, the API simulates the new proposal.
  * Mounted with `key={code}` so moving to another product starts from that product's values.
  */
-export function ProductDetailView({ detail, conversationId, runId }: ProductDetailViewProps) {
+function ProductStockView({ detail, stock, conversationId, runId }: StockViewProps) {
   const { t } = useTranslation()
   const { product } = detail
   const { withPurchase, setWithPurchase, asking, setAsking } = useProductParams()
@@ -36,7 +50,7 @@ export function ProductDetailView({ detail, conversationId, runId }: ProductDeta
   const settledLeadTime = useDebouncedValue(leadTime)
   const settledCoverage = useDebouncedValue(coverage)
 
-  const edited = settledLeadTime !== detail.purchase.lead_time_days || settledCoverage !== detail.purchase.target_coverage_weeks
+  const edited = settledLeadTime !== stock.purchase.lead_time_days || settledCoverage !== stock.purchase.target_coverage_weeks
   const simulation = useSimulation(
     runId,
     product.code,
@@ -46,9 +60,9 @@ export function ProductDetailView({ detail, conversationId, runId }: ProductDeta
   const simulated = edited ? simulation.data : undefined
   const updating = (edited && simulation.isFetching) || leadTime !== settledLeadTime || coverage !== settledCoverage
 
-  const purchase = simulated?.purchase ?? detail.purchase
+  const purchase = simulated?.purchase ?? stock.purchase
   const shownProduct = simulated?.product ?? product
-  const projection = simulated?.projection ?? (withPurchase ? detail.with_suggested_purchase : detail.without_new_purchase)
+  const projection = simulated?.projection ?? (withPurchase ? stock.withSuggested : stock.without)
 
   const save = useSaveLeadTime(runId, product.code, product.name)
   const exportProduct = useExportProduct(runId, product.code)

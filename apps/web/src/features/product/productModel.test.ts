@@ -6,28 +6,28 @@ import { firstFutureStockout, pastStockoutDates, toChartPoints, toTableRows } fr
 const all = details as unknown as Record<string, ProductDetail>
 const labels = { in_stock: 'Con stock', arrival: 'Llega compra', stockout: 'Sin stock' }
 const projections = Object.entries(all).flatMap(([code, d]) => [
-  [`${code} sin compra`, d.without_new_purchase] as const,
-  [`${code} con compra`, d.with_suggested_purchase] as const,
+  [`${code} sin compra`, d.without_new_purchase!] as const,
+  [`${code} con compra`, d.with_suggested_purchase!] as const,
 ])
 
 describe('pastStockoutDates', () => {
   it('lists the series dates inside zones that ended before today', () => {
     const d = all['QF-0001']
-    const dates = pastStockoutDates(d.without_new_purchase.series, d.without_new_purchase.stockout_zones, d.today)
+    const dates = pastStockoutDates(d.without_new_purchase!.series, d.without_new_purchase!.stockout_zones, d.today)
     expect(dates).toEqual(['2026-03-16', '2026-08-31'])
   })
 
   it('ignores zones that are current or in the future', () => {
     const d = all['QF-0001']
-    const future = d.without_new_purchase.stockout_zones.at(-1)!
-    expect(pastStockoutDates(d.without_new_purchase.series, [future], d.today)).toEqual([])
+    const future = d.without_new_purchase!.stockout_zones.at(-1)!
+    expect(pastStockoutDates(d.without_new_purchase!.series, [future], d.today)).toEqual([])
   })
 })
 
 describe('firstFutureStockout', () => {
   it('returns the start of the first zone that has not ended yet', () => {
     const d = all['QF-0001']
-    expect(firstFutureStockout(d.without_new_purchase.stockout_zones, d.today)).toBe('2026-10-26')
+    expect(firstFutureStockout(d.without_new_purchase!.stockout_zones, d.today)).toBe('2026-10-26')
   })
 
   it('returns null when nothing is ahead', () => {
@@ -38,7 +38,7 @@ describe('firstFutureStockout', () => {
 
 describe('toChartPoints', () => {
   it('maps history, forecast, range and projected stock one to one, with a formatted label', () => {
-    const series = all['QF-0001'].without_new_purchase.series
+    const series = all['QF-0001'].without_new_purchase!.series
     const points = toChartPoints(series, (iso) => `L:${iso}`)
     expect(points).toHaveLength(series.length)
     expect(points[0]).toMatchObject({ date: series[0].date, label: `L:${series[0].date}`, history: series[0].actual })
@@ -50,7 +50,7 @@ describe('toChartPoints', () => {
 
 describe('toTableRows', () => {
   it('passes every contract number through unchanged', () => {
-    const weekly = all['QF-0001'].with_suggested_purchase.weekly
+    const weekly = all['QF-0001'].with_suggested_purchase!.weekly
     const rows = toTableRows(weekly, labels)
     expect(rows).toHaveLength(weekly.length)
     rows.forEach((row, i) => {
@@ -63,7 +63,7 @@ describe('toTableRows', () => {
   })
 
   it('labels the status and colors it by meaning', () => {
-    const rows = toTableRows(all['QF-0001'].with_suggested_purchase.weekly, labels)
+    const rows = toTableRows(all['QF-0001'].with_suggested_purchase!.weekly, labels)
     expect(rows.map((r) => r.status.label)).toContain('Llega compra')
     expect(rows.find((r) => r.status.label === 'Sin stock')?.status.level).toBe('critical')
     expect(rows.find((r) => r.status.label === 'Con stock')?.status.level).toBe('optimal')

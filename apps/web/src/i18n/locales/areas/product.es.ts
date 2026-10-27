@@ -71,6 +71,11 @@ export const productEs = {
     without: 'Sin nueva compra',
     with: 'Con compra sugerida',
   },
+  noStock: {
+    chartLabel: 'Historial y pronóstico de demanda de {{name}}',
+    tableCaption: 'Demanda semanal esperada de {{name}}',
+    tableTitle: 'Demanda por semana',
+  },
   chart: {
     label: 'Historial, pronóstico y stock proyectado de {{name}}',
     history: 'Historial',
