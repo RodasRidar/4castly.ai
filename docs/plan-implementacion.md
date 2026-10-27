@@ -1266,3 +1266,18 @@ first estimate per tenant is written here after the first real run, instead of g
 | Q4 | Production forecaster | Latest TimesFM (3.0) in the pilot, with AutoETS as baseline and fallback (section 6b) |
 | Q5 | ABC with mixed units | Per unit of measure |
 | Email | Auth email provider | Resend as custom SMTP for Supabase Auth (S2) |
+
+## 15. Backend decisions closed (2026-10-27)
+
+- **Stage `clarifying` (D1):** confirming the plan (`PUT /v1/conversations/{id}/plan`) moves the
+  conversation to `clarifying`, as in the state map of section 2.1. `POST .../forecast` accepts
+  `clarifying` (and a legacy `confirmed`) and moves it to `calculating`.
+- **Monthly granularity (D2):** `monthly` stays in the contract but is in development (planned after the
+  MVP). Saving it answers 422 `errors.granularityUnsupported`; clients show it as "coming soon".
+- **Token budget (D3):** a tenant may spend 200 000 assistant tokens (input + output) per UTC day. Past it a
+  new message answers 429 `errors.dailyTokenLimit`. Counted in `rate_limits`; failed turns spend nothing.
+- **Idempotency keys (D11):** the worker function `purge_idempotency_daily` (03:30 UTC) deletes expired keys.
+- **Local development (I3, I4, I7):** `make dev`, `make seed-local` and `make e2e-local`; each app has a
+  `.env.local.example`.
+- **Still open:** D4 (provisional limits until the real client file size is known), D5 (native security
+  review of `auth.py` and RLS), D15 (production variables in Vercel; no real data before D5 closes).
