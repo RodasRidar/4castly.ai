@@ -148,7 +148,7 @@ export function HistoryPage() {
         open={pendingDelete !== null}
         onOpenChange={(open) => !open && setPendingDelete(null)}
         title={t('conversations.confirmDeleteTitle')}
-        description={t('conversations.confirmDeleteBody')}
+        description={pendingDelete ? t('conversations.confirmDeleteBodyNamed', { title: pendingDelete.title }) : t('conversations.confirmDeleteBody')}
         closeLabel={t('common.close')}
       >
         <div className="flex justify-end gap-2">
