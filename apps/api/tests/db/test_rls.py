@@ -7,6 +7,7 @@ classified here fails `test_every_table_is_classified`, so no table ships withou
 from __future__ import annotations
 
 import json
+from uuid import uuid4
 
 import psycopg
 import psycopg.types.json
@@ -28,6 +29,7 @@ READ_ONLY = {
     "forecast_runs",
     "forecasts",
     "run_product_metrics",
+    "rate_limits",  # counters move only through the definer functions of migration 0004
 }
 # Tenant-scoped tables the API writes as the user, with the verbs it is given.
 WRITABLE = {
@@ -36,7 +38,6 @@ WRITABLE = {
     "normalization_plans": {"insert", "update"},
     "jobs": {"insert", "update"},
     "idempotency_keys": {"insert"},
-    "rate_limits": {"insert", "update"},
     "product_overrides": {"insert", "update", "delete"},
     "messages": {"insert"},
     "message_feedback": {"insert", "update", "delete"},
@@ -249,12 +250,19 @@ def test_privileges_match_the_declared_verbs(conn: DictConnection) -> None:
 def test_composite_foreign_keys_block_cross_tenant_references(
     conn: DictConnection, seed: Seed
 ) -> None:
+    upload = uuid4()
     with pytest.raises(pg.ForeignKeyViolation), conn.transaction():
         conn.execute(
-            "insert into public.uploads (tenant_id, conversation_id, created_by, storage_path, "
-            "file_name, size_bytes, content_type, status) values (%s, %s, %s, 'p', 'f.xlsx', 1, "
+            "insert into public.uploads (id, tenant_id, conversation_id, created_by, storage_path, "
+            "file_name, size_bytes, content_type, status) values (%s, %s, %s, %s, %s, 'f.xlsx', 1, "
             "'text/csv', 'pending')",
-            [seed.a.tenant, seed.b.conversation, seed.a.user],
+            [
+                upload,
+                seed.a.tenant,
+                seed.b.conversation,
+                seed.a.user,
+                f"{seed.a.tenant}/{upload}/f",
+            ],
         )
     with pytest.raises(pg.ForeignKeyViolation), conn.transaction():
         conn.execute(
@@ -497,3 +505,87 @@ class TestSignupHook:
                 [role],
             ).fetchone()
             assert has == {"ok": expected}, role
+
+
+class TestServerOwnedCounters:
+    """Migration 0004: a member holding a JWT cannot reset or inflate the rate-limit counters."""
+
+    def test_a_member_cannot_reset_the_token_budget(self, conn: DictConnection, seed: Seed) -> None:
+        with acting(conn, seed.a.user), pytest.raises(DENIED), conn.transaction():
+            conn.execute("update public.rate_limits set count = 0")
+
+    def test_a_member_cannot_write_a_counter_row(self, conn: DictConnection, seed: Seed) -> None:
+        with acting(conn, seed.a.user), pytest.raises(DENIED), conn.transaction():
+            conn.execute(
+                "insert into public.rate_limits (tenant_id, scope, window_start, count) "
+                "values (%s, 'tenant:tokens', now(), 999999)",
+                [seed.a.tenant],
+            )
+
+    def test_the_hit_function_refuses_a_caller_that_is_not_the_api(
+        self, conn: DictConnection, seed: Seed
+    ) -> None:
+        with acting(conn, seed.a.user), pytest.raises(DENIED), conn.transaction():
+            conn.execute("select public.rate_limit_hit('upload', 3600)")
+
+    def test_the_spend_function_refuses_a_caller_that_is_not_the_api(
+        self, conn: DictConnection, seed: Seed
+    ) -> None:
+        with acting(conn, seed.a.user), pytest.raises(DENIED), conn.transaction():
+            conn.execute("select public.spend_tokens(1000)")
+
+    @pytest.mark.parametrize(("role", "expected"), [("anon", False), ("authenticated", True)])
+    def test_who_may_execute_the_counter_functions(
+        self, conn: DictConnection, role: str, expected: bool
+    ) -> None:
+        for signature in ("public.rate_limit_hit(text, integer)", "public.spend_tokens(integer)"):
+            has = conn.execute(
+                "select has_function_privilege(%s, %s, 'execute') as ok", [role, signature]
+            ).fetchone()
+            assert has == {"ok": expected}, (role, signature)
+
+
+class TestServerSideGuards:
+    def test_users_cannot_log_an_event_without_a_tenant(
+        self, conn: DictConnection, seed: Seed
+    ) -> None:
+        with acting(conn, seed.a.user), pytest.raises(DENIED), conn.transaction():
+            conn.execute("select audit.log_event(null, 'x.y', 'run', 'x', '{}'::jsonb)")
+
+    def test_users_cannot_log_oversized_metadata(self, conn: DictConnection, seed: Seed) -> None:
+        with acting(conn, seed.a.user), pytest.raises(pg.InvalidParameterValue), conn.transaction():
+            conn.execute(
+                "select audit.log_event(%s, 'x.y', 'run', 'x', "
+                "jsonb_build_object('k', repeat('x', 20000)))",
+                [seed.a.tenant],
+            )
+
+    def test_an_upload_path_must_start_with_its_own_tenant_and_id(
+        self, conn: DictConnection, seed: Seed
+    ) -> None:
+        with pytest.raises(pg.CheckViolation), conn.transaction():
+            conn.execute(
+                "insert into public.uploads (tenant_id, conversation_id, created_by, storage_path, "
+                "file_name, size_bytes, content_type, status) values (%s, %s, %s, %s, 'f.xlsx', 1, "
+                "'text/csv', 'pending')",
+                [seed.a.tenant, seed.a.conversation, seed.a.user, f"{seed.b.tenant}/x/f.xlsx"],
+            )
+
+    def test_an_idempotency_key_cannot_outlive_its_window(
+        self, conn: DictConnection, seed: Seed
+    ) -> None:
+        with pytest.raises(pg.CheckViolation), conn.transaction():
+            conn.execute(
+                "insert into public.idempotency_keys (tenant_id, key, request_hash, expires_at) "
+                "values (%s, 'key-too-long-1', 'h', now() + interval '30 days')",
+                [seed.a.tenant],
+            )
+
+    def test_an_idempotency_response_is_size_capped(self, conn: DictConnection, seed: Seed) -> None:
+        with pytest.raises(pg.CheckViolation), conn.transaction():
+            conn.execute(
+                "insert into public.idempotency_keys (tenant_id, key, request_hash, response, "
+                "expires_at) values (%s, 'key-big-resp-1', 'h', "
+                "jsonb_build_object('k', repeat('x', 40000)), now() + interval '1 hour')",
+                [seed.a.tenant],
+            )

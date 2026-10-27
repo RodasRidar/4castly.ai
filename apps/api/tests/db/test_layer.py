@@ -146,8 +146,9 @@ class TestTenantSession:
         async with tenant_session(engine, ctx(seed.a.user)) as session:
             await session.execute(
                 text(
-                    "insert into public.rate_limits (tenant_id, scope, window_start, count) "
-                    "values (:t, 'layer-test', now(), 1)"
+                    "insert into public.idempotency_keys "
+                    "(tenant_id, key, request_hash, expires_at) "
+                    "values (:t, 'layer-test-key', 'h', now() + interval '1 hour')"
                 ),
                 {"t": seed.a.tenant},
             )
@@ -155,13 +156,16 @@ class TestTenantSession:
             async with tenant_session(engine, ctx(seed.a.user)) as session:
                 count = (
                     await session.execute(
-                        text("select count(*) from public.rate_limits where scope = 'layer-test'")
+                        text(
+                            "select count(*) from public.idempotency_keys "
+                            "where key = 'layer-test-key'"
+                        )
                     )
                 ).scalar()
             assert count == 1
         finally:
             with psycopg.connect(pg_dsn, autocommit=True) as admin:
-                admin.execute("delete from public.rate_limits where scope = 'layer-test'")
+                admin.execute("delete from public.idempotency_keys where key = 'layer-test-key'")
 
 
 class TestSqlstateMapping:

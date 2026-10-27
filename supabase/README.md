@@ -30,6 +30,12 @@ The shim is not Supabase itself: before the first client, also run the suite aga
 Migration 0003 adds `forecast_runs.pending_params`, the only column of that table users may update
 (drawer values waiting for a recalculation).
 
+Migration 0004 closes the findings of the D5 audit: `rate_limits` is read-only for members and moves only
+through `rate_limit_hit` / `spend_tokens` (they refuse any connection that is not `app_api`, so PostgREST
+callers cannot reset the daily token budget); `audit.log_event` rejects a missing tenant and metadata over
+8 KB; `uploads.storage_path` must start with `<tenant_id>/<upload_id>/`; idempotency keys cannot outlive
+25 hours or hold a response over 16 KB.
+
 Migration 0002 creates `app_api` and `app_worker` as `NOLOGIN`. For each environment, give them a login
 and a password out of band, then use the Supabase pooler URL (transaction mode) in `DATABASE_URL`:
 
