@@ -158,6 +158,8 @@ export function createMockServices({ signedIn = true, latencyMs = 0, emptyConver
     c.current_job_id = null
     // A recalculation keeps its run; a first forecast gets the fixture run.
     c.current_run_id ??= (conversationsFx.details as unknown as ConversationDetail[]).find((d) => d.current_run_id)?.current_run_id ?? null
+    // Stored overrides and saved parameters take effect when a calculation finishes, not before.
+    runsMock.applyStoredOverrides()
     touch(c)
   }
 
@@ -190,6 +192,30 @@ export function createMockServices({ signedIn = true, latencyMs = 0, emptyConver
 
   // The run and chat mocks read these live, so toggling `mock.failRun` etc. takes effect immediately.
   const runControls = { get failRun() { return mock.failRun } }
+
+  const runsMock = createRunService({
+    controls: runControls,
+    startRecalculation(runId) {
+      const c = [...conversations.values()].find((x) => x.current_run_id === runId)
+      if (!c) throw failure('not_found')
+      const job: Job = {
+        ...clone(jobsFx.forecast_running),
+        id: uuid(),
+        conversation_id: c.id,
+        status: 'queued',
+        stage: null,
+        stages: jobsFx.forecast_running.stages.map((s) => ({ ...s, state: 'pending' as const })),
+        processed: null,
+        total: null,
+        created_at: new Date().toISOString(),
+      }
+      jobs.set(job.id, job)
+      c.stage = 'calculating'
+      c.current_job_id = job.id
+      touch(c)
+      return { job_id: job.id, conversation_id: c.id }
+    },
+  })
   const chatControls = {
     get failChat() { return mock.failChat },
     get chatDelayMs() { return mock.chatDelayMs },
@@ -426,29 +452,7 @@ export function createMockServices({ signedIn = true, latencyMs = 0, emptyConver
       },
     },
 
-    runs: createRunService({
-      controls: runControls,
-      startRecalculation(runId) {
-        const c = [...conversations.values()].find((x) => x.current_run_id === runId)
-        if (!c) throw failure('not_found')
-        const job: Job = {
-          ...clone(jobsFx.forecast_running),
-          id: uuid(),
-          conversation_id: c.id,
-          status: 'queued',
-          stage: null,
-          stages: jobsFx.forecast_running.stages.map((s) => ({ ...s, state: 'pending' as const })),
-          processed: null,
-          total: null,
-          created_at: new Date().toISOString(),
-        }
-        jobs.set(job.id, job)
-        c.stage = 'calculating'
-        c.current_job_id = job.id
-        touch(c)
-        return { job_id: job.id, conversation_id: c.id }
-      },
-    }),
+    runs: runsMock,
     chat: createChatService({ controls: chatControls }),
 
     jobs: {

@@ -39,7 +39,9 @@ export const productEn: typeof productEs = {
     updating: 'Updating the suggestion…',
     updateError: "We couldn't update the suggestion. Reference: {{ref}}",
     save: 'Save lead time',
-    saved: 'Lead time saved for {{name}}',
+    saved: 'Lead time saved for {{name}}. It will apply on the next calculation.',
+    pendingNotice: 'This lead time will apply when you recalculate the results.',
+    recalculate: 'Recalculate',
     saveError: "We couldn't save the lead time. Reference: {{ref}}",
     truncated: 'The quantity was capped to the calculated period, so it may fall short of the ideal.',
     action: {

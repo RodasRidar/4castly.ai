@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ProductDetail } from '../../services/types'
+import { Button } from '../../ui/atoms/Button'
+import { InlineNotice } from '../../ui/molecules/InlineNotice'
+import { usePendingLeadTimes } from '../results/pendingOverrides'
+import { useRecalculate } from '../results/useRecalculate'
 import { ProductAsk } from './ProductAsk'
 import { ProductCards } from './ProductCards'
 import { ProductHeader } from './ProductHeader'
@@ -25,7 +29,9 @@ export function ProductDetailView({ detail, conversationId, runId }: ProductDeta
   const { product } = detail
   const { withPurchase, setWithPurchase, asking, setAsking } = useProductParams()
 
-  const [leadTime, setLeadTime] = useState(product.lead_time_days)
+  // A lead time saved earlier is only applied on the next calculation: until then the saved value is the pending one.
+  const savedLeadTime = usePendingLeadTimes(runId)[product.code] ?? product.lead_time_days
+  const [leadTime, setLeadTime] = useState(savedLeadTime)
   const [coverage, setCoverage] = useState(product.target_coverage_weeks)
   const settledLeadTime = useDebouncedValue(leadTime)
   const settledCoverage = useDebouncedValue(coverage)
@@ -46,6 +52,8 @@ export function ProductDetailView({ detail, conversationId, runId }: ProductDeta
 
   const save = useSaveLeadTime(runId, product.code, product.name)
   const exportProduct = useExportProduct(runId, product.code)
+  const recalculate = useRecalculate(runId, conversationId)
+  const waiting = product.code in usePendingLeadTimes(runId)
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
@@ -66,10 +74,20 @@ export function ProductDetailView({ detail, conversationId, runId }: ProductDeta
         onCoverage={setCoverage}
         updating={updating}
         updateError={simulation.isError ? t('product.purchase.updateError', { ref: errorRef(simulation.error) }) : null}
-        canSave={leadTime !== product.lead_time_days}
+        canSave={leadTime !== savedLeadTime}
         saving={save.isPending}
         onSave={() => save.mutate(leadTime)}
       />
+      {waiting && (
+        <InlineNotice tone="staleness">
+          <span className="flex flex-wrap items-center gap-3">
+            <span>{t('product.purchase.pendingNotice')}</span>
+            <Button variant="secondary" size="sm" loading={recalculate.isPending} onClick={() => recalculate.mutate()}>
+              {t('product.purchase.recalculate')}
+            </Button>
+          </span>
+        </InlineNotice>
+      )}
       <ProductProjection
         product={shownProduct}
         projection={projection}

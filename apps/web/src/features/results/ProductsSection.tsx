@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { Button } from '../../ui/atoms/Button'
@@ -6,6 +7,7 @@ import { BulkActionBar } from '../../ui/organisms/BulkActionBar'
 import { ProductTable, type ProductColumnId, type ProductTableLabels } from '../../ui/organisms/ProductTable'
 import type { ResultsState } from '../shared/resultsUrl'
 import { COLUMN_TO_SORT, SORT_TO_COLUMN, toTableRow } from './format'
+import { overlayPending, prunePending, usePendingLeadTimes } from './pendingOverrides'
 import { useLeadTimeOverride } from './useLeadTimeOverride'
 import { useRunProducts, useRunSummary } from './queries'
 
@@ -38,12 +40,18 @@ export function ProductsSection({
   const summary = useRunSummary(runId)
   const products = useRunProducts(runId, state)
   const overrides = useLeadTimeOverride(runId)
+  const queryClient = useQueryClient()
+  const pending = usePendingLeadTimes(runId)
 
   const page = products.data
+  // Once a calculation has applied a saved lead time, the API row reports it and the local copy is dropped.
+  useEffect(() => {
+    if (page) prunePending(queryClient, runId, page.items)
+  }, [page, queryClient, runId])
   // Products can arrive before the summary; the run's own "today" replaces this fallback as soon as it loads.
   const [fallbackToday] = useState(() => new Date().toISOString().slice(0, 10))
   const today = summary.data?.today ?? fallbackToday
-  const rows = (page?.items ?? []).map((p) =>
+  const rows = overlayPending(page?.items ?? [], pending).map((p) =>
     toTableRow(p, { today, riskLabel: (level) => t(`results.risk.${level}`), leadTimeStatus: overrides.status[p.code] }),
   )
   const pages = page ? Math.max(1, Math.ceil(page.total / page.page_size)) : 1

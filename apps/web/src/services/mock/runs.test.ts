@@ -7,10 +7,11 @@ describe('mock run service', () => {
   it('pages, and reports filtered and unfiltered totals', async () => {
     const { runs } = createMockServices()
     const first = await runs.products(RUN)
-    expect(first.items).toHaveLength(20)
+    expect(first.items).toHaveLength(25)
+    expect(first.page_size).toBe(25)
     expect(first.total).toBe(first.total_unfiltered)
     const second = await runs.products(RUN, { page: 2 })
-    expect(second.items.length).toBe(first.total - 20)
+    expect(second.items.length).toBe(first.total - 25)
   })
 
   it('searches without caring about accents or case', async () => {
@@ -49,12 +50,39 @@ describe('mock run service', () => {
     expect(withPurchase.projection).not.toEqual(without.projection)
   })
 
-  it('keeps a per-product lead time override', async () => {
-    const { runs } = createMockServices()
-    await runs.setOverrides('QF-0001', { lead_time_days: 45 })
-    const detail = await runs.product(RUN, 'QF-0001')
-    expect(detail.product.lead_time_days).toBe(45)
-    expect(detail.product.lead_time_overridden).toBe(true)
+  it('stores a lead time override but only applies it when the next calculation finishes (like the API)', async () => {
+    const services = createMockServices()
+    const { runs } = services
+    expect(await runs.setOverrides('QF-0001', { lead_time_days: 45 })).toEqual({ lead_time_days: 45 })
+    const before = (await runs.product(RUN, 'QF-0001')).product
+    expect(before.lead_time_days).not.toBe(45)
+    const { conversation_id } = await runs.recalculate(RUN)
+    expect((await runs.product(RUN, 'QF-0001')).product.lead_time_days).not.toBe(45)
+    for (let i = 0; i < 5; i++) services.advance()
+    expect((await services.conversations.get(conversation_id)).stage).toBe('ready')
+    const after = (await runs.product(RUN, 'QF-0001')).product
+    expect(after.lead_time_days).toBe(45)
+    expect(after.lead_time_overridden).toBe(true)
+  })
+
+  it('replaces the whole override set instead of merging, and clears it when every field is empty', async () => {
+    const services = createMockServices()
+    const { runs } = services
+    const original = (await runs.product(RUN, 'QF-0001')).product
+    await runs.setOverrides('QF-0001', { lead_time_days: 45, target_coverage_weeks: 12 })
+    await runs.setOverrides('QF-0001', { on_order_quantity: 500 })
+    await runs.recalculate(RUN)
+    for (let i = 0; i < 5; i++) services.advance()
+    const replaced = (await runs.product(RUN, 'QF-0001')).product
+    expect(replaced.on_order_quantity).toBe(500)
+    // Replace, not merge: the first call's lead time and coverage are gone.
+    expect(replaced.lead_time_days).toBe(original.lead_time_days)
+    expect(replaced.target_coverage_weeks).toBe(original.target_coverage_weeks)
+
+    await runs.setOverrides('QF-0001', {})
+    await runs.recalculate(RUN)
+    for (let i = 0; i < 5; i++) services.advance()
+    expect((await runs.product(RUN, 'QF-0001')).product.on_order_quantity).toBe(original.on_order_quantity)
   })
 
   it('marks new parameters as pending (like the API) and puts the conversation back to calculating on recalculate', async () => {
@@ -63,6 +91,8 @@ describe('mock run service', () => {
     await services.runs.updateParameters(RUN, { ...summary.run.parameters, horizon_weeks: 24 })
     expect((await services.runs.summary(RUN)).run.parameters_pending).toBe(true)
     const { conversation_id } = await services.runs.recalculate(RUN)
+    // The parameters are applied when the calculation finishes, not when it starts.
+    expect((await services.runs.summary(RUN)).run.parameters_pending).toBe(true)
     expect((await services.conversations.get(conversation_id)).stage).toBe('calculating')
     for (let i = 0; i < 5; i++) services.advance()
     const done = await services.conversations.get(conversation_id)

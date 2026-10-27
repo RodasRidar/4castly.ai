@@ -29,26 +29,27 @@ function drive(panel: Panel) {
     ...partial,
   })
 
-  async function* persist(stream: AsyncIterable<ChatStreamEvent>): AsyncGenerator<ChatStreamEvent> {
+  async function* persist(stream: AsyncIterable<ChatStreamEvent>, signal?: AbortSignal): AsyncGenerator<ChatStreamEvent> {
     let text = ''
     let status: ChatMessage['status'] = 'complete'
     let payload: ChatMessage['payload'] = { kind: 'text' }
     for await (const event of stream) {
       if (event.event === 'text.delta') text += event.text
-      if (event.event === 'message.end' && event.stop_reason === 'cancelled') status = 'interrupted'
       if (event.event === 'error') {
         status = 'error'
         payload = { kind: 'error', message_key: event.message_key, ref: event.ref }
       }
       yield event
     }
+    // Like the real server: an answer the client aborted is stored as interrupted, with no closing frame.
+    if (signal?.aborted) status = 'interrupted'
     stored.push(message({ id: 'm-ctl', role: 'assistant', status, display_text: text, payload }))
   }
 
   const send = vi.fn((_c: string, m: { text: string }, signal?: AbortSignal) => {
     ctl = controlledStream(signal)
     stored.push(message({ display_text: m.text }))
-    return persist(ctl.stream)
+    return persist(ctl.stream, signal)
   })
   panel.services.chat.send = send as unknown as typeof panel.services.chat.send
   panel.services.chat.list = async () => structuredClone(stored)
@@ -73,11 +74,12 @@ describe('transcript', () => {
     expect(within(log).getByRole('link', { name: 'Ácido cítrico anhidro' })).toHaveAttribute('href', `/c/${SEEDED}/productos/QF-0001`)
   })
 
-  it('keeps the partial text of an interrupted answer and offers Retry', async () => {
+  it('keeps the partial text of an interrupted answer, with no Retry once a newer answer exists', async () => {
     renderPanel()
     const partial = (await screen.findByText(/Esa respuesta se cortó antes de terminar/)).closest('article')!
     expect(within(partial).getByText('La respuesta se detuvo antes de terminar.')).toBeInTheDocument()
-    expect(within(partial).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+    // Only the latest answer can be retried (the API answers 409 `errors.retryNotLatest` for older ones).
+    expect(within(partial).queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument()
   })
 
   it('shows a failed answer with its short reference and Retry, never a raw code', async () => {
@@ -208,6 +210,9 @@ describe('sending', () => {
     await waitFor(() => expect(within(article).getByText('La respuesta se detuvo antes de terminar.')).toBeInTheDocument())
     expect(within(article).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Detener' })).not.toBeInTheDocument()
+    // A stream that just ends after Stop (no message.end) is announced as stopped, not as completed.
+    expect(screen.getByText('Respuesta detenida')).toBeInTheDocument()
+    expect(screen.queryByText('Respuesta completa')).not.toBeInTheDocument()
   })
 
   it('shows a stream error with its reference and keeps the partial text', async () => {
@@ -325,16 +330,17 @@ describe('message actions', () => {
 })
 
 describe('retry', () => {
-  it('re-asks a failed answer in place without duplicating it', async () => {
+  it('re-asks a failed answer by appending a new one, keeping the failed one without a second retry', async () => {
     const panel = renderPanel()
     const retry = vi.spyOn(panel.services.chat, 'retry')
     const before = (await screen.findAllByRole('article', { name: 'Asistente' })).length
     const failed = (await screen.findByText('Referencia: K7Q2WX')).closest('article')!
     await panel.user.click(within(failed).getByRole('button', { name: 'Reintentar' }))
     expect(retry).toHaveBeenCalledWith(FAILED_ID, expect.any(AbortSignal))
-    await waitFor(() => expect(screen.queryByText('Referencia: K7Q2WX')).not.toBeInTheDocument())
-    await waitFor(() => expect(screen.getByText('Respuesta completa')).toBeInTheDocument())
-    expect(screen.getAllByRole('article', { name: 'Asistente' })).toHaveLength(before)
+    await waitFor(() => expect(screen.getAllByRole('article', { name: 'Asistente' })).toHaveLength(before + 1))
+    // The failed answer stays in the history, but only the newest one can be retried (the API answers 409 otherwise).
+    const stillFailed = screen.getByText('No pudimos responder').closest('article')!
+    expect(within(stillFailed).queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument()
   })
 
   it('retries the last complete answer', async () => {
@@ -344,7 +350,7 @@ describe('retry', () => {
     const retry = vi.spyOn(panel.services.chat, 'retry')
     await panel.user.click(within(lastAssistant()).getByRole('button', { name: 'Reintentar respuesta' }))
     await waitFor(() => expect(retry).toHaveBeenCalledTimes(1))
-    await waitFor(() => expect(screen.getAllByRole('article', { name: 'Asistente' })).toHaveLength(1))
+    await waitFor(() => expect(screen.getAllByRole('article', { name: 'Asistente' })).toHaveLength(2))
   })
 })
 

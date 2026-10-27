@@ -40,7 +40,9 @@ export function useChat(conversationId: string, productCode?: string) {
           current = applyStreamEvent(current, event)
           setDraft(current)
         }
-        if (current.phase === 'streaming') current = { ...current, phase: 'done' }
+        // A stream that ends without `message.end` was stopped by the user: the server keeps the partial answer
+        // as interrupted and sends no closing frame.
+        if (current.phase === 'streaming') current = { ...current, phase: abort.signal.aborted ? 'interrupted' : 'done' }
       } catch (error) {
         const ref = error instanceof ApiFailure ? error.problem.ref : ''
         current = { ...current, tools: [], phase: 'error', error: { messageKey: 'errors.generic', ref } }
@@ -85,8 +87,10 @@ export function useChat(conversationId: string, productCode?: string) {
     [chat, consume, conversationId, key, productCode, queryClient],
   )
 
+  // The API appends a NEW assistant message and leaves the failed one in the history, so the draft gets its own
+  // placeholder id (it follows `message.start`) instead of standing in for the message being retried.
   const retry = useCallback(
-    (messageId: string) => consume((signal) => chat.retry(messageId, signal), startDraft(messageId)),
+    (messageId: string) => consume((signal) => chat.retry(messageId, signal), startDraft(`pending-${crypto.randomUUID()}`)),
     [chat, consume],
   )
 

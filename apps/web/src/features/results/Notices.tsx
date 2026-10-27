@@ -1,12 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { errorTextOf } from '../../app/errorText'
-import { useNotify } from '../../app/notifyContext'
-import { useServices } from '../../services/servicesContext'
 import { Button } from '../../ui/atoms/Button'
 import { InlineNotice } from '../../ui/molecules/InlineNotice'
-import { conversationKey } from '../conversation/useConversationData'
-import { runKey, useRunSummary } from './queries'
+import { usePendingLeadTimes } from './pendingOverrides'
+import { useRunSummary } from './queries'
+import { useRecalculate } from './useRecalculate'
 
 interface NoticesProps {
   runId: string
@@ -20,18 +17,9 @@ interface NoticesProps {
  */
 export function Notices({ runId, conversationId, onChangeParameters }: NoticesProps) {
   const { t, i18n } = useTranslation()
-  const { runs } = useServices()
-  const queryClient = useQueryClient()
-  const notify = useNotify()
   const summary = useRunSummary(runId).data
-  const recalculate = useMutation({
-    mutationFn: () => runs.recalculate(runId),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: runKey(runId) })
-      await queryClient.invalidateQueries({ queryKey: conversationKey(conversationId) })
-    },
-    onError: (error) => notify('error', errorTextOf(t, error)),
-  })
+  const pendingCount = Object.keys(usePendingLeadTimes(runId)).length
+  const recalculate = useRecalculate(runId, conversationId)
   if (!summary) return null
   const { run } = summary
 
@@ -42,10 +30,14 @@ export function Notices({ runId, conversationId, onChangeParameters }: NoticesPr
   return (
     <div className="flex flex-col gap-2">
       {!summary.stock_known && <InlineNotice tone="warning">{t('results.notices.noStock')}</InlineNotice>}
-      {run.parameters_pending ? (
+      {run.parameters_pending || pendingCount > 0 ? (
         <InlineNotice tone="staleness">
           <span className="flex flex-wrap items-center gap-3">
-            <span>{t('results.notices.pending')}</span>
+            <span>
+              {run.parameters_pending
+                ? t(pendingCount > 0 ? 'results.notices.pendingBoth' : 'results.notices.pending')
+                : t('results.notices.pendingLeadTimes', { count: pendingCount })}
+            </span>
             <Button variant="secondary" size="sm" loading={recalculate.isPending} onClick={() => recalculate.mutate()}>
               {t('results.notices.recalculate')}
             </Button>

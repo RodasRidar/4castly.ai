@@ -136,6 +136,9 @@ export const resultsEn: typeof resultsEs = {
   notices: {
     noStock: 'The file had no stock column: stock was assumed to be 0 and the results are indicative.',
     pending: 'You saved new parameters that are not applied yet.',
+    pendingBoth: 'You saved parameters and lead times that are not applied yet.',
+    pendingLeadTimes_one: 'You changed the lead time of {{count}} product. It will apply when you recalculate.',
+    pendingLeadTimes_other: 'You changed the lead time of {{count}} products. They will apply when you recalculate.',
     recalculate: 'Recalculate',
     stale: 'The results are out of date because you changed the parameters. Recalculate to see the new data.',
     defaults: 'We used default values for {{items}}. You can change them and recalculate.',

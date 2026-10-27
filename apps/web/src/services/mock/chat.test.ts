@@ -30,7 +30,7 @@ describe('mock chat service', () => {
     expect(list.at(-2)).toMatchObject({ role: 'user', display_text: '¿Qué debo comprar primero?' })
   })
 
-  it('stops on abort with stop_reason cancelled and keeps the partial text as interrupted', async () => {
+  it('stops on abort without a closing message.end and keeps the partial text as interrupted', async () => {
     const services = createMockServices()
     services.chatDelayMs = 1
     const controller = new AbortController()
@@ -39,25 +39,32 @@ describe('mock chat service', () => {
       events.push(e)
       if (e.event === 'text.delta') controller.abort()
     }
-    expect(events.at(-1)).toMatchObject({ event: 'message.end', stop_reason: 'cancelled' })
-    expect((await services.chat.list(CONVERSATION)).at(-1)?.status).toBe('interrupted')
+    // The real server records the interruption itself and sends no final frame.
+    expect(events.some((e) => e.event === 'message.end')).toBe(false)
+    const stored = (await services.chat.list(CONVERSATION)).at(-1)!
+    expect(stored.status).toBe('interrupted')
+    expect(stored.display_text.length).toBeGreaterThan(0)
   })
 
   it('reports a stream error and stores the failed message', async () => {
     const services = createMockServices()
     services.failChat = true
     const events = await collect(services.chat.send(CONVERSATION, { text: 'hola' }))
-    expect(events.at(-1)).toMatchObject({ event: 'error', message_key: 'errors.assistant' })
+    expect(events.at(-1)).toMatchObject({ event: 'error', message_key: 'errors.assistantUnavailable' })
     expect((await services.chat.list(CONVERSATION)).at(-1)?.status).toBe('error')
   })
 
-  it('retries an answer in place and records feedback', async () => {
+  it('retries by appending a new assistant message, leaving the failed one in place (like the API)', async () => {
     const { chat } = createMockServices()
-    const list = await chat.list(CONVERSATION)
-    const failed = list.find((m) => m.status === 'error')!
+    const before = await chat.list(CONVERSATION)
+    const failed = before.find((m) => m.status === 'error')!
     const events = await collect(chat.retry(failed.id))
     expect(events.at(-1)?.event).toBe('message.end')
-    expect((await chat.list(CONVERSATION)).find((m) => m.id === failed.id)?.status).toBe('complete')
-    expect(await chat.feedback(failed.id, 'up')).toEqual({ message_id: failed.id, value: 'up' })
+    const after = await chat.list(CONVERSATION)
+    expect(after.find((m) => m.id === failed.id)?.status).toBe('error')
+    expect(after).toHaveLength(before.length + 1)
+    expect(after.at(-1)).toMatchObject({ role: 'assistant', status: 'complete' })
+    expect(after.at(-1)?.id).not.toBe(failed.id)
+    expect(await chat.feedback(after.at(-1)!.id, 'up')).toEqual({ message_id: after.at(-1)!.id, value: 'up' })
   })
 })

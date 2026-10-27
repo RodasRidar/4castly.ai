@@ -47,7 +47,8 @@ export function renderPanel({ language = 'es', conversationId = SEEDED, list, ..
 
 /**
  * A stream the test drives by hand, so tool lines, token-by-token text, Stop and errors can be asserted at
- * exact moments. Aborting the request ends it with `stop_reason: cancelled`, like the real service.
+ * exact moments. Aborting the request just ends the stream, like the real server (it records the interruption
+ * itself and sends no closing `message.end`).
  */
 export function controlledStream(signal?: AbortSignal) {
   const queue: ChatStreamEvent[] = []
@@ -62,15 +63,7 @@ export function controlledStream(signal?: AbortSignal) {
     closed = true
     wake?.()
   }
-  signal?.addEventListener('abort', () => {
-    push({
-      event: 'message.end',
-      message_id: 'm-ctl',
-      stop_reason: 'cancelled',
-      usage: { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0 },
-    })
-    close()
-  })
+  signal?.addEventListener('abort', close)
 
   async function* iterate(): AsyncGenerator<ChatStreamEvent> {
     for (;;) {

@@ -134,6 +134,9 @@ export const resultsEs = {
   notices: {
     noStock: 'El archivo no tenía columna de stock: se asumió stock 0 y los resultados son orientativos.',
     pending: 'Guardaste parámetros nuevos que aún no se aplican.',
+    pendingBoth: 'Guardaste parámetros y tiempos de reposición que aún no se aplican.',
+    pendingLeadTimes_one: 'Cambiaste el tiempo de reposición de {{count}} producto. Se aplicará al recalcular.',
+    pendingLeadTimes_other: 'Cambiaste el tiempo de reposición de {{count}} productos. Se aplicará al recalcular.',
     recalculate: 'Recalcular',
     stale: 'Los resultados están desactualizados porque cambiaste los parámetros. Recalcula para ver los datos nuevos.',
     defaults: 'Usamos valores por defecto para {{items}}. Puedes cambiarlos y recalcular.',

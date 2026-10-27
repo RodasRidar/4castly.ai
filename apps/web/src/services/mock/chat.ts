@@ -31,7 +31,7 @@ export function createChatService({ controls }: ChatMockHooks): ChatService {
       await tick(controls.chatDelayMs)
       if (signal?.aborted) break
       if (controls.failChat && event.event === 'text.delta') {
-        yield { event: 'error', message_key: 'errors.assistant', ref: 'K7Q2WX' } as ChatStreamEvent
+        yield { event: 'error', message_key: 'errors.assistantUnavailable', ref: 'K7Q2WX' } as ChatStreamEvent
         save(conversationId, { id: assistantId, text, status: 'error' })
         return
       }
@@ -41,15 +41,8 @@ export function createChatService({ controls }: ChatMockHooks): ChatService {
       }
       yield event
     }
-    if (signal?.aborted) {
-      save(conversationId, { id: assistantId, text, status: 'interrupted' })
-      yield {
-        event: 'message.end',
-        message_id: assistantId,
-        stop_reason: 'cancelled',
-        usage: { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0 },
-      } as ChatStreamEvent
-    }
+    // The real server stores an aborted answer as `interrupted` with the text so far and sends no closing frame.
+    if (signal?.aborted) save(conversationId, { id: assistantId, text, status: 'interrupted' })
   }
 
   function save(conversationId: string, m: { id: string; text: string; status: ChatMessage['status'] }) {
@@ -60,7 +53,7 @@ export function createChatService({ controls }: ChatMockHooks): ChatService {
       role: 'assistant',
       status: m.status,
       display_text: m.text,
-      payload: m.status === 'error' ? { kind: 'error', message_key: 'errors.assistant', ref: 'K7Q2WX' } : { kind: 'text' },
+      payload: m.status === 'error' ? { kind: 'error', message_key: 'errors.assistantUnavailable', ref: 'K7Q2WX' } : { kind: 'text' },
       annotations: [],
       context_product_code: null,
       feedback: null,
@@ -92,7 +85,8 @@ export function createChatService({ controls }: ChatMockHooks): ChatService {
     async *retry(messageId, signal) {
       const owner = [...messages.entries()].find(([, list]) => list.some((m) => m.id === messageId))
       if (!owner) throw failure('not_found')
-      yield* stream(owner[0], messageId, signal)
+      // The API appends a NEW assistant message; the failed one stays in the history.
+      yield* stream(owner[0], uuid(), signal)
     },
     async feedback(messageId, value) {
       feedback.set(messageId, value)

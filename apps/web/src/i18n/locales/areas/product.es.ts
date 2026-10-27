@@ -37,7 +37,9 @@ export const productEs = {
     updating: 'Actualizando la propuesta…',
     updateError: 'No pudimos actualizar la propuesta. Referencia: {{ref}}',
     save: 'Guardar tiempo de reposición',
-    saved: 'Tiempo de reposición guardado para {{name}}',
+    saved: 'Tiempo de reposición guardado para {{name}}. Se aplicará en el próximo cálculo.',
+    pendingNotice: 'Este tiempo de reposición se aplicará cuando recalcules los resultados.',
+    recalculate: 'Recalcular',
     saveError: 'No pudimos guardar el tiempo de reposición. Referencia: {{ref}}',
     truncated: 'La cantidad se limitó al periodo calculado, así que puede quedar por debajo de lo ideal.',
     action: {

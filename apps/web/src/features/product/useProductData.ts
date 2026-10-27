@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNotify } from '../../app/notifyContext'
+import { recordPendingLeadTime } from '../results/pendingOverrides'
 import { useServices } from '../../services/servicesContext'
 import type { SimulationRequest } from '../../services/types'
 import { triggerDownload } from './download'
@@ -45,9 +46,12 @@ export function useSaveLeadTime(runId: string, code: string, productName: string
   const notify = useNotify()
   const { t } = useTranslation()
   return useMutation({
+    // The API REPLACES the product's whole override set, so only the lead time this page edits is sent.
+    // Contract request: PATCH semantics so target coverage / on-order overrides are never wiped.
     mutationFn: (leadTimeDays: number) => runs.setOverrides(code, { lead_time_days: leadTimeDays }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: runKey(runId) })
+    // Stored, not applied: the API row keeps the old value until the next calculation, so remember the saved one.
+    onSuccess: (_data, leadTimeDays) => {
+      recordPendingLeadTime(queryClient, runId, code, leadTimeDays)
       notify('success', t('product.purchase.saved', { name: productName }))
     },
     onError: (error) => notify('error', t('product.purchase.saveError', { ref: errorRef(error) })),

@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderApp } from '../../app/testing'
+import { pollConfig } from '../conversation/useConversationData'
 import { ApiFailure } from '../../services/types'
 
 // Unit C owns the chat; here we only care that the layout mounts it where the plan says.
@@ -30,7 +31,10 @@ const citricRow = async () => {
   return row
 }
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  pollConfig.ms = 1000
+})
 
 describe('results screen', () => {
   it('shows the breadcrumb, the KPIs, the chart and the table next to the chat', async () => {
@@ -44,10 +48,10 @@ describe('results screen', () => {
     expect(screen.getByTestId('chat-panel')).toHaveAttribute('data-conversation', READY)
   })
 
-  it('lists critical products first by default and pages at 20', async () => {
+  it('lists critical products first by default and pages at 25', async () => {
     renderApp({ path: path() })
     const rows = await bodyRows()
-    expect(rows).toHaveLength(20)
+    expect(rows).toHaveLength(25)
     expect(within(rows[0]).getByText('Crítico')).toBeInTheDocument()
     expect(screen.getByText('Página 1 de 2')).toBeInTheDocument()
   })
@@ -57,7 +61,7 @@ describe('results screen', () => {
     await table()
     await user.click(screen.getByRole('button', { name: 'Página siguiente' }))
     await waitFor(() => expect(router.state.location.search).toBe('?pagina=2'))
-    await waitFor(async () => expect(await bodyRows()).toHaveLength(6))
+    await waitFor(async () => expect(await bodyRows()).toHaveLength(1))
     expect(screen.getByText('Página 2 de 2')).toBeInTheDocument()
   })
 
@@ -100,7 +104,7 @@ describe('results screen', () => {
     await table()
     await user.click(await screen.findByRole('button', { name: 'Restablecer' }))
     await waitFor(() => expect(router.state.location.search).toBe(''))
-    await waitFor(async () => expect(await bodyRows()).toHaveLength(20))
+    await waitFor(async () => expect(await bodyRows()).toHaveLength(25))
   })
 
   it('introduces the KPI cards with a level 2 heading so heading levels do not skip', async () => {
@@ -131,7 +135,7 @@ describe('results screen', () => {
     expect(await screen.findByText('Ningún producto coincide con los filtros')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Restablecer filtros' }))
     await waitFor(() => expect(router.state.location.search).toBe(''))
-    await waitFor(async () => expect(await bodyRows()).toHaveLength(20))
+    await waitFor(async () => expect(await bodyRows()).toHaveLength(25))
   })
 
   it('opens a product from its name', async () => {
@@ -246,14 +250,41 @@ describe('portfolio view', () => {
     expect(await screen.findByText('Archivo listo: pronostico-seleccion.xlsx')).toBeInTheDocument()
   })
 
-  it('saves an edited lead time as a per-product override', async () => {
+  it('saves an edited lead time as an override, keeps showing it, and offers to apply it on the next calculation', async () => {
+    const { services, user } = renderApp({ path: path('?vista=portafolio&riesgo=critical') })
+    const setOverrides = vi.spyOn(services.runs, 'setOverrides')
+    const original = (await services.runs.product(RUN, 'QF-0001')).product.lead_time_days
+    const row = await citricRow()
+    await user.click(within(row).getByRole('button', { name: /Editar tiempo de reposición/ }))
+    const input = screen.getByRole('spinbutton')
+    await user.clear(input)
+    await user.type(input, '60{Enter}')
+    await waitFor(() => expect(setOverrides).toHaveBeenCalledWith('QF-0001', { lead_time_days: 60 }))
+    // The API only applies overrides on the next calculation, so its row still has the old value...
+    expect((await services.runs.product(RUN, 'QF-0001')).product.lead_time_days).toBe(original)
+    // ...but the table must not silently revert what the user just saved, even after the rows are fetched again.
+    await user.click(screen.getByRole('button', { name: 'Ordenar por Producto' }))
+    await user.click(screen.getByRole('button', { name: 'Ordenar por Producto' }))
+    const again = await citricRow()
+    expect(within(again).getByRole('button', { name: /Editar tiempo de reposición/ }).textContent).toContain('60')
+    expect(await screen.findByText('Cambiaste el tiempo de reposición de 1 producto. Se aplicará al recalcular.')).toBeInTheDocument()
+  })
+
+  it('applies pending lead times when the user recalculates, and the notice goes away', async () => {
+    pollConfig.ms = 20
     const { services, user } = renderApp({ path: path('?vista=portafolio&riesgo=critical') })
     const row = await citricRow()
     await user.click(within(row).getByRole('button', { name: /Editar tiempo de reposición/ }))
     const input = screen.getByRole('spinbutton')
     await user.clear(input)
     await user.type(input, '60{Enter}')
-    await waitFor(async () => expect((await services.runs.product(RUN, 'QF-0001')).product.lead_time_days).toBe(60))
+    await user.click(await screen.findByRole('button', { name: 'Recalcular' }))
+    await waitFor(async () => expect((await services.conversations.get(READY)).stage).toBe('calculating'))
+    for (let i = 0; i < 5; i++) services.advance()
+    await waitFor(async () => expect((await services.conversations.get(READY)).stage).toBe('ready'))
+    expect((await services.runs.product(RUN, 'QF-0001')).product.lead_time_days).toBe(60)
+    expect(await citricRow()).toBeTruthy()
+    expect(screen.queryByText(/Cambiaste el tiempo de reposición/)).not.toBeInTheDocument()
   })
 
   it('rolls the lead time back and says so when saving fails', async () => {
@@ -343,6 +374,19 @@ describe('run notices from the contract flags', () => {
     await user.click(screen.getByRole('button', { name: 'Recalcular' }))
     await waitFor(async () => expect((await services.conversations.get(READY)).stage).toBe('calculating'))
     expect(router.state.location.pathname).toBe(`/c/${READY}`)
+  })
+
+  it('shows a single notice when parameters and lead times are both waiting to be applied', async () => {
+    const { services, user } = renderApp({ path: path('?vista=portafolio&riesgo=critical') })
+    withSummary(services, { parameters_pending: true })
+    const row = await citricRow()
+    await user.click(within(row).getByRole('button', { name: /Editar tiempo de reposición/ }))
+    const input = screen.getByRole('spinbutton')
+    await user.clear(input)
+    await user.type(input, '45{Enter}')
+    expect(await screen.findByText('Guardaste parámetros y tiempos de reposición que aún no se aplican.')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Recalcular' })).toHaveLength(1)
+    expect(screen.queryByText('Guardaste parámetros nuevos que aún no se aplican.')).not.toBeInTheDocument()
   })
 
   it('shows one coherent notice when both pending parameters and a stale run are reported', async () => {

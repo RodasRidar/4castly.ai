@@ -161,16 +161,43 @@ describe('what-if and overrides', () => {
     await waitFor(() => expect(simulate).toHaveBeenCalledWith(RUN, 'QF-0001', { lead_time_days: 21, target_coverage_weeks: 5, with_purchase: true }))
   })
 
-  it('saves the lead time as a per-product override and confirms it', async () => {
+  it('saves the lead time as an override that applies on the next calculation, and says so', async () => {
+    const { services, user } = product('QF-0001')
+    const setOverrides = vi.spyOn(services.runs, 'setOverrides')
+    const original = (await services.runs.product(RUN, 'QF-0001')).product.lead_time_days
+    await title('Ácido cítrico anhidro')
+    await user.click(await screen.findByRole('button', { name: 'Aumentar el tiempo de reposición' }))
+    await user.click(await screen.findByRole('button', { name: 'Guardar tiempo de reposición' }))
+    expect(await screen.findByText('Tiempo de reposición guardado para Ácido cítrico anhidro. Se aplicará en el próximo cálculo.')).toBeInTheDocument()
+    expect(setOverrides).toHaveBeenCalledWith('QF-0001', { lead_time_days: original + 1 })
+    // The API applies it only when results are calculated again: its row is unchanged, but the page must not
+    // offer to save the same value again nor fall back to the old one.
+    expect((await services.runs.product(RUN, 'QF-0001')).product.lead_time_days).toBe(original)
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Guardar tiempo de reposición' })).not.toBeInTheDocument())
+    expect(screen.getByRole('spinbutton', { name: 'Tiempo de reposición' })).toHaveAttribute('aria-valuenow', String(original + 1))
+    expect(await screen.findByText(/se aplicará cuando recalcules/)).toBeInTheDocument()
+  })
+
+  it('keeps the saved lead time when the product is opened again before recalculating', async () => {
+    const { user, router } = product('QF-0001')
+    await title('Ácido cítrico anhidro')
+    await user.click(await screen.findByRole('button', { name: 'Aumentar el tiempo de reposición' }))
+    await user.click(await screen.findByRole('button', { name: 'Guardar tiempo de reposición' }))
+    await screen.findByText(/se aplicará cuando recalcules/)
+    await user.click(screen.getByRole('link', { name: /Volver a los resultados/ }))
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/c/${READY}`))
+    await router.navigate(`/c/${READY}/productos/QF-0001`)
+    expect(await screen.findByRole('spinbutton', { name: 'Tiempo de reposición' })).toHaveAttribute('aria-valuenow', '22')
+    expect(screen.queryByRole('button', { name: 'Guardar tiempo de reposición' })).not.toBeInTheDocument()
+  })
+
+  it('starts the calculation from the product page', async () => {
     const { services, user } = product('QF-0001')
     await title('Ácido cítrico anhidro')
     await user.click(await screen.findByRole('button', { name: 'Aumentar el tiempo de reposición' }))
     await user.click(await screen.findByRole('button', { name: 'Guardar tiempo de reposición' }))
-    expect(await screen.findByText('Tiempo de reposición guardado para Ácido cítrico anhidro')).toBeInTheDocument()
-    const saved = await services.runs.product(RUN, 'QF-0001')
-    expect(saved.product.lead_time_days).toBe(22)
-    expect(saved.product.lead_time_overridden).toBe(true)
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Guardar tiempo de reposición' })).not.toBeInTheDocument())
+    await user.click(await screen.findByRole('button', { name: 'Recalcular' }))
+    await waitFor(async () => expect((await services.conversations.get(READY)).stage).toBe('calculating'))
   })
 
   it('reports a failed save with the support reference', async () => {

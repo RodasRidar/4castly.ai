@@ -3,12 +3,13 @@ import runDetails from './fixtures/run-product-details.json'
 import runSummary from './fixtures/run-summary.json'
 import { failure } from './errors'
 import type { ProductQuery, RunService } from '../ports'
-import type { ProductDetail, ProductRow, ProductSort, RunParameters, RunSummary } from '../types'
+import type { ProductDetail, ProductOverrides, ProductRow, ProductSort, RunParameters, RunSummary } from '../types'
 
 const clone = <T,>(value: T): T => structuredClone(value)
 const RISK_RANK = { critical: 0, medium: 1, optimal: 2 } as const
 const BUY_RANK = { order_today: 0, order_by_date: 1, no_stockout: 2 } as const
-export const DEFAULT_PAGE_SIZE = 20
+/** The API's default `page_size` (apps/api routers/runs.py), so paging in the mock matches production. */
+export const DEFAULT_PAGE_SIZE = 25
 
 /** Accent- and case-insensitive, so "acido" finds "Ácido cítrico". */
 export const normalize = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
@@ -36,6 +37,9 @@ export function createRunService({ startRecalculation, controls }: RunMockHooks)
   const products = new Map<string, ProductRow>(
     (runProducts.items as unknown as ProductRow[]).map((p) => [p.code, clone(p)]),
   )
+  // What the last calculation produced; overrides are layered on top only when the next one finishes.
+  const base = new Map<string, ProductRow>([...products].map(([code, row]) => [code, clone(row)]))
+  const overrides = new Map<string, ProductOverrides>()
   const details = runDetails as unknown as Record<string, ProductDetail>
   let summary = clone(runSummary) as unknown as RunSummary
   let parameters: RunParameters = clone(summary.run.parameters)
@@ -106,20 +110,19 @@ export function createRunService({ startRecalculation, controls }: RunMockHooks)
     },
     async recalculate(runId) {
       guard()
-      summary = { ...summary, run: { ...summary.run, parameters_pending: false, stale: false, defaults_used: [] } }
       return startRecalculation(runId)
     },
-    async setOverrides(code, overrides) {
+    /**
+     * Like the API (`PUT /v1/products/{code}/overrides`): the body REPLACES the product's overrides (an empty
+     * body clears them) and nothing shown changes until the next calculation finishes.
+     */
+    async setOverrides(code, body) {
       guard()
-      const row = products.get(code)
-      if (!row) throw failure('not_found')
-      if (overrides.lead_time_days != null) {
-        row.lead_time_days = overrides.lead_time_days
-        row.lead_time_overridden = true
-      }
-      if (overrides.target_coverage_weeks != null) row.target_coverage_weeks = overrides.target_coverage_weeks
-      if (overrides.on_order_quantity != null) row.on_order_quantity = overrides.on_order_quantity
-      return clone(overrides)
+      if (!products.has(code)) throw failure('not_found')
+      const kept = Object.fromEntries(Object.entries(body).filter(([, value]) => value != null))
+      if (Object.keys(kept).length === 0) overrides.delete(code)
+      else overrides.set(code, kept)
+      return clone(body)
     },
     async createExport(_runId, request) {
       guard()
@@ -132,5 +135,22 @@ export function createRunService({ startRecalculation, controls }: RunMockHooks)
       }
     },
   }
-  return service
+
+  /** Called when a calculation finishes: rebuilds every row from the base figures plus the stored overrides. */
+  function applyStoredOverrides() {
+    for (const [code, row] of products) {
+      const stored = overrides.get(code)
+      const original = base.get(code)!
+      Object.assign(row, clone(original))
+      if (stored?.lead_time_days != null) {
+        row.lead_time_days = stored.lead_time_days
+        row.lead_time_overridden = true
+      }
+      if (stored?.target_coverage_weeks != null) row.target_coverage_weeks = stored.target_coverage_weeks
+      if (stored?.on_order_quantity != null) row.on_order_quantity = stored.on_order_quantity
+    }
+    summary = { ...summary, run: { ...summary.run, parameters_pending: false, stale: false, defaults_used: [] } }
+  }
+
+  return Object.assign(service, { applyStoredOverrides })
 }

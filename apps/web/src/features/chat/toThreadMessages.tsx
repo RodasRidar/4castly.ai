@@ -70,11 +70,12 @@ function fromStored(m: ChatMessage, isLast: boolean, ctx: ThreadContext): ChatTh
     return {
       ...base,
       note: { tone: 'warning', title: t('chat.note.errorTitle'), text: t(backendKey(payload?.message_key ?? '')) },
-      card: recovery(ctx, m.id, payload?.ref),
+      // Only the latest answer can be retried (the API answers 409 `errors.retryNotLatest` otherwise).
+      card: isLast ? recovery(ctx, m.id, payload?.ref) : undefined,
     }
   }
   if (m.status === 'interrupted') {
-    return { ...base, note: { tone: 'info', text: t('chat.note.interrupted') }, card: recovery(ctx, m.id) }
+    return { ...base, note: { tone: 'info', text: t('chat.note.interrupted') }, card: isLast ? recovery(ctx, m.id) : undefined }
   }
   // Stage messages (progress, mapping, clarification, result) are part of the transcript, not answers to rate.
   if (m.status === 'complete' && (m.payload?.kind ?? 'text') === 'text') {
@@ -99,8 +100,8 @@ function fromStored(m: ChatMessage, isLast: boolean, ctx: ThreadContext): ChatTh
 }
 
 /**
- * Maps the stored transcript plus the live draft into thread messages. The draft replaces the stored message it
- * is regenerating (Retry) in place, or is appended when it is a new answer.
+ * Maps the stored transcript plus the live draft into thread messages. The draft is appended as the newest
+ * answer (a retry is a new message too); it only replaces a stored message once the refetch returns its id.
  */
 export function toThreadMessages(messages: ChatMessage[], ctx: ThreadContext): ChatThreadMessage[] {
   const { draft } = ctx
