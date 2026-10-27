@@ -55,8 +55,23 @@ export interface ProfileService {
   updatePreferences(patch: Partial<Preferences>): Promise<Preferences>
 }
 
+export interface ConversationQuery {
+  q?: string
+  includeArchived?: boolean
+  cursor?: string | null
+  limit?: number
+}
+
+export interface ConversationsPage {
+  items: Conversation[]
+  nextCursor: string | null
+}
+
 export interface ConversationService {
+  /** First page for the sidebar (non-archived, newest first). */
   list(): Promise<Conversation[]>
+  /** Full history: text search, archived ones on request, cursor paging. */
+  search(query?: ConversationQuery): Promise<ConversationsPage>
   get(id: string): Promise<ConversationDetail>
   update(id: string, patch: ConversationUpdate): Promise<Conversation>
   remove(id: string): Promise<void>

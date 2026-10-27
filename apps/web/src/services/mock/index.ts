@@ -3,7 +3,7 @@ import entryFlow from './fixtures/entry-flow.json'
 import session from './fixtures/session.json'
 import { createChatService } from './chat'
 import { failure } from './errors'
-import { createRunService } from './runs'
+import { createRunService, normalize } from './runs'
 import type { Services } from '../ports'
 import type {
   Conversation,
@@ -270,6 +270,18 @@ export function createMockServices({ signedIn = true, latencyMs = 0, emptyConver
           .filter((c) => !c.deleted_at && !c.archived)
           .sort((a, b) => b.last_activity_at.localeCompare(a.last_activity_at))
           .map(toSummary)
+      },
+      async search({ q = '', includeArchived = false, cursor = null, limit = 30 } = {}) {
+        await wait()
+        if (mock.failConversations) throw failure('failure')
+        const needle = normalize(q.trim())
+        const all = [...conversations.values()]
+          .filter((c) => !c.deleted_at && (includeArchived || !c.archived))
+          .filter((c) => !needle || normalize(c.title).includes(needle) || normalize(c.file_name ?? '').includes(needle))
+          .sort((a, b) => b.last_activity_at.localeCompare(a.last_activity_at))
+        const start = cursor ? Number.parseInt(cursor, 10) || 0 : 0
+        const next = start + limit
+        return { items: all.slice(start, next).map(toSummary), nextCursor: next < all.length ? String(next) : null }
       },
       async get(id) {
         await wait()

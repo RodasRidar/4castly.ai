@@ -9,4 +9,6 @@ export interface AppEnv {
   themeStore: ThemeStore
   /** Element whose `lang` follows the language preference. */
   root: HTMLElement
+  /** Retry failed GETs with backoff (R12). Off in tests so failures show at once. Mutations never retry. */
+  retryQueries?: boolean
 }

@@ -76,3 +76,33 @@ describe('mock run service', () => {
     await expect(services.runs.summary(RUN)).rejects.toMatchObject({ problem: { status: 500 } })
   })
 })
+
+describe('mock conversation search', () => {
+  it('pages with a cursor, newest first', async () => {
+    const { conversations } = createMockServices()
+    const first = await conversations.search({ limit: 5 })
+    expect(first.items).toHaveLength(5)
+    expect(first.nextCursor).toBe('5')
+    const second = await conversations.search({ limit: 5, cursor: first.nextCursor })
+    expect(second.items.map((c) => c.id)).not.toContain(first.items[0].id)
+  })
+
+  it('searches titles and file names without caring about accents', async () => {
+    const { conversations } = createMockServices()
+    const page = await conversations.search({ q: 'PRONOSTICO' })
+    expect(page.items.map((c) => c.title)).toContain('Pronóstico con error')
+    expect((await conversations.search({ q: 'kardex_set' })).items).toHaveLength(1)
+  })
+
+  it('hides archived conversations unless asked, and deleted ones never', async () => {
+    const { conversations } = createMockServices()
+    const id = (await conversations.list())[0].id
+    await conversations.update(id, { archived: true })
+    expect((await conversations.search()).items.map((c) => c.id)).not.toContain(id)
+    expect((await conversations.search({ includeArchived: true })).items.map((c) => c.id)).toContain(id)
+    await conversations.remove(id)
+    expect((await conversations.search({ includeArchived: true })).items.map((c) => c.id)).not.toContain(id)
+    await conversations.restore(id)
+    expect((await conversations.search({ includeArchived: true })).items.map((c) => c.id)).toContain(id)
+  })
+})
