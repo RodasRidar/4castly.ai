@@ -54,6 +54,7 @@ export const en: Messages = {
     menu: 'Conversation options',
     confirmDeleteTitle: 'Delete this conversation?',
     confirmDeleteBody: 'The forecast and the chat will be removed. This cannot be undone.',
+    confirmDeleteBodyNamed: 'The forecast and the chat of "{{title}}" will be removed. This cannot be undone.',
     deleted: 'Conversation deleted',
     undo: 'Undo',
     cancel: 'Cancel',

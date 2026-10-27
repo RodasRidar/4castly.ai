@@ -84,7 +84,7 @@ export function AppSidebar({ collapsed, onToggleCollapsed, mobile }: AppSidebarP
             archiveLabel={t('conversations.archive')}
             deleteLabel={t('conversations.delete')}
             confirmTitle={t('conversations.confirmDeleteTitle')}
-            confirmDescription={t('conversations.confirmDeleteBody')}
+            confirmDescription={t('conversations.confirmDeleteBodyNamed', { title: item.title })}
             confirmLabel={t('conversations.delete')}
             cancelLabel={t('conversations.cancel')}
             closeLabel={t('common.close')}

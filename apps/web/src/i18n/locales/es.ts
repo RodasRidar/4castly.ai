@@ -53,6 +53,7 @@ export const es = {
     menu: 'Opciones de la conversación',
     confirmDeleteTitle: '¿Eliminar esta conversación?',
     confirmDeleteBody: 'Se borrarán el pronóstico y el chat. No se puede deshacer.',
+    confirmDeleteBodyNamed: 'Se borrarán el pronóstico y el chat de «{{title}}». No se puede deshacer.',
     deleted: 'Conversación eliminada',
     undo: 'Deshacer',
     cancel: 'Cancelar',
