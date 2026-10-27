@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
 import { Button } from '../../ui/atoms/Button'
 import { KpiRow, type KpiRowItem } from '../../ui/organisms/KpiRow'
-import type { FilterLink } from '../../services/types'
+import type { FilterLink, RunKpis } from '../../services/types'
 import { resultsSearch, type ResultsState } from '../shared/resultsUrl'
 import { useRunSummary } from './queries'
 
@@ -28,29 +28,39 @@ export function KpiSection({ runId, state, onRetry }: KpiSectionProps) {
       page: 1,
     })}`
 
-  let items: KpiRowItem[] = []
-  if (summary.data) {
-    const { kpis, total_products } = summary.data
-    const { lower, expected, upper } = kpis.average_coverage_weeks
-    const { overall, distribution } = kpis.reliability
-    items = [
+  const stockItems = (
+    atRisk: NonNullable<RunKpis['products_at_risk']>,
+    coverage: NonNullable<RunKpis['average_coverage_weeks']>,
+    total: number,
+  ): KpiRowItem[] => [
       {
         id: 'at-risk',
         label: t('results.kpi.atRisk'),
-        value: kpis.products_at_risk.count,
-        caption: t('results.kpi.atRiskCaption', { count: total_products, total: total_products }),
+        value: atRisk.count,
+        caption: t('results.kpi.atRiskCaption', { count: total, total }),
         linkLabel: t('results.kpi.atRiskLink'),
-        href: hrefFor(kpis.products_at_risk),
+        href: hrefFor(atRisk),
       },
       {
         id: 'coverage',
         label: t('results.kpi.coverage'),
-        value: expected === null ? undefined : t('results.kpi.coverageValue', { value: number.format(expected) }),
+        value: coverage.expected === null ? undefined : t('results.kpi.coverageValue', { value: number.format(coverage.expected) }),
         caption:
-          lower === null || upper === null
+          coverage.lower === null || coverage.upper === null
             ? undefined
-            : t('results.kpi.coverageRange', { lower: number.format(lower), upper: number.format(upper) }),
+            : t('results.kpi.coverageRange', { lower: number.format(coverage.lower), upper: number.format(coverage.upper) }),
       },
+  ]
+
+  let items: KpiRowItem[] = []
+  if (summary.data) {
+    const { kpis, total_products: total } = summary.data
+    const { overall, distribution } = kpis.reliability
+    const atRisk = kpis.products_at_risk
+    const coverage = kpis.average_coverage_weeks
+    items = [
+      // Without stock there is no risk and no coverage: the API sends both as null (D17-C).
+      ...(atRisk && coverage ? stockItems(atRisk, coverage, total) : []),
       {
         id: 'reliability',
         label: t('results.kpi.reliability'),

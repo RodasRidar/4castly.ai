@@ -153,6 +153,7 @@ export const es = {
     rateLimited: 'Hiciste demasiadas solicitudes. Espera un momento e inténtalo de nuevo.',
     retryNotLatest: 'Solo se puede reintentar la última respuesta.',
     runSuperseded: 'Estos resultados fueron reemplazados por un cálculo más reciente.',
+    stockUnknown: 'Tu archivo no incluye stock, así que no se puede calcular el riesgo ni simular compras.',
     timeout: 'La solicitud tardó demasiado. Inténtalo de nuevo.',
     unauthenticated: 'Tu sesión venció. Inicia sesión de nuevo.',
     unavailable: 'El servicio no está disponible por ahora. Inténtalo en unos minutos.',

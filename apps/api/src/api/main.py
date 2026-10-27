@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.adapters.anthropic_agent import build_agent
 from api.adapters.jwks import JwksTokenVerifier
 from api.adapters.langfuse_scores import LangfuseScores
+from api.adapters.local_spawner import LocalJobSpawner
 from api.adapters.modal_spawner import ModalJobSpawner
 from api.adapters.supabase_storage import SupabaseStorage
 from api.assistant.prompt import SYSTEM_PROMPT
@@ -76,8 +77,12 @@ def create_app(  # noqa: PLR0913
             bucket=settings.storage_bucket,
         ),
         spawner=spawner
-        or ModalJobSpawner(
-            app_name=settings.modal_app_name, environment=settings.modal_environment
+        or (
+            LocalJobSpawner(worker_dir=settings.worker_dir)
+            if settings.job_runner == "local"
+            else ModalJobSpawner(
+                app_name=settings.modal_app_name, environment=settings.modal_environment
+            )
         ),
         agent=agent
         or build_agent(

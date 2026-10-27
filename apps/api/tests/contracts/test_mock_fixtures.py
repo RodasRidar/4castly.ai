@@ -142,6 +142,8 @@ class TestRun:
         risks = Counter(r.risk for r in rows)
 
         assert summary.total_products == len(rows)
+        assert summary.risk_distribution is not None
+        assert summary.kpis.products_at_risk is not None
         assert summary.risk_distribution.critical == risks[RiskLevel.CRITICAL]
         assert summary.risk_distribution.medium == risks[RiskLevel.MEDIUM]
         assert summary.risk_distribution.optimal == risks[RiskLevel.OPTIMAL]
@@ -177,6 +179,8 @@ class TestRun:
         assert set(details) == set(rows)
         for code, detail in details.items():
             assert detail.product == rows[code]
+            assert detail.without_new_purchase is not None
+            assert detail.with_suggested_purchase is not None
             for projection in (detail.without_new_purchase, detail.with_suggested_purchase):
                 for week in projection.weekly:
                     assert min(week.projected_stock.model_dump().values()) >= 0, code
@@ -196,6 +200,8 @@ class TestRun:
 
         assert ordering
         for detail in ordering:
+            assert detail.with_suggested_purchase is not None
+            assert detail.purchase is not None
             arrivals = detail.with_suggested_purchase.arrivals
             lead_weeks = -(-detail.purchase.lead_time_days // 7)
             arrival_date = detail.with_suggested_purchase.weekly[0].week_start + timedelta(
@@ -206,8 +212,10 @@ class TestRun:
 
     def test_order_today_rows_have_no_buy_before_date(self, fixtures: dict) -> None:
         for row in self.rows(fixtures):
+            assert row.buy_before is not None
             if row.buy_before.action == "order_today":
                 assert row.buy_before.date is None
+                assert row.coverage_weeks is not None
                 assert row.risk == "critical" or row.coverage_weeks.expected is not None
 
 
@@ -238,6 +246,7 @@ class TestChat:
                     span = message.display_text[annotation.start : annotation.end]
                     assert span.startswith(str(annotation.link.count)), span
                     if annotation.link.risk == "critical":
+                        assert summary.kpis.products_at_risk is not None
                         assert annotation.link.count == summary.kpis.products_at_risk.count
 
     def test_stream_example_rebuilds_the_final_text(self, fixtures: dict) -> None:

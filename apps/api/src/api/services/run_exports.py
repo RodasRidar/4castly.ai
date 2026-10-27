@@ -87,7 +87,14 @@ _TEXT: dict[str, dict[str, Any]] = {
 }
 
 
-def _cells(row: Any, words: dict[str, Any]) -> list[Any]:
+_NO_STOCK_COLUMNS = (0, 1, 2, 3, 4, 8)
+"""Code, product, unit, ABC class, typical demand and reliability: what exists without stock."""
+
+
+def _cells(row: Any, words: dict[str, Any], *, stock_known: bool) -> list[Any]:
+    if not stock_known:
+        full = [row.code, row.name, row.uom, row.abc_class.value, row.typical_demand.expected]
+        return [*full, words["reliability"][row.reliability.value]]
     buy = row.buy_before
     order = {
         "order_today": words["order_today"],
@@ -115,14 +122,15 @@ def _cells(row: Any, words: dict[str, Any]) -> list[Any]:
     ]
 
 
-def workbook(rows: list[Any], locale: str) -> bytes:
+def workbook(rows: list[Any], locale: str, *, stock_known: bool = True) -> bytes:
     words = _TEXT.get(locale, _TEXT["es"])
     book = Workbook()
     sheet = book.active
     sheet.title = "Forecast"
-    append_row(sheet, words["headers"])
+    headers = words["headers"]
+    append_row(sheet, headers if stock_known else [headers[i] for i in _NO_STOCK_COLUMNS])
     for row in rows:
-        append_row(sheet, _cells(row, words))
+        append_row(sheet, _cells(row, words, stock_known=stock_known))
     buffer = io.BytesIO()
     book.save(buffer)
     return buffer.getvalue()
@@ -151,7 +159,7 @@ async def _collect(
     if codes is not None and not rows:
         raise NotFoundError
     locale = (await session.execute(_LOCALE, {"user_id": who.user_id})).scalar_one_or_none()
-    return info, [product_row(r) for r in rows], locale or "es"
+    return info, [product_row(r, stock_known=info.stock_known) for r in rows], locale or "es"
 
 
 async def _record(
@@ -165,7 +173,7 @@ async def create_export(tx: Tx, run_id: UUID, body: ExportRequest) -> ExportFile
     file_name = _file_name(info, body)
     path = f"{tx.who.tenant_id}/exports/{uuid4()}/{file_name}"
     storage = tx.container.storage
-    await storage.put(path, workbook(rows, locale), XLSX_TYPE)
+    await storage.put(path, workbook(rows, locale, stock_known=info.stock_known), XLSX_TYPE)
     signed = await storage.create_download_url(path, ttl_seconds=DOWNLOAD_TTL_SECONDS)
     await tx.run(
         _record,

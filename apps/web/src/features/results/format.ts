@@ -53,17 +53,22 @@ interface RowContext {
 
 /** The suggested quantity is a range; the table shows its upper end so the high scenario is covered. */
 export function toTableRow(p: ProductRow, { today, riskLabel, leadTimeStatus }: RowContext): TableRow {
-  const { action, date } = p.buy_before
+  const buyBefore = p.buy_before
   return {
     code: p.code,
     name: p.name,
     abcClass: p.abc_class,
     typicalDemand: p.typical_demand.expected,
     stock: p.current_stock,
-    coverageWeeks: p.coverage_weeks.expected,
-    risk: { level: p.risk, label: riskLabel(p.risk) },
-    suggestedQuantity: p.suggested_quantity.high,
-    buyBefore: action === 'order_today' ? calendarDate(today) : action === 'order_by_date' && date ? calendarDate(date) : null,
+    coverageWeeks: p.coverage_weeks?.expected ?? null,
+    risk: p.risk ? { level: p.risk, label: riskLabel(p.risk) } : null,
+    suggestedQuantity: p.suggested_quantity?.high ?? null,
+    buyBefore:
+      buyBefore?.action === 'order_today'
+        ? calendarDate(today)
+        : buyBefore?.action === 'order_by_date' && buyBefore.date
+          ? calendarDate(buyBefore.date)
+          : null,
     leadTimeDays: p.lead_time_days,
     leadTimeStatus,
   }

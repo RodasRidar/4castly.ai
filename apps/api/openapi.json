@@ -3773,6 +3773,30 @@
         "title": "DefaultedParameter",
         "description": "Parameters the user did not answer, so the run used a default (shown in results)."
       },
+      "DemandWeek": {
+        "properties": {
+          "week": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Week"
+          },
+          "week_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Week Start"
+          },
+          "demand": {
+            "$ref": "#/components/schemas/ScenarioValues"
+          }
+        },
+        "type": "object",
+        "required": [
+          "week",
+          "week_start",
+          "demand"
+        ],
+        "title": "DemandWeek"
+      },
       "ErrorPayload": {
         "properties": {
           "kind": {
@@ -4886,16 +4910,41 @@
             "title": "Today"
           },
           "purchase": {
-            "$ref": "#/components/schemas/PurchaseRecommendation"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PurchaseRecommendation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`purchase` and both projections are `null` when the file had no stock column."
           },
           "reliability": {
             "$ref": "#/components/schemas/ReliabilityDetail"
           },
+          "forecast": {
+            "$ref": "#/components/schemas/ProductForecast"
+          },
           "without_new_purchase": {
-            "$ref": "#/components/schemas/ProductProjection"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductProjection"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "with_suggested_purchase": {
-            "$ref": "#/components/schemas/ProductProjection",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductProjection"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "The suggested quantity (low bound) arriving at the lead time (\"Con compra sugerida\")."
           }
         },
@@ -4906,10 +4955,37 @@
           "today",
           "purchase",
           "reliability",
+          "forecast",
           "without_new_purchase",
           "with_suggested_purchase"
         ],
         "title": "ProductDetail"
+      },
+      "ProductForecast": {
+        "properties": {
+          "weekly": {
+            "items": {
+              "$ref": "#/components/schemas/DemandWeek"
+            },
+            "type": "array",
+            "title": "Weekly"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesPoint"
+            },
+            "type": "array",
+            "title": "Series",
+            "description": "History (with censored weeks) followed by the forecast range, without projected stock."
+          }
+        },
+        "type": "object",
+        "required": [
+          "weekly",
+          "series"
+        ],
+        "title": "ProductForecast",
+        "description": "The forecast on its own: no stock involved, so it exists even if the file had no stock."
       },
       "ProductOverrides": {
         "properties": {
@@ -5061,14 +5137,35 @@
             "description": "Mean weekly demand over the next 4 weeks."
           },
           "current_stock": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Current Stock"
           },
           "coverage_weeks": {
-            "$ref": "#/components/schemas/CoverageRange"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoverageRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "risk": {
-            "$ref": "#/components/schemas/RiskLevel"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RiskLevel"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "reliability": {
             "$ref": "#/components/schemas/Reliability"
@@ -5086,7 +5183,14 @@
             "title": "Stockout Date"
           },
           "suggested_quantity": {
-            "$ref": "#/components/schemas/QuantityRange"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuantityRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "suggested_truncated": {
             "type": "boolean",
@@ -5094,7 +5198,14 @@
             "description": "The horizon is shorter than lead time + target coverage, so the figure is partial."
           },
           "buy_before": {
-            "$ref": "#/components/schemas/BuyBefore"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BuyBefore"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "lead_time_days": {
             "type": "integer",
@@ -5133,7 +5244,8 @@
           "target_coverage_weeks",
           "on_order_quantity"
         ],
-        "title": "ProductRow"
+        "title": "ProductRow",
+        "description": "When the run's file had no stock column (`RunSummary.stock_known` is false) every field that\ndepends on stock is `null`: `current_stock`, `coverage_weeks`, `risk`, `stockout_date`,\n`suggested_quantity` and `buy_before`. Demand and reliability are still there."
       },
       "ProductSort": {
         "type": "string",
@@ -5451,12 +5563,26 @@
       "RunKpis": {
         "properties": {
           "products_at_risk": {
-            "$ref": "#/components/schemas/FilterLink",
-            "description": "Products with critical risk, with the filter that lists them."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilterLink"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Products with critical risk, with the filter that lists them. `null` when the file had no\nstock column (`RunSummary.stock_known` is false): risk cannot be known."
           },
           "average_coverage_weeks": {
-            "$ref": "#/components/schemas/CoverageRange",
-            "description": "Mean over products; a product without stockout counts as the horizon (lower bound)."
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CoverageRange"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Mean over products; a product without stockout counts as the horizon (lower bound).\n`null` when stock is unknown."
           },
           "reliability": {
             "$ref": "#/components/schemas/ReliabilityKpi"
@@ -5530,7 +5656,15 @@
             "$ref": "#/components/schemas/RunKpis"
           },
           "risk_distribution": {
-            "$ref": "#/components/schemas/RiskDistribution"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RiskDistribution"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`null` when stock is unknown."
           },
           "total_products": {
             "type": "integer",

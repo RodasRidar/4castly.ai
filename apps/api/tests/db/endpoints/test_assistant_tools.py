@@ -62,6 +62,30 @@ class TestSpecs:
             assert spec["input_schema"]["additionalProperties"] is False
             assert spec["description"]
 
+    def test_strict_schemas_use_no_keywords_the_provider_rejects(self) -> None:
+        # The API answered 400 to `minimum`/`maximum` on integers in strict tools (found live).
+        unsupported = {
+            "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf",
+            "minLength", "maxLength", "pattern", "minItems", "maxItems", "format",
+        }  # fmt: skip
+
+        def keys(node: Any) -> set[str]:
+            if isinstance(node, dict):
+                return set(node) | {k for v in node.values() for k in keys(v)}
+            if isinstance(node, list):
+                return {k for v in node for k in keys(v)}
+            return set()
+
+        for spec in TOOL_SPECS:
+            assert not keys(spec["input_schema"]) & unsupported, spec["name"]
+
+    def test_limits_are_still_enforced_by_the_server(self) -> None:
+        # Dropped from the schema sent to the model, but the Pydantic input models keep them.
+        from api.services.assistant_tools import FindProductsInput  # noqa: PLC0415
+
+        with pytest.raises(ValueError):  # noqa: PT011
+            FindProductsInput(limit=11)
+
     def test_the_list_is_frozen_for_caching(self) -> None:
         assert json.dumps(TOOL_SPECS, sort_keys=True) == json.dumps(TOOL_SPECS, sort_keys=True)
         assert isinstance(TOOL_SPECS, tuple)
@@ -290,3 +314,75 @@ class TestSafety:
         result = await call(box, "get_run_summary", {"run_id": str(uuid4())})
 
         assert result["error"] == "invalid_input"
+
+
+class TestWithoutStock:
+    """D17-C: a run whose file had no stock gives the assistant nothing about risk or coverage."""
+
+    @pytest.fixture
+    def blind(self, world: World):
+        return add_run(world, portfolio(), params={"stock_known": False})
+
+    async def test_the_summary_says_so_and_leaves_out_risk_and_coverage(
+        self, engine, world, blind
+    ) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        result = await call(box, "get_run_summary")
+
+        assert result["stock_known"] is False
+        assert result["total_products"]["value"] == 3
+        for absent in (
+            "critical_products",
+            "medium_products",
+            "optimal_products",
+            "average_coverage_weeks",
+        ):
+            assert absent not in result
+
+    async def test_products_come_with_demand_and_reliability_only(
+        self, engine, world, blind
+    ) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        result = await call(box, "find_products", {"query": "acido"})
+
+        [product] = result["products"]
+        assert product["typical_demand"]["value"] == 20.0
+        assert product["typical_demand"]["uom"] == "kg"
+        assert product["reliability"] == "high"
+        for absent in ("risk", "current_stock", "coverage_weeks", "suggested_min", "buy_before"):
+            assert absent not in product
+
+    async def test_asking_for_a_risk_filter_is_an_error_result(self, engine, world, blind) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        result = await call(box, "find_products", {"risk": "critical"})
+
+        assert result == {"error": "stock_unknown"}
+
+    async def test_the_detail_is_demand_and_reliability(self, engine, world, blind) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        result = await call(box, "get_product_detail", {"code": "QF-1001"})
+
+        assert result["typical_demand"]["value"] == 20.0
+        assert result["method"] == "model"
+        assert result["backtest_error_pct"]["value"] == 22.0
+        for absent in ("risk", "current_stock", "stockout_date", "suggested_max", "buy_before"):
+            assert absent not in result
+
+    async def test_a_simulation_needs_stock(self, engine, world, blind) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        result = await call(box, "simulate_purchase", {"code": "QF-1001", "with_purchase": True})
+
+        assert result == {"error": "stock_unknown"}
+
+    async def test_reliability_and_parameters_do_not_depend_on_stock(
+        self, engine, world, blind
+    ) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        assert (await call(box, "explain_reliability", {"code": "QF-1001"}))["level"] == "high"
+        assert (await call(box, "get_parameters"))["lead_time_days"]["value"] == 14

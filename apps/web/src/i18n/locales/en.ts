@@ -154,6 +154,7 @@ export const en: Messages = {
     rateLimited: 'You made too many requests. Wait a moment and try again.',
     retryNotLatest: 'Only the latest answer can be retried.',
     runSuperseded: 'These results were replaced by a more recent calculation.',
+    stockUnknown: 'Your file has no stock, so risk cannot be calculated and purchases cannot be simulated.',
     timeout: 'The request took too long. Try again.',
     unauthenticated: 'Your session expired. Sign in again.',
     unavailable: 'The service is unavailable right now. Try again in a few minutes.',

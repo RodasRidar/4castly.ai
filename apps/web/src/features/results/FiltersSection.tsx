@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { AbcClass, RiskLevel } from '../../services/types'
 import { ResultsFilters } from '../../ui/organisms/ResultsFilters'
 import type { ResultsState } from '../shared/resultsUrl'
-import { useRunProducts } from './queries'
+import { useRunProducts, useRunSummary } from './queries'
 
 const SEARCH_DEBOUNCE_MS = 250
 
@@ -17,6 +17,7 @@ interface FiltersSectionProps {
 export function FiltersSection({ runId, state, update, onReset }: FiltersSectionProps) {
   const { t } = useTranslation()
   const products = useRunProducts(runId, state)
+  const stockKnown = useRunSummary(runId).data?.stock_known !== false
 
   // Typing is local and debounced into the URL (replace, so Back is not flooded). An external change of `q`
   // (reset, KPI link, shared URL) wins: it is adopted during render, not in an effect.
@@ -33,7 +34,7 @@ export function FiltersSection({ runId, state, update, onReset }: FiltersSection
     timer.current = setTimeout(() => update({ q: value.trim() }, { replace: true }), SEARCH_DEBOUNCE_MS)
   }
 
-  const focused = !!state.q || state.risk.length > 0 || state.abc.length > 0
+  const focused = !!state.q || (stockKnown && state.risk.length > 0) || state.abc.length > 0
   const page = products.data
 
   return (
@@ -46,7 +47,7 @@ export function FiltersSection({ runId, state, update, onReset }: FiltersSection
         placeholder: t('results.filters.searchPlaceholder'),
         clearLabel: t('results.filters.clearSearch'),
       }}
-      risk={{
+      risk={stockKnown ? {
         label: t('results.filters.risk'),
         options: [
           { value: '', label: t('results.filters.allRisks') },
@@ -54,7 +55,7 @@ export function FiltersSection({ runId, state, update, onReset }: FiltersSection
         ],
         value: state.risk.length === 1 ? state.risk[0] : '',
         onValueChange: (value) => update({ risk: value ? [value as RiskLevel] : [] }),
-      }}
+      } : undefined}
       abc={{
         label: t('results.filters.abc'),
         options: [{ value: '', label: t('results.filters.allClasses') }, ...(['A', 'B', 'C'] as const).map((value) => ({ value, label: value }))],

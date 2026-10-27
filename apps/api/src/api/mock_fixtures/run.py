@@ -28,11 +28,13 @@ from api.schemas import (
     BuyBeforeAction,
     CoverageRange,
     DateSpan,
+    DemandWeek,
     FilterLink,
     ForecastMethod,
     ForecastRun,
     Granularity,
     ProductDetail,
+    ProductForecast,
     ProductProjection,
     ProductRow,
     PurchaseRecommendation,
@@ -243,6 +245,32 @@ def _projection(
     )
 
 
+def _forecast(raw: dict[str, Any], inputs: inv.ProductInputs) -> ProductForecast:
+    demand = inputs.demand
+    first = _history_start(raw)
+    weeks = [week_date(w) for w in range(1, demand.weeks + 1)]
+    scenarios = list(zip(demand.low, demand.expected, demand.high, strict=True))
+    history = [
+        SeriesPoint(
+            date=first + timedelta(weeks=i),
+            actual=_r1(qty),
+            censored=i in raw["history"]["censored"],
+        )
+        for i, qty in enumerate(raw["history"]["qty"])
+    ]
+    future = [
+        SeriesPoint(date=day, expected=_r1(mid), low=_r1(lo), high=_r1(hi))
+        for day, (lo, mid, hi) in zip(weeks, scenarios, strict=True)
+    ]
+    return ProductForecast(
+        weekly=[
+            DemandWeek(week=i + 1, week_start=day, demand=_scenario(lo, mid, hi))
+            for i, (day, (lo, mid, hi)) in enumerate(zip(weeks, scenarios, strict=True))
+        ],
+        series=[*history, *future],
+    )
+
+
 def to_detail(item: Built) -> ProductDetail:
     a, raw = item.analysis, item.raw
     return ProductDetail(
@@ -267,6 +295,7 @@ def to_detail(item: Built) -> ProductDetail:
                 None if raw["method"] == "simple" else _BACKTEST_ERROR_PCT[item.reliability]
             ),
         ),
+        forecast=_forecast(raw, item.inputs),
         without_new_purchase=_projection(raw, item.inputs, a),
         with_suggested_purchase=_projection(raw, item.purchase_inputs, item.purchase_analysis),
     )

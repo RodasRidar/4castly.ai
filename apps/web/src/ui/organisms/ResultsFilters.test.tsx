@@ -42,7 +42,7 @@ describe('ResultsFilters', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Buscar producto' }), 'a')
     expect(p.search.onValueChange).toHaveBeenCalledWith('a')
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Riesgo' }), 'critical')
-    expect(p.risk.onValueChange).toHaveBeenCalledWith('critical')
+    expect(p.risk!.onValueChange).toHaveBeenCalledWith('critical')
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Clase ABC' }), 'A')
     expect(p.abc.onValueChange).toHaveBeenCalledWith('A')
   })

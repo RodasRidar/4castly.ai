@@ -47,7 +47,7 @@ export function ProductHeader({ detail, conversationId, exporting, onExport, onA
           <div className="flex flex-wrap items-center gap-2 text-body-md text-mute">
             <span className="font-mono">{t('product.code', { code: product.code })}</span>
             <Badge>{t('product.abcClass', { class: product.abc_class })}</Badge>
-            <RiskBadge level={product.risk} label={t(`product.risk.${product.risk}`)} />
+            {product.risk && <RiskBadge level={product.risk} label={t(`product.risk.${product.risk}`)} />}
             <span>{t('product.dataUntil', { date: date(detail.data_until) })}</span>
           </div>
         </div>

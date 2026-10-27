@@ -52,7 +52,7 @@ describe.skipIf(!live)('against the real API', () => {
   it('serves the run summary, the filtered table, a product and a simulation', async () => {
     const { runs } = services()
     const summary = await runs.summary(live!.runId)
-    expect(summary.kpis.products_at_risk.count).toBeGreaterThanOrEqual(0)
+    expect(summary.kpis.products_at_risk?.count ?? 0).toBeGreaterThanOrEqual(0)
     expect(typeof summary.stock_known).toBe('boolean')
     expect(typeof summary.run.parameters_pending).toBe('boolean')
     const page = await runs.products(live!.runId, { sort: 'risk', order: 'asc', page: 1 })

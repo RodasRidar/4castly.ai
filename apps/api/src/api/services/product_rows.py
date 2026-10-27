@@ -36,7 +36,8 @@ METRIC_COLUMNS = (
 )
 
 
-def product_row(row: Any) -> ProductRow:
+def product_row(row: Any, *, stock_known: bool = True) -> ProductRow:
+    """From a stored metrics row. Without stock the figures that depend on it are `null` (D17)."""
     return ProductRow(
         code=row.code,
         name=row.name,
@@ -47,25 +48,31 @@ def product_row(row: Any) -> ProductRow:
             expected=r1(row.typical_demand_expected),
             high=r1(row.typical_demand_high),
         ),
-        current_stock=r1(row.current_stock),
+        current_stock=r1(row.current_stock) if stock_known else None,
         coverage_weeks=CoverageRange(
             lower=optional_r2(row.coverage_weeks_lower),
             expected=optional_r2(row.coverage_weeks_expected),
             upper=optional_r2(row.coverage_weeks_upper),
-        ),
-        risk=RiskLevel(row.risk),
+        )
+        if stock_known
+        else None,
+        risk=RiskLevel(row.risk) if stock_known else None,
         reliability=Reliability(row.reliability),
-        stockout_date=row.stockout_date,
+        stockout_date=row.stockout_date if stock_known else None,
         suggested_quantity=QuantityRange(
             low=r1(row.suggested_qty_low), high=r1(row.suggested_qty_high)
-        ),
-        suggested_truncated=row.suggested_truncated,
+        )
+        if stock_known
+        else None,
+        suggested_truncated=row.suggested_truncated if stock_known else False,
         buy_before=BuyBefore(
             action=BuyBeforeAction(row.buy_before_action),
             date=row.buy_before_date,
             earliest_date=row.earliest_buy_date,
             weeks_without_stock=r2(row.weeks_without_stock),
-        ),
+        )
+        if stock_known
+        else None,
         lead_time_days=row.lead_time_days,
         lead_time_overridden=row.lead_time_overridden,
         target_coverage_weeks=row.target_coverage_weeks,

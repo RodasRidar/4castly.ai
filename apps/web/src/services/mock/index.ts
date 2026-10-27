@@ -3,7 +3,7 @@ import entryFlow from './fixtures/entry-flow.json'
 import session from './fixtures/session.json'
 import { createChatService } from './chat'
 import { failure } from './errors'
-import { createRunService, normalize } from './runs'
+import { createRunService, NO_STOCK_CONVERSATION_ID, NO_STOCK_RUN_ID, normalize } from './runs'
 import type { Services } from '../ports'
 import type {
   Conversation,
@@ -62,15 +62,27 @@ export interface MockOptions {
   /** Start with no conversations (empty sidebar and history states). */
   emptyConversations?: boolean
   preferences?: Partial<Preferences>
+  /** Adds a ready conversation whose file had no stock column (`NO_STOCK_CONVERSATION_ID`). */
+  withoutStock?: boolean
 }
 
-export function createMockServices({ signedIn = true, latencyMs = 0, emptyConversations = false, preferences: initialPreferences }: MockOptions = {}): MockServices {
+export function createMockServices({ signedIn = true, latencyMs = 0, emptyConversations = false, preferences: initialPreferences, withoutStock = false }: MockOptions = {}): MockServices {
   let hasSession = signedIn
   let user = clone(session.user) as User
   let preferences = { ...(clone(session.preferences) as Preferences), ...initialPreferences }
   const conversations = new Map<string, ConversationDetail>(
     emptyConversations ? [] : (conversationsFx.details as unknown as ConversationDetail[]).map((c) => [c.id, clone(c)]),
   )
+  if (withoutStock) {
+    const ready = clone([...conversations.values()].find((c) => c.current_run_id)!)
+    conversations.set(NO_STOCK_CONVERSATION_ID, {
+      ...ready,
+      id: NO_STOCK_CONVERSATION_ID,
+      title: 'Ventas sin stock',
+      file_name: 'ventas_sin_stock.csv',
+      current_run_id: NO_STOCK_RUN_ID,
+    })
+  }
   const plans = new Map<string, PlanView>()
   const jobs = new Map<string, Job>()
   const answers = new Map<string, unknown>()

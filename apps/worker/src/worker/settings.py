@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", ".env.local"), extra="ignore")
 
     database_url: str = ""
     """Pooler URL for the `app_worker` role (transaction mode)."""
@@ -25,6 +26,9 @@ class Settings(BaseSettings):
     axiom_domain: str = "api.axiom.co"
     axiom_token: str = ""
     axiom_dataset: str = ""
+
+    forecaster: Literal["autoets", "timesfm"] = "autoets"
+    """`timesfm` (TimesFM 3.0, non-commercial weights) is accepted only if `environment=local`."""
 
     max_attempts: int = 3
     stale_after_minutes: int = 10

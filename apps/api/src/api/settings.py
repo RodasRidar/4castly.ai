@@ -1,10 +1,12 @@
 from functools import lru_cache
+from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", ".env.local"), extra="ignore")
 
     supabase_url: str = "http://127.0.0.1:54321"
     supabase_service_role_key: str = ""
@@ -26,6 +28,9 @@ class Settings(BaseSettings):
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
     storage_bucket: str = "uploads"
+    job_runner: Literal["modal", "local"] = "modal"
+    """`local` starts `apps/worker` as a subprocess (development); `modal` uses the deployed app."""
+    worker_dir: Path = Path(__file__).resolve().parents[3] / "worker"
     modal_app_name: str = "castly-worker"
     modal_environment: str = ""
     """Modal environment (`dev` or `main`); empty uses the one the token belongs to."""

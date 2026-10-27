@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createMockServices } from '.'
+import { NO_STOCK_RUN_ID } from './runs'
 
 const RUN = 'b3984a50-ec9f-5ff8-acdc-763d348729cf'
 
@@ -135,5 +136,60 @@ describe('mock conversation search', () => {
     expect((await conversations.search({ includeArchived: true })).items.map((c) => c.id)).not.toContain(id)
     await conversations.restore(id)
     expect((await conversations.search({ includeArchived: true })).items.map((c) => c.id)).toContain(id)
+  })
+})
+
+describe('mock run without stock (D17-C)', () => {
+  const services = () => createMockServices({ withoutStock: true })
+
+  it('reports stock_known false and no risk figures', async () => {
+    const { runs } = services()
+    const summary = await runs.summary(NO_STOCK_RUN_ID)
+    expect(summary.stock_known).toBe(false)
+    expect(summary.risk_distribution).toBeNull()
+    expect(summary.kpis.products_at_risk).toBeNull()
+    expect(summary.kpis.average_coverage_weeks).toBeNull()
+    expect(summary.kpis.reliability.overall).toBeTruthy()
+  })
+
+  it('nulls every stock-dependent field of a row and keeps demand and reliability', async () => {
+    const { runs } = services()
+    const { items } = await runs.products(NO_STOCK_RUN_ID)
+    expect(items.length).toBeGreaterThan(0)
+    for (const row of items) {
+      expect([row.risk, row.current_stock, row.coverage_weeks, row.suggested_quantity, row.buy_before, row.stockout_date]).toEqual(
+        Array(6).fill(null),
+      )
+      expect(row.typical_demand.expected).toBeGreaterThan(0)
+      expect(row.reliability).toBeTruthy()
+    }
+  })
+
+  it('rejects the risk filter with 422 errors.stockUnknown and sorts by name whatever the sort', async () => {
+    const { runs } = services()
+    await expect(runs.products(NO_STOCK_RUN_ID, { risk: ['critical'] })).rejects.toMatchObject({
+      problem: { status: 422, message_key: 'errors.stockUnknown' },
+    })
+    const byRisk = (await runs.products(NO_STOCK_RUN_ID, { sort: 'risk' })).items.map((p) => p.name)
+    const byName = (await runs.products(NO_STOCK_RUN_ID, { sort: 'name' })).items.map((p) => p.name)
+    expect(byRisk).toEqual(byName)
+  })
+
+  it('returns the detail without purchase or projections, with the forecast', async () => {
+    const { runs } = services()
+    const detail = await runs.product(NO_STOCK_RUN_ID, 'QF-0001')
+    expect(detail.purchase).toBeNull()
+    expect(detail.without_new_purchase).toBeNull()
+    expect(detail.with_suggested_purchase).toBeNull()
+    expect(detail.product.risk).toBeNull()
+    expect(detail.forecast.weekly.length).toBeGreaterThan(0)
+    expect(detail.forecast.series.some((p) => p.censored)).toBeDefined()
+  })
+
+  it('refuses the what-if with 409 errors.stockUnknown', async () => {
+    const { runs } = services()
+    await expect(runs.simulate(NO_STOCK_RUN_ID, 'QF-0001', { with_purchase: false })).rejects.toMatchObject({
+      problem: { status: 409, message_key: 'errors.stockUnknown' },
+    })
   })
 })

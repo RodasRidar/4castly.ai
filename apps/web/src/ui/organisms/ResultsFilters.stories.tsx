@@ -37,7 +37,7 @@ function InteractiveFilters() {
     <ResultsFilters
       {...base}
       search={{ ...base.search, value: q, onValueChange: setQ }}
-      risk={{ ...base.risk, value: risk, onValueChange: setRisk }}
+      risk={{ ...base.risk!, value: risk, onValueChange: setRisk }}
       abc={{ ...base.abc, value: abc, onValueChange: setAbc }}
       focus={{ countText: '12 de 142 en foco', resetLabel: 'Restablecer', onReset: () => setQ('') }}
     />

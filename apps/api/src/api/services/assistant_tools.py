@@ -48,7 +48,7 @@ class FindProductsInput(_Input):
         "risk", "coverage", "suggested_quantity", "current_stock", "typical_demand", "name"
     ] = "risk"
     order: Literal["asc", "desc"] = "asc"
-    limit: Annotated[int, Field(ge=1, le=10)] = 5
+    limit: Annotated[int, Field(ge=1, le=10, description="How many products (1 to 10).")] = 5
 
 
 class ProductInput(_Input):
@@ -63,11 +63,29 @@ class SimulateInput(_Input):
     purchase_quantity: Annotated[float, Field(ge=0)] | None = None
 
 
+# Strict tool schemas reject these (the API answers 400); the Pydantic models still enforce them.
+_UNSUPPORTED = frozenset(
+    {
+        "title", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf",
+        "minLength", "maxLength", "pattern", "minItems", "maxItems", "format",
+    }
+)  # fmt: skip
+
+
+def _clean(node: Any) -> Any:
+    if isinstance(node, dict):
+        return {
+            k: ({name: _clean(sub) for name, sub in v.items()} if k == "properties" else _clean(v))
+            for k, v in node.items()
+            if k not in _UNSUPPORTED
+        }
+    if isinstance(node, list):
+        return [_clean(v) for v in node]
+    return node
+
+
 def _schema(model: type[BaseModel]) -> dict[str, Any]:
-    schema = model.model_json_schema()
-    schema.pop("title", None)
-    for prop in schema.get("properties", {}).values():
-        prop.pop("title", None)
+    schema = _clean(model.model_json_schema())
     schema.setdefault("properties", {})
     return schema
 
@@ -152,6 +170,12 @@ class Toolbox:
             structlog.get_logger().exception("assistant.tool_failed", tool=name)
             return {"error": "tool_failed"}
 
+    async def _stock_known(self) -> bool:
+        async def load(session: Any, who: Any) -> bool:  # noqa: ARG001
+            return (await load_run(session, self._run_id)).stock_known
+
+        return await self._tx.run(load)
+
     # -- figure helpers ------------------------------------------------------------------------
     def _fig(self, value: float | int | Any, kind: FigureKind, label: str, **kw: Any) -> dict:
         return self._refs.figure(value, kind, label=label, **kw).for_model()
@@ -162,7 +186,29 @@ class Toolbox:
     def _product(self, row: ProductRow) -> ProductRef:
         return self._refs.product(row.code, row.name)
 
+    def _demand_card(self, row: ProductRow) -> dict[str, Any]:
+        """Without stock (D17) all there is: demand and how far to trust the forecast."""
+        return {
+            "product": self._product(row).for_model(),
+            "abc": row.abc_class.value,
+            "reliability": row.reliability.value,
+            "typical_demand": self._fig(
+                row.typical_demand.expected,
+                FigureKind.QUANTITY,
+                "typical weekly demand",
+                uom=row.uom,
+            ),
+        }
+
     def _card(self, row: ProductRow) -> dict[str, Any]:
+        if (
+            row.risk is None
+            or row.buy_before is None
+            or row.coverage_weeks is None
+            or row.suggested_quantity is None
+            or row.current_stock is None
+        ):
+            return self._demand_card(row)
         buy = row.buy_before
         return {
             "product": self._product(row).for_model(),
@@ -208,13 +254,35 @@ class Toolbox:
         summary = await self._tx.run(runs.get_summary, self._run_id)
         count = FigureKind.COUNT
         dist = summary.risk_distribution
-        coverage = summary.kpis.average_coverage_weeks.expected
+        coverage = (
+            summary.kpis.average_coverage_weeks.expected
+            if summary.kpis.average_coverage_weeks
+            else None
+        )
 
         def risk(level: RiskLevel, value: int) -> dict:
             link = FilterLink(risk=level, count=value)
             return self._fig(value, count, f"{level.value} products", filter=link)
 
         reliability = summary.kpis.reliability
+        if not summary.stock_known:  # no risk and no coverage to report without stock (D17)
+            return {
+                "total_products": self._fig(
+                    summary.total_products, count, "products in the results"
+                ),
+                "data_until": self._fig(summary.run.data_until, FigureKind.DATE, "data until"),
+                "stale": summary.run.stale,
+                "stock_known": False,
+                "defaults_used": [d.value for d in summary.run.defaults_used],
+                "reliability_overall": reliability.overall.value,
+                "high_reliability_products": self._fig(
+                    reliability.distribution.high, count, "high reliability products"
+                ),
+                "low_reliability_products": self._fig(
+                    reliability.distribution.low, count, "low reliability products"
+                ),
+            }
+        assert dist is not None  # noqa: S101 - known stock always has a distribution
         return {
             "total_products": self._fig(summary.total_products, count, "products in the results"),
             "critical_products": risk(RiskLevel.CRITICAL, dist.critical),
@@ -237,6 +305,8 @@ class Toolbox:
         }
 
     async def _find(self, args: FindProductsInput) -> dict:
+        if args.risk and not await self._stock_known():
+            return {"error": "stock_unknown"}
         page = await self._tx.run(
             run_products.list_products,
             self._run_id,
@@ -259,18 +329,19 @@ class Toolbox:
     def _brief(self, row: ProductRow) -> dict[str, Any]:
         card = self._card(row)
         for key in ("target_coverage_weeks", "on_order", "suggested_truncated", "lead_time_days"):
-            card.pop(key)
+            card.pop(key, None)
         return card
 
     async def _detail(self, args: ProductInput) -> dict:
         detail = await self._tx.run(run_product_detail.get_detail, self._run_id, args.code)
         card = self._card(detail.product)
-        card["typical_demand"] = self._fig(
-            detail.product.typical_demand.expected,
-            FigureKind.QUANTITY,
-            "typical weekly demand",
-            uom=detail.product.uom,
-        )
+        if "typical_demand" not in card:
+            card["typical_demand"] = self._fig(
+                detail.product.typical_demand.expected,
+                FigureKind.QUANTITY,
+                "typical weekly demand",
+                uom=detail.product.uom,
+            )
         card["reliability_level"] = detail.reliability.level.value
         card["method"] = detail.reliability.method.value
         card["history_weeks"] = self._fig(
@@ -282,6 +353,8 @@ class Toolbox:
         return card
 
     async def _simulate(self, args: SimulateInput) -> dict:
+        if not await self._stock_known():
+            return {"error": "stock_unknown"}
         body = SimulationRequest(
             lead_time_days=args.lead_time_days,
             target_coverage_weeks=args.target_coverage_weeks,

@@ -32,3 +32,5 @@ locale and masks any digit the model writes on its own. History is append-only (
 replayed unchanged; context changes and retries are hidden `system` rows). Without `ANTHROPIC_API_KEY`
 the chat answers 503. With Langfuse keys, LLM spans (with prompts) go to Langfuse and the same spans
 reach Axiom without them; votes become Langfuse scores.
+
+For the full local stack (Supabase, worker, TimesFM) see [`docs/desarrollo-local.md`](../../docs/desarrollo-local.md).

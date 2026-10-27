@@ -27,9 +27,9 @@ export interface ProductRow {
   abcClass: string
   /** Typical demand per week. */
   typicalDemand: number
-  stock: number
+  stock: number | null
   coverageWeeks: number | null
-  risk: { level: RiskLevel; label: string }
+  risk: { level: RiskLevel; label: string } | null
   /** Portfolio mode. */
   suggestedQuantity?: number | null
   buyBefore?: Date | null
@@ -80,6 +80,8 @@ export interface ProductTableProps {
   onSelectionChange?: (codes: string[]) => void
   /** Portfolio: commit of the editable lead time. */
   onLeadTimeChange?: (code: string, days: number) => void
+  /** Columns that do not apply to this data (e.g. everything that needs stock): not shown and not offered in the picker. */
+  hiddenColumns?: ProductColumnId[]
   /** Controlled visible columns; omit for internal state (all columns of the mode). */
   visibleColumns?: ProductColumnId[]
   onVisibleColumnsChange?: (columns: ProductColumnId[]) => void
@@ -99,13 +101,14 @@ export function ProductTable({
   selectedCodes = [],
   onSelectionChange,
   onLeadTimeChange,
+  hiddenColumns,
   visibleColumns,
   onVisibleColumnsChange,
   pagination,
   loadingRows = 5,
   className,
 }: ProductTableProps) {
-  const modeColumns = mode === 'portfolio' ? PORTFOLIO_COLUMNS : RESULTS_COLUMNS
+  const modeColumns = (mode === 'portfolio' ? PORTFOLIO_COLUMNS : RESULTS_COLUMNS).filter((c) => !hiddenColumns?.includes(c))
   const [internalVisible, setInternalVisible] = useState<ProductColumnId[] | null>(null)
   const chosen = visibleColumns ?? internalVisible ?? modeColumns
   const columns = modeColumns.filter((c) => c === 'name' || chosen.includes(c))
@@ -200,7 +203,7 @@ export function ProductTable({
       case 'coverage':
         return <td key={id} className={cell}><NumberValue value={row.coverageWeeks} unit={labels.units.coverage} /></td>
       case 'risk':
-        return <td key={id} className={cell}><RiskBadge level={row.risk.level} label={row.risk.label} /></td>
+        return <td key={id} className={cell}>{row.risk ? <RiskBadge level={row.risk.level} label={row.risk.label} /> : <span className="font-mono text-mute">—</span>}</td>
       case 'suggested':
         return <td key={id} className={cell}><NumberValue value={row.suggestedQuantity} unit={labels.units.suggested} /></td>
       case 'buyBefore':

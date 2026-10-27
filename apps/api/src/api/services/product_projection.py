@@ -17,6 +17,8 @@ from api.schemas import (
     Arrival,
     BuyBefore,
     DateSpan,
+    DemandWeek,
+    ProductForecast,
     ProductProjection,
     PurchaseRecommendation,
     QuantityRange,
@@ -172,3 +174,21 @@ def projection(
 def coverage_values(analysis: inv.ProductAnalysis) -> tuple[float | None, ...]:
     c = analysis.coverage
     return (optional_r2(c.lower), optional_r2(c.expected), optional_r2(c.upper))
+
+
+def forecast_view(
+    weeks: Sequence[date], demand: Sequence[tuple[float, float, float]], history: Sequence[Any]
+) -> ProductForecast:
+    """The forecast alone (low, expected, high per week) with the history: no stock involved."""
+    rows = [
+        DemandWeek(week=index + 1, week_start=start, demand=_scenario(low, expected, high))
+        for index, (start, (low, expected, high)) in enumerate(zip(weeks, demand, strict=True))
+    ]
+    past = [
+        SeriesPoint(date=h.period, actual=r1(h.demand), censored=bool(h.censored)) for h in history
+    ]
+    future = [
+        SeriesPoint(date=start, expected=r1(expected), low=r1(low), high=r1(high))
+        for start, (low, expected, high) in zip(weeks, demand, strict=True)
+    ]
+    return ProductForecast(weekly=rows, series=[*past, *future])

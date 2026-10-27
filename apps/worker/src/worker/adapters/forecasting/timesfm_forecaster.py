@@ -42,6 +42,10 @@ class TimesFMForecaster:
             )
         return self._model
 
+    def warmup(self) -> None:
+        """Load the weights now: a missing install or download fails at startup, not per product."""
+        self._load()
+
     def forecast(self, series: DemandSeries, horizon: int) -> Forecast:
         model = self._load()
         context = np.asarray(series.y, dtype=np.float32)
