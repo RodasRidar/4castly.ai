@@ -125,7 +125,7 @@ usuario ya vio el texto. Se guarda un error neutro y no se reenvía.
 - B. Retener los primeros ~40 caracteres antes de mostrar (retrasa el primer token).
 - Recomendación: **A**.
 
-**D17. Archivos sin columna de stock: ¿qué mostrar?** (nuevo, hallado en la prueba de punta a punta)
+**D17. Archivos sin columna de stock: ¿qué mostrar?** — RESUELTA: C (2026-10-27). Con `stock_known = false` la API no entrega riesgo, cobertura, compra sugerida ni «comprar antes de»; sí entrega demanda, ABC, fiabilidad y el pronóstico con su rango. Detalle del cambio de contrato abajo.
 Problema: sin stock se asume 0, así que todos los productos salen "críticos" con cobertura 0 y la compra
 sugerida es la demanda completa del horizonte. El resultado es matemáticamente coherente pero engañoso.
 - A. Dejarlo, con el aviso `stock_known = false` ya presente en el resumen (el chat ya lo menciona).
@@ -185,3 +185,22 @@ Faltan variables (`ANTHROPIC_API_KEY`, `LANGFUSE_*`, `MODAL_*`, `JWT_*`) y medir
 2. D1, D2 (cambian el contrato; mejor antes de que el frontend avance).
 3. D5, D15 (riesgo ya en producción).
 4. El resto, en cualquier orden.
+
+## 6. D17-C: cambio de contrato para el frontend
+
+Cuando `RunSummary.stock_known` es `false` (el archivo no traía columna de stock):
+
+| Dónde | Cambio |
+|---|---|
+| `ProductRow` | `risk`, `current_stock`, `coverage_weeks`, `suggested_quantity` y `buy_before` pasan a ser `null` (y `stockout_date` también). `typical_demand`, `abc_class`, `reliability`, `lead_time_*` siguen. |
+| `RunKpis` | `products_at_risk` y `average_coverage_weeks` pasan a ser `null`. `reliability` sigue. |
+| `RunSummary` | `risk_distribution` pasa a ser `null`. `series_by_uom` y `total_products` siguen. |
+| `ProductDetail` | `purchase`, `without_new_purchase` y `with_suggested_purchase` pasan a ser `null`. **Campo nuevo `forecast`** (siempre presente, también con stock): `weekly` (semana, inicio, demanda baja/esperada/alta) y `series` (historia con semanas censuradas + pronóstico con rango, sin stock proyectado). |
+| `GET /runs/{id}/products` | `risk=...` responde 422 (`errors.stockUnknown`). Ordenar por riesgo, cobertura, stock, compra sugerida o «comprar antes de» ordena por nombre, en la misma dirección. |
+| `POST .../simulate` | 409 (`errors.stockUnknown`): una simulación necesita un stock de partida. |
+| Exportación | Solo las columnas código, producto, unidad, clase ABC, demanda típica y fiabilidad. |
+| Chat | Las tools no devuelven riesgo ni cobertura, y el prompt le indica explicar una sola vez que falta el stock. |
+
+Los tipos de TypeScript quedan nulables en esos campos: el compilador marcará cada lugar que los use.
+Claves i18n nuevas: `errors.stockUnknown`. Sin cambios en base de datos ni en el worker: el worker sigue
+calculando con stock 0, y la API oculta esas cifras al leerlas.
