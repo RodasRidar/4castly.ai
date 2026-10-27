@@ -314,3 +314,75 @@ class TestSafety:
         result = await call(box, "get_run_summary", {"run_id": str(uuid4())})
 
         assert result["error"] == "invalid_input"
+
+
+class TestWithoutStock:
+    """D17-C: a run whose file had no stock gives the assistant nothing about risk or coverage."""
+
+    @pytest.fixture
+    def blind(self, world: World):
+        return add_run(world, portfolio(), params={"stock_known": False})
+
+    async def test_the_summary_says_so_and_leaves_out_risk_and_coverage(
+        self, engine, world, blind
+    ) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        result = await call(box, "get_run_summary")
+
+        assert result["stock_known"] is False
+        assert result["total_products"]["value"] == 3
+        for absent in (
+            "critical_products",
+            "medium_products",
+            "optimal_products",
+            "average_coverage_weeks",
+        ):
+            assert absent not in result
+
+    async def test_products_come_with_demand_and_reliability_only(
+        self, engine, world, blind
+    ) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        result = await call(box, "find_products", {"query": "acido"})
+
+        [product] = result["products"]
+        assert product["typical_demand"]["value"] == 20.0
+        assert product["typical_demand"]["uom"] == "kg"
+        assert product["reliability"] == "high"
+        for absent in ("risk", "current_stock", "coverage_weeks", "suggested_min", "buy_before"):
+            assert absent not in product
+
+    async def test_asking_for_a_risk_filter_is_an_error_result(self, engine, world, blind) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        result = await call(box, "find_products", {"risk": "critical"})
+
+        assert result == {"error": "stock_unknown"}
+
+    async def test_the_detail_is_demand_and_reliability(self, engine, world, blind) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        result = await call(box, "get_product_detail", {"code": "QF-1001"})
+
+        assert result["typical_demand"]["value"] == 20.0
+        assert result["method"] == "model"
+        assert result["backtest_error_pct"]["value"] == 22.0
+        for absent in ("risk", "current_stock", "stockout_date", "suggested_max", "buy_before"):
+            assert absent not in result
+
+    async def test_a_simulation_needs_stock(self, engine, world, blind) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        result = await call(box, "simulate_purchase", {"code": "QF-1001", "with_purchase": True})
+
+        assert result == {"error": "stock_unknown"}
+
+    async def test_reliability_and_parameters_do_not_depend_on_stock(
+        self, engine, world, blind
+    ) -> None:
+        box, _ = toolbox(engine, world, blind)
+
+        assert (await call(box, "explain_reliability", {"code": "QF-1001"}))["level"] == "high"
+        assert (await call(box, "get_parameters"))["lead_time_days"]["value"] == 14

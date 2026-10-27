@@ -956,6 +956,17 @@ export interface components {
          * @enum {string}
          */
         DefaultedParameter: "lead_time" | "target_coverage" | "stockout_censoring";
+        /** DemandWeek */
+        DemandWeek: {
+            /** Week */
+            week: number;
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+            demand: components["schemas"]["ScenarioValues"];
+        };
         /** ErrorPayload */
         ErrorPayload: {
             /**
@@ -1463,11 +1474,26 @@ export interface components {
              * Format: date
              */
             today: string;
-            purchase: components["schemas"]["PurchaseRecommendation"];
+            /** @description `purchase` and both projections are `null` when the file had no stock column. */
+            purchase: components["schemas"]["PurchaseRecommendation"] | null;
             reliability: components["schemas"]["ReliabilityDetail"];
-            without_new_purchase: components["schemas"]["ProductProjection"];
+            forecast: components["schemas"]["ProductForecast"];
+            without_new_purchase: components["schemas"]["ProductProjection"] | null;
             /** @description The suggested quantity (low bound) arriving at the lead time ("Con compra sugerida"). */
-            with_suggested_purchase: components["schemas"]["ProductProjection"];
+            with_suggested_purchase: components["schemas"]["ProductProjection"] | null;
+        };
+        /**
+         * ProductForecast
+         * @description The forecast on its own: no stock involved, so it exists even if the file had no stock.
+         */
+        ProductForecast: {
+            /** Weekly */
+            weekly: components["schemas"]["DemandWeek"][];
+            /**
+             * Series
+             * @description History (with censored weeks) followed by the forecast range, without projected stock.
+             */
+            series: components["schemas"]["SeriesPoint"][];
         };
         /**
          * ProductOverrides
@@ -1511,7 +1537,12 @@ export interface components {
             /** Arrivals */
             arrivals: components["schemas"]["Arrival"][];
         };
-        /** ProductRow */
+        /**
+         * ProductRow
+         * @description When the run's file had no stock column (`RunSummary.stock_known` is false) every field that
+         *     depends on stock is `null`: `current_stock`, `coverage_weeks`, `risk`, `stockout_date`,
+         *     `suggested_quantity` and `buy_before`. Demand and reliability are still there.
+         */
         ProductRow: {
             /** Code */
             code: string;
@@ -1523,19 +1554,19 @@ export interface components {
             /** @description Mean weekly demand over the next 4 weeks. */
             typical_demand: components["schemas"]["ScenarioValues"];
             /** Current Stock */
-            current_stock: number;
-            coverage_weeks: components["schemas"]["CoverageRange"];
-            risk: components["schemas"]["RiskLevel"];
+            current_stock: number | null;
+            coverage_weeks: components["schemas"]["CoverageRange"] | null;
+            risk: components["schemas"]["RiskLevel"] | null;
             reliability: components["schemas"]["Reliability"];
             /** Stockout Date */
             stockout_date: string | null;
-            suggested_quantity: components["schemas"]["QuantityRange"];
+            suggested_quantity: components["schemas"]["QuantityRange"] | null;
             /**
              * Suggested Truncated
              * @description The horizon is shorter than lead time + target coverage, so the figure is partial.
              */
             suggested_truncated: boolean;
-            buy_before: components["schemas"]["BuyBefore"];
+            buy_before: components["schemas"]["BuyBefore"] | null;
             /** Lead Time Days */
             lead_time_days: number;
             /** Lead Time Overridden */
@@ -1687,10 +1718,16 @@ export interface components {
         };
         /** RunKpis */
         RunKpis: {
-            /** @description Products with critical risk, with the filter that lists them. */
-            products_at_risk: components["schemas"]["FilterLink"];
-            /** @description Mean over products; a product without stockout counts as the horizon (lower bound). */
-            average_coverage_weeks: components["schemas"]["CoverageRange"];
+            /**
+             * @description Products with critical risk, with the filter that lists them. `null` when the file had no
+             *     stock column (`RunSummary.stock_known` is false): risk cannot be known.
+             */
+            products_at_risk: components["schemas"]["FilterLink"] | null;
+            /**
+             * @description Mean over products; a product without stockout counts as the horizon (lower bound).
+             *     `null` when stock is unknown.
+             */
+            average_coverage_weeks: components["schemas"]["CoverageRange"] | null;
             reliability: components["schemas"]["ReliabilityKpi"];
         };
         /**
@@ -1720,7 +1757,8 @@ export interface components {
         RunSummary: {
             run: components["schemas"]["ForecastRun"];
             kpis: components["schemas"]["RunKpis"];
-            risk_distribution: components["schemas"]["RiskDistribution"];
+            /** @description `null` when stock is unknown. */
+            risk_distribution: components["schemas"]["RiskDistribution"] | null;
             /** Total Products */
             total_products: number;
             /**
@@ -2114,6 +2152,7 @@ export type SchemaDateColumnCandidate = components['schemas']['DateColumnCandida
 export type SchemaDateMapping = components['schemas']['DateMapping'];
 export type SchemaDateSpan = components['schemas']['DateSpan'];
 export type SchemaDefaultedParameter = components['schemas']['DefaultedParameter'];
+export type SchemaDemandWeek = components['schemas']['DemandWeek'];
 export type SchemaErrorPayload = components['schemas']['ErrorPayload'];
 export type SchemaExportFile = components['schemas']['ExportFile'];
 export type SchemaExportFormat = components['schemas']['ExportFormat'];
@@ -2158,6 +2197,7 @@ export type SchemaPlanView = components['schemas']['PlanView'];
 export type SchemaPreferences = components['schemas']['Preferences'];
 export type SchemaProductAnnotation = components['schemas']['ProductAnnotation'];
 export type SchemaProductDetail = components['schemas']['ProductDetail'];
+export type SchemaProductForecast = components['schemas']['ProductForecast'];
 export type SchemaProductOverrides = components['schemas']['ProductOverrides'];
 export type SchemaProductPage = components['schemas']['ProductPage'];
 export type SchemaProductProjection = components['schemas']['ProductProjection'];

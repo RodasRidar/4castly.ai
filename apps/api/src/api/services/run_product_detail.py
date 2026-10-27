@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import Principal
-from api.domain.errors import NotFoundError
+from api.domain.errors import ConflictError, NotFoundError
 from api.schemas import (
     CoverageRange,
     ForecastMethod,
@@ -79,11 +79,31 @@ async def get_detail(
     loaded = await _load(session, run_id, code)
     today = (await user_clock(session, who)).today
     data_until, row = loaded.info.data_until, loaded.row
+    known = loaded.info.stock_known
+    stored = product_row(row, stock_known=known)
+    detail = row.reliability_detail or {}
+    reliability = ReliabilityDetail(
+        level=Reliability(row.reliability),
+        method=ForecastMethod(detail.get("method", "model")),
+        history_weeks=int(detail.get("history_weeks", len(loaded.history))),
+        non_censored_weeks=int(detail.get("non_censored_weeks", 0)),
+        backtest_error_pct=detail.get("wape_pct"),
+    )
+    forecast = pp.forecast_view(loaded.weeks, loaded.demand, loaded.history)
+    if not known:  # no stock: nothing to project, only the forecast and its reliability (D17)
+        return ProductDetail(
+            product=stored,
+            data_until=data_until,
+            today=today,
+            purchase=None,
+            reliability=reliability,
+            forecast=forecast,
+            without_new_purchase=None,
+            with_suggested_purchase=None,
+        )
     inputs = loaded.inputs()
     analysis = inv.analyze_product(inputs, loaded.info.thresholds)
     bought = inv.with_purchase(inputs, analysis.suggested.low)
-    stored = product_row(row)
-    detail = row.reliability_detail or {}
     return ProductDetail(
         product=stored,
         data_until=data_until,
@@ -95,13 +115,8 @@ async def get_detail(
                 "buy_before": stored.buy_before,
             }
         ),
-        reliability=ReliabilityDetail(
-            level=Reliability(row.reliability),
-            method=ForecastMethod(detail.get("method", "model")),
-            history_weeks=int(detail.get("history_weeks", len(loaded.history))),
-            non_censored_weeks=int(detail.get("non_censored_weeks", 0)),
-            backtest_error_pct=detail.get("wape_pct"),
-        ),
+        reliability=reliability,
+        forecast=forecast,
         without_new_purchase=pp.projection(inputs, analysis, loaded.weeks, loaded.history),
         with_suggested_purchase=pp.projection(
             bought,
@@ -152,6 +167,8 @@ async def simulate(
     body: SimulationRequest,
 ) -> SimulationResult:
     loaded = await _load(session, run_id, code)
+    if not loaded.info.stock_known:
+        raise ConflictError("errors.stockUnknown")  # a what-if needs a stock to start from
     today = (await user_clock(session, who)).today
     base = loaded.inputs(body.lead_time_days, body.target_coverage_weeks)
     thresholds = loaded.info.thresholds

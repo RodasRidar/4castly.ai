@@ -86,15 +86,20 @@ async def get_summary(session: AsyncSession, who: Principal, run_id: UUID) -> Ru
     rows = (await session.execute(_METRICS, {"run": run_id})).all()
     risks = {level: sum(r.risk == level for r in rows) for level in RiskLevel}
     reliability = {level: sum(r.reliability == level for r in rows) for level in Reliability}
+    known = info.stock_known  # without stock there is no risk and no coverage to report (D17)
     return RunSummary(
         run=forecast_run(info, clock.today),
         kpis=RunKpis(
-            products_at_risk=FilterLink(risk=RiskLevel.CRITICAL, count=risks[RiskLevel.CRITICAL]),
+            products_at_risk=FilterLink(risk=RiskLevel.CRITICAL, count=risks[RiskLevel.CRITICAL])
+            if known
+            else None,
             average_coverage_weeks=CoverageRange(
                 lower=_coverage(rows, "lower", info.horizon_weeks),
                 expected=_coverage(rows, "expected", info.horizon_weeks),
                 upper=_coverage(rows, "upper", info.horizon_weeks),
-            ),
+            )
+            if known
+            else None,
             reliability=ReliabilityKpi(
                 overall=_overall(reliability),
                 distribution=ReliabilityDistribution(
@@ -108,7 +113,9 @@ async def get_summary(session: AsyncSession, who: Principal, run_id: UUID) -> Ru
             critical=risks[RiskLevel.CRITICAL],
             medium=risks[RiskLevel.MEDIUM],
             optimal=risks[RiskLevel.OPTIMAL],
-        ),
+        )
+        if known
+        else None,
         total_products=len(rows),
         stock_known=info.stock_known,
         series_by_uom=await _series(session, run_id),

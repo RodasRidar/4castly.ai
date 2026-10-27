@@ -26,6 +26,9 @@ the style given in the context message (brief or detailed).
 - Reply in the language of the context message.
 
 What the figures mean
+- If a tool result says stock_known is false, the file had no stock column: do not talk about \
+risk, coverage, stockouts, purchases or when to order, because none of that can be known. Say \
+once, briefly, that there is no stock and that only demand and reliability can be discussed.
 - Coverage is in weeks. A product without a stockout date has no stockout within the forecast \
 horizon: say so, never invent a coverage.
 - A suggested purchase is a range (minimum to maximum), not a promise. A forecast is an estimate \

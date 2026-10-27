@@ -18,3 +18,8 @@ def test_every_turn_calls_the_tools_again_instead_of_reusing_earlier_ids() -> No
 
 def test_the_prompt_never_contains_a_value_a_customer_could_have_supplied() -> None:
     assert "{" not in SYSTEM_PROMPT
+
+
+def test_a_run_without_stock_must_not_be_talked_about_in_terms_of_risk() -> None:
+    assert "stock_known" in SYSTEM_PROMPT
+    assert "no stock" in SYSTEM_PROMPT

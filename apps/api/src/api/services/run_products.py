@@ -13,6 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import Principal
+from api.domain.errors import BusinessRuleError
 from api.schemas import ProductPage
 from api.schemas.enums import AbcClass, ProductSort, RiskLevel, SortOrder
 from api.services.product_rows import METRIC_COLUMNS, product_row
@@ -43,6 +44,15 @@ _SORT_TIEBREAK = {
     ProductSort.BUY_BEFORE: "coalesce(m.buy_before_date, date '9999-12-31')",
     ProductSort.RISK: "coalesce(m.coverage_weeks_expected, 1e9)",
 }
+_NEEDS_STOCK = frozenset(
+    {
+        ProductSort.RISK,
+        ProductSort.COVERAGE,
+        ProductSort.CURRENT_STOCK,
+        ProductSort.SUGGESTED_QUANTITY,
+        ProductSort.BUY_BEFORE,
+    }
+)
 _DIRECTION = {SortOrder.ASC: "asc", SortOrder.DESC: "desc"}
 
 
@@ -65,7 +75,12 @@ async def list_products(  # noqa: PLR0913, PLR0917
     page_size: int,
 ) -> ProductPage:
     del who
-    await load_run(session, run_id)
+    info = await load_run(session, run_id)
+    stock_known = info.stock_known
+    if risk and not stock_known:
+        raise BusinessRuleError("errors.stockUnknown")  # there is no risk to filter by
+    if not stock_known and sort in _NEEDS_STOCK:
+        sort = ProductSort.NAME  # these columns are null: order by name, in the same direction
     where = ["m.run_id = :run"]
     params: dict[str, Any] = {"run": run_id}
     if q:
@@ -112,7 +127,7 @@ async def list_products(  # noqa: PLR0913, PLR0917
         )
     ).scalar_one()
     return ProductPage(
-        items=[product_row(r) for r in rows],
+        items=[product_row(r, stock_known=stock_known) for r in rows],
         page=page,
         page_size=page_size,
         total=total,

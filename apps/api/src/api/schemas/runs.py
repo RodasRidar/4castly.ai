@@ -142,17 +142,20 @@ class ReliabilityKpi(ApiModel):
 
 
 class RunKpis(ApiModel):
-    products_at_risk: FilterLink
-    """Products with critical risk, with the filter that lists them."""
-    average_coverage_weeks: CoverageRange
-    """Mean over products; a product without stockout counts as the horizon (lower bound)."""
+    products_at_risk: FilterLink | None
+    """Products with critical risk, with the filter that lists them. `null` when the file had no
+    stock column (`RunSummary.stock_known` is false): risk cannot be known."""
+    average_coverage_weeks: CoverageRange | None
+    """Mean over products; a product without stockout counts as the horizon (lower bound).
+    `null` when stock is unknown."""
     reliability: ReliabilityKpi
 
 
 class RunSummary(ApiModel):
     run: ForecastRun
     kpis: RunKpis
-    risk_distribution: RiskDistribution
+    risk_distribution: RiskDistribution | None
+    """`null` when stock is unknown."""
     total_products: int = Field(ge=0)
     stock_known: bool
     """The file had a stock column. Without it stock is assumed 0 and results are indicative."""
@@ -171,21 +174,25 @@ class BuyBefore(ApiModel):
 
 
 class ProductRow(ApiModel):
+    """When the run's file had no stock column (`RunSummary.stock_known` is false) every field that
+    depends on stock is `null`: `current_stock`, `coverage_weeks`, `risk`, `stockout_date`,
+    `suggested_quantity` and `buy_before`. Demand and reliability are still there."""
+
     code: str
     name: str
     uom: str
     abc_class: AbcClass
     typical_demand: ScenarioValues
     """Mean weekly demand over the next 4 weeks."""
-    current_stock: float
-    coverage_weeks: CoverageRange
-    risk: RiskLevel
+    current_stock: float | None
+    coverage_weeks: CoverageRange | None
+    risk: RiskLevel | None
     reliability: Reliability
     stockout_date: date | None
-    suggested_quantity: QuantityRange
+    suggested_quantity: QuantityRange | None
     suggested_truncated: bool
     """The horizon is shorter than lead time + target coverage, so the figure is partial."""
-    buy_before: BuyBefore
+    buy_before: BuyBefore | None
     lead_time_days: int
     lead_time_overridden: bool
     target_coverage_weeks: int
@@ -244,14 +251,30 @@ class ProductProjection(ApiModel):
     arrivals: list[Arrival]
 
 
+class DemandWeek(ApiModel):
+    week: int = Field(ge=1)
+    week_start: date
+    demand: ScenarioValues
+
+
+class ProductForecast(ApiModel):
+    """The forecast on its own: no stock involved, so it exists even if the file had no stock."""
+
+    weekly: list[DemandWeek]
+    series: list[SeriesPoint]
+    """History (with censored weeks) followed by the forecast range, without projected stock."""
+
+
 class ProductDetail(ApiModel):
     product: ProductRow
     data_until: date
     today: date
-    purchase: PurchaseRecommendation
+    purchase: PurchaseRecommendation | None
+    """`purchase` and both projections are `null` when the file had no stock column."""
     reliability: ReliabilityDetail
-    without_new_purchase: ProductProjection
-    with_suggested_purchase: ProductProjection
+    forecast: ProductForecast
+    without_new_purchase: ProductProjection | None
+    with_suggested_purchase: ProductProjection | None
     """The suggested quantity (low bound) arriving at the lead time ("Con compra sugerida")."""
 
 
