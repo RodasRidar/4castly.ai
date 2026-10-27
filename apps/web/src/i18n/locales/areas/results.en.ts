@@ -134,7 +134,7 @@ export const resultsEn: typeof resultsEs = {
     export: 'Export selection',
   },
   notices: {
-    noStock: 'The file had no stock column: stock was assumed to be 0 and the results are indicative.',
+    noStock: 'Your file has no stock: we show demand and reliability, not risk or purchases',
     pending: 'You saved new parameters that are not applied yet.',
     pendingBoth: 'You saved parameters and lead times that are not applied yet.',
     pendingLeadTimes_one: 'You changed the lead time of {{count}} product. It will apply when you recalculate.',

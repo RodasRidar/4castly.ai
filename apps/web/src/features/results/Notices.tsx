@@ -29,7 +29,7 @@ export function Notices({ runId, conversationId, onChangeParameters }: NoticesPr
 
   return (
     <div className="flex flex-col gap-2">
-      {!summary.stock_known && <InlineNotice tone="warning">{t('results.notices.noStock')}</InlineNotice>}
+      {!summary.stock_known && <InlineNotice tone="info">{t('results.notices.noStock')}</InlineNotice>}
       {run.parameters_pending || pendingCount > 0 ? (
         <InlineNotice tone="staleness">
           <span className="flex flex-wrap items-center gap-3">

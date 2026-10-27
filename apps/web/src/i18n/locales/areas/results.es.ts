@@ -132,7 +132,7 @@ export const resultsEs = {
     export: 'Exportar selección',
   },
   notices: {
-    noStock: 'El archivo no tenía columna de stock: se asumió stock 0 y los resultados son orientativos.',
+    noStock: 'Tu archivo no incluye stock: mostramos demanda y fiabilidad, no riesgo ni compras',
     pending: 'Guardaste parámetros nuevos que aún no se aplican.',
     pendingBoth: 'Guardaste parámetros y tiempos de reposición que aún no se aplican.',
     pendingLeadTimes_one: 'Cambiaste el tiempo de reposición de {{count}} producto. Se aplicará al recalcular.',

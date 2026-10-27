@@ -7,6 +7,7 @@ import { BulkActionBar } from '../../ui/organisms/BulkActionBar'
 import { ProductTable, type ProductColumnId, type ProductTableLabels } from '../../ui/organisms/ProductTable'
 import type { ResultsState } from '../shared/resultsUrl'
 import { COLUMN_TO_SORT, SORT_TO_COLUMN, toTableRow } from './format'
+import { STOCK_COLUMNS, withoutStockDependence } from './stockless'
 import { overlayPending, prunePending, usePendingLeadTimes } from './pendingOverrides'
 import { useLeadTimeOverride } from './useLeadTimeOverride'
 import { useRunProducts, useRunSummary } from './queries'
@@ -54,6 +55,8 @@ export function ProductsSection({
   const rows = overlayPending(page?.items ?? [], pending).map((p) =>
     toTableRow(p, { today, riskLabel: (level) => t(`results.risk.${level}`), leadTimeStatus: overrides.status[p.code] }),
   )
+  const stockKnown = summary.data?.stock_known !== false
+  const shownSort = stockKnown ? state : withoutStockDependence(state)
   const pages = page ? Math.max(1, Math.ceil(page.total / page.page_size)) : 1
 
   const labels: ProductTableLabels = {
@@ -111,7 +114,8 @@ export function ProductsSection({
         mode={portfolio ? 'portfolio' : 'results'}
         rows={rows}
         labels={labels}
-        sort={{ column: SORT_TO_COLUMN[state.sort], direction: state.order }}
+        hiddenColumns={stockKnown ? undefined : STOCK_COLUMNS}
+        sort={{ column: SORT_TO_COLUMN[shownSort.sort], direction: shownSort.order }}
         onSortChange={onSortChange}
         onOpenProduct={(code) => void navigate(`/c/${conversationId}/productos/${code}`)}
         selectedCodes={portfolio ? selected : undefined}

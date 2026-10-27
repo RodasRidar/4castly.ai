@@ -361,10 +361,10 @@ describe('run notices from the contract flags', () => {
     expect(screen.queryByText(/aún no se aplican/)).not.toBeInTheDocument()
   })
 
-  it('warns that results are indicative when the file had no stock column', async () => {
+  it('says only demand and reliability are shown when the file had no stock column', async () => {
     const { services } = renderApp({ path: path() })
     withSummary(services, { stock_known: false })
-    expect(await screen.findByText(/no tenía columna de stock: se asumió stock 0 y los resultados son orientativos/)).toBeInTheDocument()
+    expect(await screen.findByText(/Tu archivo no incluye stock: mostramos demanda y fiabilidad, no riesgo ni compras/)).toBeInTheDocument()
   })
 
   it('offers Recalcular for parameters that were saved but not applied, and starts the recalculation', async () => {
@@ -410,6 +410,6 @@ describe('run notices from the contract flags', () => {
     const { services } = renderApp({ path: path(), language: 'en', preferences: { locale: 'en' } })
     withSummary(services, { parameters_pending: true, stock_known: false })
     expect(await screen.findByText('You saved new parameters that are not applied yet.')).toBeInTheDocument()
-    expect(screen.getByText(/had no stock column/)).toBeInTheDocument()
+    expect(screen.getByText(/Your file has no stock/)).toBeInTheDocument()
   })
 })

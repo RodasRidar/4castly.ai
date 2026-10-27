@@ -20,7 +20,8 @@ export interface ResultsFiltersProps {
     placeholder?: string
     clearLabel: string
   }
-  risk: FilterConfig
+  /** Omitted when risk cannot be known (the file had no stock). */
+  risk?: FilterConfig
   abc: FilterConfig
   /** Present only while a focus (e.g. chat-driven subset) is active. */
   focus?: { countText: string; resetLabel: string; onReset: () => void }
@@ -40,7 +41,7 @@ export function ResultsFilters({ search, risk, abc, focus, groupLabel, className
         clearLabel={search.clearLabel}
         className="w-full sm:w-72"
       />
-      <FilterSelect {...risk} />
+      {risk && <FilterSelect {...risk} />}
       <FilterSelect {...abc} />
       {focus && <FocusChip {...focus} />}
     </div>
