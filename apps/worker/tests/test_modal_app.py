@@ -22,6 +22,7 @@ class FakeWorker:
         self.forecast: list[UUID] = []
         self.respawned = 0
         self.pings = 0
+        self.purged = 0
 
     def run_digest(self, job_id: UUID) -> str:
         self.digested.append(job_id)
@@ -38,6 +39,10 @@ class FakeWorker:
     def ping_database(self) -> None:
         self.pings += 1
 
+    def purge_expired_idempotency_keys(self) -> int:
+        self.purged += 1
+        return 4
+
 
 @pytest.fixture
 def worker(monkeypatch: pytest.MonkeyPatch) -> FakeWorker:
@@ -52,6 +57,7 @@ def test_the_four_functions_exist() -> None:
         "run_forecast",
         "respawn_stuck",
         "keepalive_daily",
+        "purge_idempotency_daily",
     )
     for name in modal_app.FUNCTION_NAMES:
         assert hasattr(modal_app, name)
@@ -69,6 +75,15 @@ def test_the_respawn_sweep_runs_well_inside_the_stale_window() -> None:
 
 def test_keepalive_runs_once_a_day() -> None:
     assert modal_app.KEEPALIVE_CRON == "0 12 * * *"  # R14
+
+
+def test_the_idempotency_purge_runs_once_a_day_and_reports_how_many_it_deleted(
+    worker: FakeWorker,
+) -> None:
+    assert modal_app.PURGE_CRON == "30 3 * * *"  # D11, UTC, off-peak
+
+    assert modal_app.purge_idempotency_daily.local() == {"deleted": 4}
+    assert worker.purged == 1
 
 
 def test_job_functions_delegate_with_a_parsed_uuid(worker: FakeWorker) -> None:

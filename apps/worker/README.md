@@ -20,7 +20,7 @@ Two job kinds live in the `jobs` table: `digest` (open the file, detect Kardex o
 column mapping, summarise) and `forecast` (clean, forecast, apply the formulas, publish the run). The API
 inserts the row and spawns the function by name; handlers are idempotent by job id, so a duplicated or
 retried spawn is harmless. A scheduled `respawn_stuck` (every 5 minutes) re-spawns unclaimed or abandoned
-jobs, and `keepalive_daily` keeps a free Supabase project awake.
+jobs, `keepalive_daily` keeps a free Supabase project awake, and `purge_idempotency_daily` deletes expired idempotency keys.
 
 ```bash
 make modal-requirements                 # refresh requirements-modal.txt after dependency changes

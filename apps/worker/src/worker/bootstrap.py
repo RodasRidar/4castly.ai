@@ -12,6 +12,7 @@ from sqlalchemy import Engine, text
 
 from worker.adapters.db.digest import SqlDigestRepository
 from worker.adapters.db.engine import create_worker_engine
+from worker.adapters.db.housekeeping import SqlHousekeeping
 from worker.adapters.db.jobs import SqlJobRepository
 from worker.adapters.db.runs import SqlRunRepository
 from worker.adapters.forecasting import StatsForecastBaseline
@@ -52,6 +53,7 @@ class Worker:
         self.jobs = SqlJobRepository(engine, stale_after=stale_after, max_attempts=max_attempts)
         self.digest_repo = SqlDigestRepository(engine)
         self.run_repo = SqlRunRepository(engine, today=today)
+        self._housekeeping = SqlHousekeeping(engine)
         self._queued_after = queued_after
         self._digest = DigestJob(
             self.digest_repo,
@@ -81,6 +83,9 @@ class Worker:
         """A trivial query, enough to keep a free Supabase project from pausing."""
         with self.engine.connect() as conn:
             conn.execute(text("select 1"))
+
+    def purge_expired_idempotency_keys(self) -> int:
+        return self._housekeeping.purge_expired_idempotency_keys()
 
     def respawn_stuck(self, spawner: JobSpawner) -> RespawnReport:
         return RespawnStuckJobs(

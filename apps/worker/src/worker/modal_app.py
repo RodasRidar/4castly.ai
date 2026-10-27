@@ -24,7 +24,13 @@ from worker.bootstrap import Worker
 from worker.settings import get_settings
 
 APP_NAME = "castly-worker"
-FUNCTION_NAMES = ("run_digest", "run_forecast", "respawn_stuck", "keepalive_daily")
+FUNCTION_NAMES = (
+    "run_digest",
+    "run_forecast",
+    "respawn_stuck",
+    "keepalive_daily",
+    "purge_idempotency_daily",
+)
 LOCAL_SOURCES = ("worker", "inventory", "telemetry")
 REQUIREMENTS = Path(__file__).resolve().parents[2] / "requirements-modal.txt"
 
@@ -32,6 +38,7 @@ REQUIREMENTS = Path(__file__).resolve().parents[2] / "requirements-modal.txt"
 RETRIES = modal.Retries(max_retries=2, backoff_coefficient=2.0, initial_delay=5.0, max_delay=60.0)
 RESPAWN_EVERY_MINUTES = 5  # R3 (Vercel Hobby crons run at most daily)
 KEEPALIVE_CRON = "0 12 * * *"  # R14, UTC
+PURGE_CRON = "30 3 * * *"  # D11, UTC, off-peak
 API_CHECK_TIMEOUT_SECONDS = 10.0
 
 app = modal.App(APP_NAME)
@@ -104,3 +111,8 @@ def keepalive_daily() -> dict[str, bool | None]:
 
     result = keepalive(worker.ping_database, api_ready if url else None)
     return {"database_ok": result.database_ok, "api_ok": result.api_ok}
+
+
+@app.function(image=image, secrets=[secret], schedule=modal.Cron(PURGE_CRON), timeout=60)
+def purge_idempotency_daily() -> dict[str, int]:
+    return {"deleted": get_worker().purge_expired_idempotency_keys()}
