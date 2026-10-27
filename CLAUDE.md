@@ -30,7 +30,9 @@ B2B demand/stock forecasting SaaS. First client: a chemical/pharma importer expo
 - `make check` - everything above; must pass before pushing
 - `make contracts` - export `apps/api/openapi.json` and regenerate `apps/web/src/services/http/schema.gen.ts` (CI fails on drift)
 - `make fixtures` - regenerate `apps/web/src/services/mock/fixtures/` through the API schemas (generated, never hand-edit)
-- `make dev-web` / `make dev-api` - run dev servers
+- `make dev-web` / `make dev-api` - run dev servers; `make dev` runs both (copy each app's `.env.local.example` to `.env.local` first)
+- `make seed-local` - tenant, owner and synthetic Kardex/CSV in `.local/` (database named in `apps/api/.env.local`)
+- `make e2e-local` - upload -> digest -> confirm -> forecast -> results on this machine (own PostgreSQL, worker inline, no Docker); adds a chat question when `ANTHROPIC_API_KEY` is set
 - Hooks: `prek install` (or `pre-commit install`), config in `.pre-commit-config.yaml`
 - Worker deploy: `make modal-requirements`, then `cd apps/worker && uv run modal deploy -m worker.modal_app --env dev`
   (see `apps/worker/README.md`). TimesFM is local-only: `uv sync --group local`.

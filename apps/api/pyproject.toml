@@ -37,10 +37,12 @@ module-name = "api"
 castly-inventory = { path = "../../packages/inventory", editable = true }
 castly-pgtest = { path = "../../packages/pgtest", editable = true }
 castly-telemetry = { path = "../../packages/telemetry", editable = true }
+castly-worker = { path = "../worker", editable = true }
 
 [dependency-groups]
 dev = [
     "castly-pgtest",
+    "castly-worker",
     "httpx>=0.28.1",
     "psycopg[binary]>=3.3.6",
     "pytest>=9.1.1",
@@ -91,6 +93,12 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = [
+    "S106",     # the password belongs to a throw-away local cluster
+    "DTZ001",   # the Kardex stores naive local dates
+    "PLR2004",  # expected counts of the synthetic data
+    "ARG002",   # methods that satisfy a port
+]
 "src/api/routers/*.py" = [
     "ARG001",   # stubs until B4: the parameters are the contract and are not used yet
     "PLR0913",  # a filtered, sorted, paginated list has many query parameters

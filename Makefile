@@ -1,6 +1,6 @@
 APPS_PY := apps/api apps/worker packages/inventory packages/telemetry packages/pgtest
 
-.PHONY: install lint format typecheck test check contracts fixtures modal-requirements dev-web dev-api
+.PHONY: install lint format typecheck test check contracts fixtures modal-requirements dev dev-web dev-api seed-local e2e-local
 
 install:
 	cd apps/web && pnpm install
@@ -43,3 +43,16 @@ dev-web:
 
 dev-api:
 	cd apps/api && uv run uvicorn api.main:app --reload
+
+# Web and API together (Ctrl-C stops both). Copy each app's .env.local.example to .env.local first.
+dev:
+	$(MAKE) -j2 dev-api dev-web
+
+# A tenant, its owner and synthetic sales files in .local/ (needs the database named in apps/api/.env.local).
+seed-local:
+	cd apps/api && uv run python scripts/seed_local.py
+
+# Upload -> digest -> confirm -> forecast -> results, for a synthetic Kardex and a CSV, on this machine.
+# Needs PostgreSQL binaries (no Docker). With ANTHROPIC_API_KEY set it also asks the assistant a question.
+e2e-local:
+	cd apps/api && uv run python scripts/e2e_local.py

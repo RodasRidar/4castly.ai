@@ -19,6 +19,10 @@ __pycache__/
 .env
 .env.*
 !.env.example
+!.env.local.example
+
+# Synthetic files and local state made by `make seed-local`
+.local/
 
 # Model caches and weights
 .cache/
