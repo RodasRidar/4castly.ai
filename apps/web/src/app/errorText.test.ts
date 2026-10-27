@@ -44,7 +44,7 @@ describe('errorText', () => {
       'assistant', 'assistantRefusal', 'assistantUnavailable', 'conflict', 'fileTooLarge', 'fileTypeMismatch', 'forbidden',
       'forecastNotStartable', 'generic', 'granularityUnsupported', 'idempotencyKeyReused', 'internal', 'invalidCursor',
       'jobFinished', 'json', 'methodNotAllowed', 'noResultsYet', 'notFound', 'payloadTooLarge', 'planColumnUnknown',
-      'planIncomplete', 'planLocked', 'planNotApplicable', 'rateLimited', 'retryNotLatest', 'runSuperseded', 'timeout',
+      'planIncomplete', 'planLocked', 'planNotApplicable', 'rateLimited', 'retryNotLatest', 'runSuperseded', 'stockUnknown', 'timeout',
       'unauthenticated', 'unavailable', 'uploadAlreadyCompleted', 'uploadMissing', 'validation', 'network', 'invalidCode',
     ]
     for (const language of ['es', 'en'] as const) {
