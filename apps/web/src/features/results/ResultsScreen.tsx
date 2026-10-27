@@ -46,7 +46,7 @@ export function ResultsScreen({ conversation }: { conversation: ConversationDeta
   }
 
   return (
-    <div className={cn('flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4 md:p-6', !portfolio && 'lg:overflow-hidden')}>
+    <div className={cn('flex h-full min-h-0 flex-col gap-4 p-4 md:p-6', portfolio ? 'overflow-hidden' : 'overflow-y-auto lg:overflow-hidden')}>
       <ResultsHeader
         navLabel={t('results.header.nav')}
         breadcrumb={[
@@ -81,18 +81,21 @@ export function ResultsScreen({ conversation }: { conversation: ConversationDeta
 
       {portfolio ? (
         <>
-          <ResultsPanel
-            runId={runId}
-            conversationId={conversation.id}
-            state={state}
-            update={update}
-            portfolio
-            selected={selected}
-            onSelectedChange={setSelected}
-            onExportSelection={() => exporter.exportSelection(selected)}
-            onOpenParameters={() => setParametersOpen(true)}
-            onAsk={() => setAskOpen(true)}
-          />
+          {/* Header and tabs stay put; only the portfolio scrolls. */}
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <ResultsPanel
+              runId={runId}
+              conversationId={conversation.id}
+              state={state}
+              update={update}
+              portfolio
+              selected={selected}
+              onSelectedChange={setSelected}
+              onExportSelection={() => exporter.exportSelection(selected)}
+              onOpenParameters={() => setParametersOpen(true)}
+              onAsk={() => setAskOpen(true)}
+            />
+          </div>
           <Drawer open={askOpen} onOpenChange={setAskOpen} title={t('results.ask.title')} closeLabel={t('results.ask.close')}>
             <ChatPanel conversationId={conversation.id} className="min-h-0 flex-1" />
           </Drawer>
