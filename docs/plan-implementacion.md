@@ -1281,3 +1281,20 @@ first estimate per tenant is written here after the first real run, instead of g
   `.env.local.example`.
 - **Still open:** D4 (provisional limits until the real client file size is known), D5 (native security
   review of `auth.py` and RLS), D15 (production variables in Vercel; no real data before D5 closes).
+
+### D5 security audit (2026-10-27)
+
+Read-only audit of the authentication path and of RLS/grants. Closed in migration 0004: members could
+reset or inflate `rate_limits` counters (BLOCKER), `audit.log_event` accepted a missing tenant and
+unbounded metadata, `uploads.storage_path` had no tenant prefix, and idempotency keys were unbounded.
+
+Open, not fixed yet:
+
+- Authentication is enforced per handler (`CurrentTx`); put `Depends(get_principal)` at router level and
+  add a test that walks the routes.
+- Writes are tenant-wide, not creator-only (conversations, jobs, uploads, chat). Decide whether that is intended.
+- `JwksTokenVerifier` has no single-flight lock and does not record failed refreshes.
+- Database connection errors on the auth path return a plain 500 instead of problem+json.
+- `app_worker` has CRUD on every table and on future ones; narrow it to what the worker SQL uses.
+- `jobs` and `messages` have columns users can write that should be server-owned.
+- The storage bucket has no size or MIME limit; `/docs` and `/openapi.json` are public outside local.
