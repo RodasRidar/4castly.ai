@@ -190,6 +190,7 @@ async def _open_turn(
         raise ConflictError("errors.noResultsYet")
     limit, window = limits.CHAT_LIMIT
     await limits.enforce(session, who, "chat", limit=limit, window_seconds=window)
+    await limits.ensure_token_budget(session)
     profile = (await session.execute(_PROFILE, {"user_id": who.user_id})).one_or_none()
     locale, style = (profile.locale, profile.assistant_style) if profile else ("es", "brief")
     signature = {"run_id": str(run_id[0]), "locale": locale, "style": style}
@@ -351,6 +352,7 @@ async def stream(tx: Tx, prepared: Prepared) -> AsyncGenerator[str]:  # noqa: PL
         if finished is None:
             raise AssistantUnavailableError
         usage = finished.usage
+        await tx.run(limits.spend_tokens, usage.input_tokens + usage.output_tokens)
         span.set_attribute("assistant.guard_hits", guard.hits)
         log.info(
             "assistant.turn",

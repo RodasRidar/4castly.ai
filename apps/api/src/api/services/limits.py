@@ -42,3 +42,35 @@ async def enforce(
     ).scalar_one()
     if count > limit:
         raise TooManyRequestsError
+
+
+TENANT_DAILY_TOKENS = 200_000
+"""Model tokens (input + output) a tenant may spend per UTC day on the assistant (S18)."""
+
+_TOKENS_SCOPE = "tenant:tokens"
+_TODAY = "to_timestamp(floor(extract(epoch from now()) / 86400) * 86400)"
+_SPENT = text(
+    "select coalesce(sum(count), 0) from public.rate_limits "  # noqa: S608 - constant fragment
+    f"where scope = :scope and window_start = {_TODAY}"
+)
+_SPEND = text(
+    "insert into public.rate_limits (tenant_id, scope, window_start, count) "  # noqa: S608
+    f"values (:tenant_id, :scope, {_TODAY}, :amount) "
+    "on conflict (tenant_id, scope, window_start) "
+    "do update set count = public.rate_limits.count + :amount"
+)
+
+
+async def ensure_token_budget(session: AsyncSession) -> None:
+    """Refuse a new assistant turn once the tenant has spent today's tokens."""
+    spent = (await session.execute(_SPENT, {"scope": _TOKENS_SCOPE})).scalar_one()
+    if spent >= TENANT_DAILY_TOKENS:
+        raise TooManyRequestsError("errors.dailyTokenLimit")
+
+
+async def spend_tokens(session: AsyncSession, who: Principal, tokens: int) -> None:
+    """Add a finished turn's tokens to today's tenant counter."""
+    if tokens > 0:
+        await session.execute(
+            _SPEND, {"tenant_id": who.tenant_id, "scope": _TOKENS_SCOPE, "amount": tokens}
+        )

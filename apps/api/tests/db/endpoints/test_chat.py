@@ -517,6 +517,37 @@ class TestGuardsAndLimits:
         assert statuses == [200, 200, 429]
         assert len([r for r in rows(world, ready.conversation) if r["role"] == "user"]) == 2
 
+    def test_the_tenant_stops_at_its_daily_token_budget(
+        self, world: World, ready, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("api.services.limits.TENANT_DAILY_TOKENS", 30)  # a turn spends 15
+
+        chat(world, ready.conversation)
+        chat(world, ready.conversation)
+        response = world.client.post(
+            url(ready.conversation), json={"text": "hola"}, headers=world.headers()
+        )
+
+        assert response.status_code == 429
+        assert response.json()["message_key"] == "errors.dailyTokenLimit"
+        assert len([r for r in rows(world, ready.conversation) if r["role"] == "user"]) == 2
+        assert len(world.agent.histories) == 2  # the model was not called
+
+    def test_a_turn_that_fails_spends_no_budget(
+        self, world: World, ready, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("api.services.limits.TENANT_DAILY_TOKENS", 15)
+
+        async def down(history, tools):
+            raise AssistantUnavailableError
+            yield  # pragma: no cover - makes this an async generator
+
+        world.agent.script = down
+        chat(world, ready.conversation)
+        world.agent.script = world.agent.say("Listo.")
+
+        assert chat(world, ready.conversation)[-1][0] == "message.end"
+
     def test_a_conversation_pinned_to_a_superseded_run_still_uses_the_current_one(
         self, world: World, ready
     ) -> None:
