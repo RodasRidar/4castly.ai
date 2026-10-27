@@ -14,7 +14,7 @@ from worker.adapters.db.digest import SqlDigestRepository
 from worker.adapters.db.engine import create_worker_engine
 from worker.adapters.db.jobs import SqlJobRepository
 from worker.adapters.db.runs import SqlRunRepository
-from worker.adapters.forecasting import StatsForecastBaseline
+from worker.adapters.forecasting import StatsForecastBaseline, TimesFMForecaster
 from worker.adapters.ingestion.inspector import SheetsInspector
 from worker.adapters.ingestion.kardex_excel import KardexExcelSource
 from worker.adapters.ingestion.kardex_scan import KardexScanner
@@ -31,6 +31,26 @@ from worker.ports.forecaster import Forecaster
 from worker.ports.job_spawner import JobSpawner
 from worker.ports.plan_proposer import PlanProposer
 from worker.settings import Settings
+
+
+def build_forecaster(settings: Settings) -> Forecaster:
+    """AutoETS by default; TimesFM 3.0 only on a developer's machine (non-commercial weights)."""
+    if settings.forecaster == "autoets":
+        # Weekly series are short (tens of weeks): no yearly season, or AutoETS cannot fit.
+        return StatsForecastBaseline("auto_ets", season_length=1)
+    if settings.environment != "local":
+        message = "TimesFM 3.0 weights are non-commercial: FORECASTER=timesfm is local-only"
+        raise ValueError(message)
+    forecaster = TimesFMForecaster()
+    try:
+        forecaster.warmup()
+    except Exception as error:
+        message = (
+            "TimesFM 3.0 could not be loaded; install it with `uv sync --group local` "
+            f"({type(error).__name__})"
+        )
+        raise RuntimeError(message) from error
+    return forecaster
 
 
 class Worker:
@@ -100,8 +120,7 @@ class Worker:
             engine,
             store=SupabaseFileStore(settings.supabase_url, settings.supabase_service_role_key),
             proposer=proposer,
-            # Weekly series are short (tens of weeks): no yearly season, or AutoETS cannot fit.
-            forecaster=StatsForecastBaseline("auto_ets", season_length=1),
+            forecaster=build_forecaster(settings),
             stale_after=timedelta(minutes=settings.stale_after_minutes),
             queued_after=timedelta(minutes=settings.queued_after_minutes),
             max_attempts=settings.max_attempts,

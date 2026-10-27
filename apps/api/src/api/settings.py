@@ -1,4 +1,6 @@
 from functools import lru_cache
+from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -26,6 +28,9 @@ class Settings(BaseSettings):
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
     storage_bucket: str = "uploads"
+    job_runner: Literal["modal", "local"] = "modal"
+    """`local` starts `apps/worker` as a subprocess (development); `modal` uses the deployed app."""
+    worker_dir: Path = Path(__file__).resolve().parents[3] / "worker"
     modal_app_name: str = "castly-worker"
     modal_environment: str = ""
     """Modal environment (`dev` or `main`); empty uses the one the token belongs to."""
