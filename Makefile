@@ -1,6 +1,6 @@
 APPS_PY := apps/api apps/worker packages/inventory packages/telemetry packages/pgtest
 
-.PHONY: install lint format typecheck test check contracts fixtures modal-requirements dev-web dev-api
+.PHONY: install lint format typecheck test check contracts fixtures modal-requirements dev-web dev-api local-up local-down
 
 install:
 	cd apps/web && pnpm install
@@ -43,3 +43,14 @@ dev-web:
 
 dev-api:
 	cd apps/api && uv run uvicorn api.main:app --reload
+
+# Local stack without Docker Desktop: Colima + Supabase (Auth, Storage, Postgres, mail). See docs/desarrollo-local.md.
+SUPABASE_LOCAL_SKIP := realtime,imgproxy,edge-runtime,logflare,vector,supavisor,studio,postgres-meta
+
+local-up:
+	@colima status >/dev/null 2>&1 || colima start --cpu 4 --memory 4 --disk 20
+	supabase start -x $(SUPABASE_LOCAL_SKIP)
+
+local-down:
+	supabase stop
+	colima stop

@@ -47,3 +47,6 @@ supabase/.temp/
 htmlcov/
 # Local AI runtime state
 .atl/
+
+# Local worker logs (JOB_RUNNER=local)
+.logs/
