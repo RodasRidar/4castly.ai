@@ -182,15 +182,4 @@ export function LoginPage() {
   )
 }
 
-export function AuthCallbackPage() {
-  const { t } = useTranslation()
-  // Reaching this page means no session exists (RedirectIfAuthed forwards signed-in users). The real
-  // Supabase token exchange arrives with the http services (B4).
-  return (
-    <div className="flex flex-col gap-3">
-      <h1 className="text-heading-md font-semibold text-ink">{t('login.callbackTitle')}</h1>
-      <p className="text-body-md text-body">{t('login.callbackBody')}</p>
-      <TextLink href="/login">{t('login.callbackBack')}</TextLink>
-    </div>
-  )
-}
+export { AuthCallbackPage } from './AuthCallbackPage'

@@ -20,7 +20,9 @@ export function SettingsLayout() {
         soonLabel={t('settings.soon')}
         soonItems={[
           { id: 'team', label: t('settings.soonItems.team') },
-          { id: 'billing', label: t('settings.soonItems.billing') },
+          { id: 'sources', label: t('settings.soonItems.sources') },
+          { id: 'notifications', label: t('settings.soonItems.notifications') },
+          { id: 'plan', label: t('settings.soonItems.plan') },
         ]}
       />
       <main id="main" className="min-w-0 flex-1 p-6 md:p-10">

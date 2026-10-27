@@ -17,6 +17,7 @@ export const loginEs = {
   resendIn: 'Reenviar código en {{seconds}} s',
   resend: 'Reenviar código',
   useOtherEmail: 'Usar otro correo',
+  callbackChecking: 'Validando tu acceso…',
   callbackTitle: 'No pudimos validar tu enlace',
   callbackBody: 'El enlace no es válido o ya venció. Pide uno nuevo desde la pantalla de acceso.',
   callbackBack: 'Volver a iniciar sesión',

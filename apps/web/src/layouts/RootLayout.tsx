@@ -2,6 +2,7 @@ import { Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { NotificationsProvider } from '../app/notifications'
 import { useClientNavigation } from '../app/useClientNavigation'
+import { OfflineBanner } from './OfflineBanner'
 
 /** Providers, skip link, toasts. Every route renders inside it. */
 export function RootLayout() {
@@ -16,6 +17,7 @@ export function RootLayout() {
       >
         {t('common.skipToContent')}
       </a>
+      <OfflineBanner />
       <NotificationsProvider>
         <Outlet />
       </NotificationsProvider>

@@ -19,6 +19,7 @@ export const loginEn: typeof loginEs = {
   resendIn: 'Resend code in {{seconds}} s',
   resend: 'Resend code',
   useOtherEmail: 'Use a different email',
+  callbackChecking: 'Checking your access…',
   callbackTitle: "We couldn't validate your link",
   callbackBody: 'The link is not valid or has expired. Request a new one from the sign-in screen.',
   callbackBack: 'Back to sign in',

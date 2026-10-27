@@ -1,13 +1,39 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { errorTextOf } from '../../app/errorText'
+import { useNotify } from '../../app/notifyContext'
+import { useServices } from '../../services/servicesContext'
 import { Button } from '../../ui/atoms/Button'
 import { InlineNotice } from '../../ui/molecules/InlineNotice'
-import { useRunSummary } from './queries'
+import { conversationKey } from '../conversation/useConversationData'
+import { runKey, useRunSummary } from './queries'
 
-/** Stale results and the defaults used when the clarification questions were skipped (F4 requirement). */
-export function Notices({ runId, onChangeParameters }: { runId: string; onChangeParameters: () => void }) {
+interface NoticesProps {
+  runId: string
+  conversationId: string
+  onChangeParameters: () => void
+}
+
+/**
+ * What the user should know before trusting the numbers: no stock column (indicative results), parameters
+ * saved but not applied yet, stale results, and the defaults used when the questions were skipped.
+ */
+export function Notices({ runId, conversationId, onChangeParameters }: NoticesProps) {
   const { t, i18n } = useTranslation()
-  const run = useRunSummary(runId).data?.run
-  if (!run) return null
+  const { runs } = useServices()
+  const queryClient = useQueryClient()
+  const notify = useNotify()
+  const summary = useRunSummary(runId).data
+  const recalculate = useMutation({
+    mutationFn: () => runs.recalculate(runId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: runKey(runId) })
+      await queryClient.invalidateQueries({ queryKey: conversationKey(conversationId) })
+    },
+    onError: (error) => notify('error', errorTextOf(t, error)),
+  })
+  if (!summary) return null
+  const { run } = summary
 
   const items = new Intl.ListFormat(i18n.language, { style: 'long', type: 'conjunction' }).format(
     run.defaults_used.map((key) => t(`results.notices.defaultItems.${key}`)),
@@ -15,7 +41,19 @@ export function Notices({ runId, onChangeParameters }: { runId: string; onChange
 
   return (
     <div className="flex flex-col gap-2">
-      {run.stale && <InlineNotice tone="staleness">{t('results.notices.stale')}</InlineNotice>}
+      {!summary.stock_known && <InlineNotice tone="warning">{t('results.notices.noStock')}</InlineNotice>}
+      {run.parameters_pending ? (
+        <InlineNotice tone="staleness">
+          <span className="flex flex-wrap items-center gap-3">
+            <span>{t('results.notices.pending')}</span>
+            <Button variant="secondary" size="sm" loading={recalculate.isPending} onClick={() => recalculate.mutate()}>
+              {t('results.notices.recalculate')}
+            </Button>
+          </span>
+        </InlineNotice>
+      ) : (
+        run.stale && <InlineNotice tone="staleness">{t('results.notices.stale')}</InlineNotice>
+      )}
       {run.defaults_used.length > 0 && (
         <InlineNotice tone="info">
           <span className="flex flex-wrap items-center gap-3">

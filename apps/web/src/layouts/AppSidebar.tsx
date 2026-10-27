@@ -8,6 +8,7 @@ import { Sidebar } from '../ui/organisms/Sidebar'
 import { ConnectedUserMenu } from './ConnectedUserMenu'
 import { groupConversations } from './groupConversations'
 import { conversationsKey } from './keys'
+import { useDeleteConversation } from './useDeleteConversation'
 
 interface AppSidebarProps {
   collapsed: boolean
@@ -28,10 +29,10 @@ export function AppSidebar({ collapsed, onToggleCollapsed, mobile }: AppSidebarP
   const pin = useMutation({ mutationFn: (v: { id: string; pinned: boolean }) => conversations.update(v.id, { pinned: v.pinned }), onSettled: refresh })
   const rename = useMutation({ mutationFn: (v: { id: string; title: string }) => conversations.update(v.id, { title: v.title }), onSettled: refresh })
   const archive = useMutation({ mutationFn: (id: string) => conversations.update(id, { archived: true }), onSettled: refresh })
-  const remove = useMutation({ mutationFn: (id: string) => conversations.remove(id), onSettled: refresh })
   const leaveIfActive = (id: string) => {
     if (id === activeId) void navigate('/nuevo')
   }
+  const remove = useDeleteConversation(leaveIfActive)
 
   const groups = groupConversations(list.data ?? [], {
     pinned: t('conversations.pinned'),
@@ -95,7 +96,6 @@ export function AppSidebar({ collapsed, onToggleCollapsed, mobile }: AppSidebarP
             }}
             onDelete={() => {
               remove.mutate(item.id)
-              leaveIfActive(item.id)
             }}
           />
         ),

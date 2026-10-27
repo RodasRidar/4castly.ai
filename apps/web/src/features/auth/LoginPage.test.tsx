@@ -153,4 +153,24 @@ describe('AuthCallbackPage', () => {
     const { router } = renderApp({ path: '/auth/callback' })
     await waitFor(() => expect(router.state.location.pathname).toBe('/nuevo'))
   })
+
+  it('says it is checking the link before it decides', async () => {
+    renderApp({ path: '/auth/callback', signedIn: false, latencyMs: 40 })
+    expect(await screen.findByRole('status', { name: 'Validando tu acceso…' })).toBeInTheDocument()
+  })
+
+  it('picks up a session that appeared after the link was processed and goes where the user was headed', async () => {
+    const { services, router } = renderApp({ path: '/auth/callback?next=%2Fhistorial', signedIn: false, latencyMs: 30 })
+    // The guard's first check is already in flight and answers "no session"; the page's own check finds one.
+    services.auth.hasSession = async () => true
+    await waitFor(() => expect(router.state.location.pathname).toBe('/historial'))
+  })
+
+  it('shows the invalid-link state when the check itself fails', async () => {
+    const { services } = renderApp({ path: '/auth/callback', signedIn: false, latencyMs: 30 })
+    services.auth.hasSession = async () => {
+      throw new Error('boom')
+    }
+    expect(await screen.findByRole('heading', { name: 'No pudimos validar tu enlace' })).toBeInTheDocument()
+  })
 })

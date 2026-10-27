@@ -308,3 +308,64 @@ describe('copy in English', () => {
     expect(await screen.findByRole('table', { name: 'Products and their stockout risk' })).toBeInTheDocument()
   })
 })
+
+describe('run notices from the contract flags', () => {
+  /** `stock_known` is a summary field; `parameters_pending` belongs to the run (see the generated schema). */
+  const withSummary = (
+    services: ReturnType<typeof renderApp>['services'],
+    patch: { stock_known?: boolean; parameters_pending?: boolean; stale?: boolean },
+  ) => {
+    const original = services.runs.summary.bind(services.runs)
+    services.runs.summary = async (id) => {
+      const s = await original(id)
+      const { stock_known = s.stock_known, ...run } = patch
+      return { ...s, stock_known, run: { ...s.run, ...run } }
+    }
+  }
+
+  it('says nothing when the file had stock and nothing is pending', async () => {
+    renderApp({ path: path() })
+    await table()
+    expect(screen.queryByText(/columna de stock/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/aún no se aplican/)).not.toBeInTheDocument()
+  })
+
+  it('warns that results are indicative when the file had no stock column', async () => {
+    const { services } = renderApp({ path: path() })
+    withSummary(services, { stock_known: false })
+    expect(await screen.findByText(/no tenía columna de stock: se asumió stock 0 y los resultados son orientativos/)).toBeInTheDocument()
+  })
+
+  it('offers Recalcular for parameters that were saved but not applied, and starts the recalculation', async () => {
+    const { services, user, router } = renderApp({ path: path() })
+    withSummary(services, { parameters_pending: true })
+    expect(await screen.findByText('Guardaste parámetros nuevos que aún no se aplican.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Recalcular' }))
+    await waitFor(async () => expect((await services.conversations.get(READY)).stage).toBe('calculating'))
+    expect(router.state.location.pathname).toBe(`/c/${READY}`)
+  })
+
+  it('shows one coherent notice when both pending parameters and a stale run are reported', async () => {
+    const { services } = renderApp({ path: path() })
+    withSummary(services, { parameters_pending: true, stale: true })
+    expect(await screen.findByText('Guardaste parámetros nuevos que aún no se aplican.')).toBeInTheDocument()
+    expect(screen.queryByText(/cambiaste los parámetros/)).not.toBeInTheDocument()
+  })
+
+  it('tells the user when the recalculation cannot start', async () => {
+    const { services, user } = renderApp({ path: path() })
+    withSummary(services, { parameters_pending: true })
+    services.runs.recalculate = async () => {
+      throw failure()
+    }
+    await user.click(await screen.findByRole('button', { name: 'Recalcular' }))
+    expect(await screen.findByText(/Algo salió mal de nuestro lado.*Referencia: K7Q2WX/)).toBeInTheDocument()
+  })
+
+  it('uses English copy in English', async () => {
+    const { services } = renderApp({ path: path(), language: 'en', preferences: { locale: 'en' } })
+    withSummary(services, { parameters_pending: true, stock_known: false })
+    expect(await screen.findByText('You saved new parameters that are not applied yet.')).toBeInTheDocument()
+    expect(screen.getByText(/had no stock column/)).toBeInTheDocument()
+  })
+})

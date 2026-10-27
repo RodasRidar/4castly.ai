@@ -3,6 +3,7 @@ import { SlidersHorizontal } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../ui/atoms/Button'
 import { Icon } from '../../ui/atoms/Icon'
+import { PanelBoundary } from '../../layouts/ErrorBoundary'
 import type { ResultsState } from '../shared/resultsUrl'
 import { ChartSection } from './ChartSection'
 import { FiltersSection } from './FiltersSection'
@@ -45,9 +46,11 @@ export function ResultsPanel({
 
   return (
     <div className="flex flex-col gap-6">
-      <Notices runId={runId} onChangeParameters={onOpenParameters} />
+      <Notices runId={runId} conversationId={conversationId} onChangeParameters={onOpenParameters} />
       <KpiSection runId={runId} state={state} onRetry={retryAll} />
-      <ChartSection runId={runId} onRetry={retryAll} />
+      <PanelBoundary>
+        <ChartSection runId={runId} onRetry={retryAll} />
+      </PanelBoundary>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <FiltersSection runId={runId} state={state} update={update} onReset={reset} />
         <div className="flex items-center gap-2">
@@ -61,17 +64,19 @@ export function ResultsPanel({
           )}
         </div>
       </div>
-      <ProductsSection
-        runId={runId}
-        conversationId={conversationId}
-        state={state}
-        update={update}
-        onReset={reset}
-        portfolio={portfolio}
-        selected={selected}
-        onSelectedChange={onSelectedChange}
-        onExportSelection={onExportSelection}
-      />
+      <PanelBoundary>
+        <ProductsSection
+          runId={runId}
+          conversationId={conversationId}
+          state={state}
+          update={update}
+          onReset={reset}
+          portfolio={portfolio}
+          selected={selected}
+          onSelectedChange={onSelectedChange}
+          onExportSelection={onExportSelection}
+        />
+      </PanelBoundary>
     </div>
   )
 }

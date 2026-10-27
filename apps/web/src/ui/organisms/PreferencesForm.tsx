@@ -11,6 +11,7 @@ export interface PreferencesValues {
   theme: string
   language: string
   timezone: string
+  assistantStyle: string
 }
 
 export interface PreferencesFormProps {
@@ -21,6 +22,7 @@ export interface PreferencesFormProps {
   themeOptions: SelectOption[]
   languageOptions: SelectOption[]
   timezoneOptions: SelectOption[]
+  assistantStyleOptions: SelectOption[]
   /** Note under Idioma about the assistant's language. */
   languageNote: string
   /** Autosave: fires once per changed field. */
@@ -44,6 +46,7 @@ export function PreferencesForm({
   themeOptions,
   languageOptions,
   timezoneOptions,
+  assistantStyleOptions,
   languageNote,
   onChange,
   saveState = 'idle',
@@ -109,6 +112,16 @@ export function PreferencesForm({
           <Select {...control} invalid={invalid} options={timezoneOptions} value={values.timezone} onValueChange={(v) => onChange('timezone', v)} />
         )}
       </FormField>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-body-md font-medium text-ink">{fieldLabels.assistantStyle}</span>
+        <SegmentedControl
+          aria-label={fieldLabels.assistantStyle}
+          className="self-start"
+          options={assistantStyleOptions}
+          value={values.assistantStyle}
+          onValueChange={(v) => onChange('assistantStyle', v)}
+        />
+      </div>
       <p role="status" className="min-h-5 text-body-md text-mute">
         {saveState === 'saving' ? savingText : saveState === 'saved' ? savedText : ''}
       </p>

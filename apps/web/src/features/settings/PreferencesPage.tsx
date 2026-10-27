@@ -10,6 +10,7 @@ const TIMEZONES = ['America/Lima', 'America/Bogota', 'America/Santiago', 'Americ
 function toPatch(field: keyof PreferencesValues, value: string): Partial<Preferences> {
   if (field === 'language') return isLanguage(value) ? { locale: value } : {}
   if (field === 'timezone') return { time_zone: value }
+  if (field === 'assistantStyle') return value === 'brief' || value === 'detailed' ? { assistant_style: value } : {}
   return value === 'light' || value === 'dark' || value === 'system' ? { theme: value } : {}
 }
 
@@ -26,13 +27,19 @@ export function PreferencesPage() {
         label={t('settings.preferencesForm')}
         values={
           prefs.data
-            ? { theme: prefs.data.theme, language: prefs.data.locale, timezone: prefs.data.time_zone }
-            : { theme: 'system', language: 'es', timezone: 'UTC' }
+            ? { theme: prefs.data.theme, language: prefs.data.locale, timezone: prefs.data.time_zone, assistantStyle: prefs.data.assistant_style }
+            : { theme: 'system', language: 'es', timezone: 'UTC', assistantStyle: 'brief' }
         }
-        fieldLabels={{ theme: t('settings.fields.theme'), language: t('settings.fields.language'), timezone: t('settings.fields.timezone') }}
+        fieldLabels={{
+          theme: t('settings.fields.theme'),
+          language: t('settings.fields.language'),
+          timezone: t('settings.fields.timezone'),
+          assistantStyle: t('settings.fields.assistantStyle'),
+        }}
         themeOptions={(['light', 'dark', 'system'] as const).map((value) => ({ value, label: t(`theme.${value}`) }))}
         languageOptions={LANGUAGES.map((value) => ({ value, label: t(`language.${value}`) }))}
         timezoneOptions={TIMEZONES.map((value) => ({ value, label: t(`timezones.${value}`) }))}
+        assistantStyleOptions={(['brief', 'detailed'] as const).map((value) => ({ value, label: t(`settings.assistantStyle.${value}`) }))}
         languageNote={t('settings.languageNote')}
         onChange={(field: keyof PreferencesValues, value: string) => update.mutate(toPatch(field, value))}
         saveState={update.isPending ? 'saving' : update.isSuccess ? 'saved' : 'idle'}

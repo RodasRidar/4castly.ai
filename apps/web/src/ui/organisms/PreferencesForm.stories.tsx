@@ -4,8 +4,12 @@ import { PreferencesForm, type PreferencesFormProps } from './PreferencesForm'
 
 const base: PreferencesFormProps = {
   label: 'Preferencias',
-  values: { theme: 'system', language: 'es', timezone: 'America/Santiago' },
-  fieldLabels: { theme: 'Tema', language: 'Idioma', timezone: 'Zona horaria' },
+  values: { theme: 'system', language: 'es', timezone: 'America/Santiago', assistantStyle: 'brief' },
+  fieldLabels: { theme: 'Tema', language: 'Idioma', timezone: 'Zona horaria', assistantStyle: 'Estilo del asistente' },
+  assistantStyleOptions: [
+    { value: 'brief', label: 'Breve' },
+    { value: 'detailed', label: 'Detallado' },
+  ],
   themeOptions: [
     { value: 'light', label: 'Claro' },
     { value: 'dark', label: 'Oscuro' },

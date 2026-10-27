@@ -5,8 +5,12 @@ import { PreferencesForm, type PreferencesFormProps } from './PreferencesForm'
 
 const props = (over: Partial<PreferencesFormProps> = {}): PreferencesFormProps => ({
   label: 'Preferencias',
-  values: { theme: 'light', language: 'es', timezone: 'America/Santiago' },
-  fieldLabels: { theme: 'Tema', language: 'Idioma', timezone: 'Zona horaria' },
+  values: { theme: 'light', language: 'es', timezone: 'America/Santiago', assistantStyle: 'brief' },
+  fieldLabels: { theme: 'Tema', language: 'Idioma', timezone: 'Zona horaria', assistantStyle: 'Estilo del asistente' },
+  assistantStyleOptions: [
+    { value: 'brief', label: 'Breve' },
+    { value: 'detailed', label: 'Detallado' },
+  ],
   themeOptions: [
     { value: 'light', label: 'Claro' },
     { value: 'dark', label: 'Oscuro' },
@@ -32,6 +36,14 @@ describe('PreferencesForm', () => {
     expect(screen.getByRole('radio', { name: 'Claro' })).toBeChecked()
     expect(screen.getByRole('combobox', { name: 'Idioma' })).toHaveValue('es')
     expect(screen.getByRole('combobox', { name: 'Zona horaria' })).toHaveValue('America/Santiago')
+  })
+  it('shows the assistant style and autosaves a change', async () => {
+    const p = props()
+    render(<PreferencesForm {...p} />)
+    expect(screen.getByRole('radiogroup', { name: 'Estilo del asistente' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Breve' })).toBeChecked()
+    await userEvent.click(screen.getByRole('radio', { name: 'Detallado' }))
+    expect(p.onChange).toHaveBeenLastCalledWith('assistantStyle', 'detailed')
   })
   it('links the assistant-language note to the language select', () => {
     render(<PreferencesForm {...props()} />)

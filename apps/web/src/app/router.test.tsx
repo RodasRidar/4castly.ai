@@ -162,6 +162,15 @@ describe('AppLayout', () => {
 })
 
 describe('SettingsLayout', () => {
+  it('lists the sections that are coming soon, as the plan names them', async () => {
+    renderApp({ path: '/configuracion/preferencias' })
+    const nav = await screen.findByRole('navigation', { name: 'Configuración' })
+    for (const label of ['Empresa y equipo', 'Fuentes de datos', 'Notificaciones', 'Plan y uso']) {
+      expect(within(nav).getByText(label)).toBeInTheDocument()
+    }
+    expect(within(nav).queryByText('Facturación')).not.toBeInTheDocument()
+  })
+
   it('has its own navigation and no conversation sidebar', async () => {
     renderApp({ path: '/configuracion/preferencias' })
     expect(await screen.findByRole('navigation', { name: 'Configuración' })).toBeInTheDocument()
